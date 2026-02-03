@@ -2,7 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'BPMN FlowForge - Smart BPMN Generator',
+  title: '(ወርቁ) - Smart BPMN Generator',
   description: 'Generate professional BPMN diagrams from simple text process steps.',
 };
 

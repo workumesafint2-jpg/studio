@@ -49,7 +49,7 @@ export function BPMNFlowForgeApp() {
           <div className="p-2 bg-secondary rounded-lg">
             <FileCode className="w-6 h-6 text-primary" />
           </div>
-          <h1 className="text-xl font-bold tracking-tight font-headline uppercase">BPMN FlowForge</h1>
+          <h1 className="text-xl font-bold tracking-tight font-headline uppercase">(ወርቁ)</h1>
         </div>
         <div className="flex items-center gap-4">
           <Badge variant="secondary" className="px-3 py-1 bg-accent text-primary border-none font-medium">
@@ -170,7 +170,7 @@ export function BPMNFlowForgeApp() {
       
       {/* Footer */}
       <footer className="px-8 py-3 bg-white border-t border-muted flex items-center justify-between text-xs text-muted-foreground shrink-0">
-        <p>© {new Date().getFullYear()} BPMN FlowForge - Precision Engineering for Process Design</p>
+        <p>© {new Date().getFullYear()} (ወርቁ) - Precision Engineering for Process Design</p>
         <p className="flex items-center gap-4">
           <span>Privacy</span>
           <span>Terms</span>
