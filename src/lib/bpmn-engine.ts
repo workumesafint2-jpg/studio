@@ -6,20 +6,35 @@ export function generateBPMN(input: string): string {
     .map((s) => s.trim())
     .filter((s) => s.length > 0);
 
-  let processElements = '    <bpmn:startEvent id="StartEvent_1" name="Start" />\n';
-  let diagramElements = `
+  let processElements = '';
+  let diagramElements = '';
+
+  // 1. Start Event Definition
+  processElements += '    <bpmn:startEvent id="StartEvent_1" name="Start">\n';
+  processElements += '      <bpmn:outgoing>Flow_Start</bpmn:outgoing>\n';
+  processElements += '    </bpmn:startEvent>\n';
+
+  // Start Event Shape
+  diagramElements += `
       <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
         <dc:Bounds x="150" y="150" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="156" y="193" width="24" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>`;
 
   let lastId = "StartEvent_1";
-  let currentX = 230;
+  let lastFlowId = "Flow_Start";
+  let currentX = 250;
+  let lastX = 150;
+  let lastWidth = 36;
 
+  // 2. Iterate through steps to create Tasks and Gateways
   steps.forEach((stepName, i) => {
     const currentId = `Activity_${i}`;
-    const flowId = `Flow_${i}`;
-
-    // Smart detection for gateways (questions or keywords)
+    const nextFlowId = i === steps.length - 1 ? 'Flow_End' : `Flow_${i + 1}`;
+    
+    // Detect if this step should be a Gateway or a Task
     const isGateway = stepName.includes('?') || 
                       stepName.toLowerCase().includes('if') || 
                       stepName.toLowerCase().includes('whether');
@@ -29,34 +44,55 @@ export function generateBPMN(input: string): string {
     const height = isGateway ? 50 : 80;
     const yPos = isGateway ? 143 : 135;
 
-    processElements += `    <bpmn:sequenceFlow id="${flowId}" sourceRef="${lastId}" targetRef="${currentId}" />\n`;
-    processElements += `    <${type} id="${currentId}" name="${escapeXml(stepName)}" />\n`;
+    // Sequence Flow Definition (linking last element to this one)
+    processElements += `    <bpmn:sequenceFlow id="${lastFlowId}" sourceRef="${lastId}" targetRef="${currentId}" />\n`;
+    
+    // Element Definition with explicit references
+    processElements += `    <${type} id="${currentId}" name="${escapeXml(stepName)}">\n`;
+    processElements += `      <bpmn:incoming>${lastFlowId}</bpmn:incoming>\n`;
+    processElements += `      <bpmn:outgoing>${nextFlowId}</bpmn:outgoing>\n`;
+    processElements += `    </${type}>\n`;
 
+    // Diagram Shape for Element
     diagramElements += `
       <bpmndi:BPMNShape id="${currentId}_di" bpmnElement="${currentId}" isMarkerVisible="true">
         <dc:Bounds x="${currentX}" y="${yPos}" width="${width}" height="${height}" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
-        <di:waypoint x="${lastId === "StartEvent_1" ? currentX - 44 : currentX - 50}" y="168" />
+      </bpmndi:BPMNShape>`;
+      
+    // Diagram Edge for Sequence Flow
+    diagramElements += `
+      <bpmndi:BPMNEdge id="${lastFlowId}_di" bpmnElement="${lastFlowId}">
+        <di:waypoint x="${lastX + lastWidth}" y="168" />
         <di:waypoint x="${currentX}" y="168" />
       </bpmndi:BPMNEdge>`;
 
+    // Update state for next iteration
     lastId = currentId;
-    currentX += width + 50;
+    lastFlowId = nextFlowId;
+    lastX = currentX;
+    lastWidth = width;
+    currentX += width + 70; // Spacing between elements
   });
 
-  processElements += `    <bpmn:sequenceFlow id="FinalFlow" sourceRef="${lastId}" targetRef="EndEvent_1" />\n`;
-  processElements += '    <bpmn:endEvent id="EndEvent_1" name="End" />';
+  // 3. End Event Definition
+  processElements += '    <bpmn:endEvent id="EndEvent_1" name="End">\n';
+  processElements += `      <bpmn:incoming>${lastFlowId}</bpmn:incoming>\n`;
+  processElements += '    </bpmn:endEvent>\n';
 
+  // End Event Shape and Final Edge
   diagramElements += `
       <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
         <dc:Bounds x="${currentX}" y="150" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="${currentX + 8}" y="193" width="20" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="FinalFlow_di" bpmnElement="FinalFlow">
-        <di:waypoint x="${currentX - 50}" y="168" />
+      <bpmndi:BPMNEdge id="${lastFlowId}_di" bpmnElement="${lastFlowId}">
+        <di:waypoint x="${lastX + lastWidth}" y="168" />
         <di:waypoint x="${currentX}" y="168" />
       </bpmndi:BPMNEdge>`;
 
+  // Final XML Construction
   return `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" 
                   xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" 
