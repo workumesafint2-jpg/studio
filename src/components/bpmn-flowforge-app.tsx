@@ -1,22 +1,22 @@
-
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Copy, FileCode, Play, Trash2, CheckCircle2, Info, Eye, Code } from "lucide-react";
+import { Copy, FileCode, Play, Trash2, CheckCircle2, Info, Eye, Code, Download } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BPMNViewer } from "@/components/bpmn-viewer";
+import { BPMNViewer, type BPMNViewerRef } from "@/components/bpmn-viewer";
 
 export function BPMNFlowForgeApp() {
   const [input, setInput] = useState("");
   const [xmlResult, setXmlResult] = useState("");
   const [activeTab, setActiveTab] = useState("diagram");
+  const viewerRef = useRef<BPMNViewerRef>(null);
   const { toast } = useToast();
 
   const handleGenerate = () => {
@@ -41,6 +41,16 @@ export function BPMNFlowForgeApp() {
       title: "Copied!",
       description: "BPMN XML has been copied to your clipboard.",
     });
+  };
+
+  const handleDownloadPNG = async () => {
+    if (viewerRef.current) {
+      await viewerRef.current.exportPNG();
+      toast({
+        title: "Exporting...",
+        description: "Your diagram is being saved as a PNG.",
+      });
+    }
   };
 
   const handleClear = () => {
@@ -132,14 +142,24 @@ export function BPMNFlowForgeApp() {
               </TabsList>
               
               {xmlResult && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={handleCopy}
-                  className="flex items-center gap-2"
-                >
-                  <Copy className="w-4 h-4" /> <span className="hidden sm:inline">Copy</span>
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleDownloadPNG}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="w-4 h-4" /> <span className="hidden sm:inline">Download PNG</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleCopy}
+                    className="flex items-center gap-2"
+                  >
+                    <Copy className="w-4 h-4" /> <span className="hidden sm:inline">Copy XML</span>
+                  </Button>
+                </div>
               )}
             </div>
 
@@ -147,7 +167,7 @@ export function BPMNFlowForgeApp() {
               <TabsContent value="diagram" className="flex-1 m-0 focus-visible:ring-0 h-full">
                 {xmlResult ? (
                   <div className="h-full w-full">
-                    <BPMNViewer xml={xmlResult} />
+                    <BPMNViewer xml={xmlResult} ref={viewerRef} />
                   </div>
                 ) : (
                   <EmptyState message="Diagram will appear here." />

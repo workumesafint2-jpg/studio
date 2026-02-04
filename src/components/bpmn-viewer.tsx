@@ -1,27 +1,73 @@
-
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import BpmnViewer from 'bpmn-js/lib/NavigatedViewer';
 
 interface BPMNViewerProps {
   xml: string;
 }
 
-export function BPMNViewer({ xml }: BPMNViewerProps) {
+export interface BPMNViewerRef {
+  exportPNG: () => Promise<void>;
+}
+
+export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<any>(null);
+
+  useImperativeHandle(ref, () => ({
+    exportPNG: async () => {
+      if (!viewerRef.current) return;
+
+      try {
+        const { svg } = await viewerRef.current.saveSVG();
+        
+        // Create a canvas element
+        const canvas = document.createElement('canvas');
+        const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(svgBlob);
+        
+        const img = new Image();
+        img.onload = () => {
+          // Add some padding to the exported image
+          const padding = 40;
+          canvas.width = img.width + padding * 2;
+          canvas.height = img.height + padding * 2;
+          
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            // Set white background
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw the diagram
+            ctx.drawImage(img, padding, padding);
+            
+            // Trigger download
+            const pngUrl = canvas.toDataURL('image/png');
+            const downloadLink = document.createElement('a');
+            downloadLink.href = pngUrl;
+            downloadLink.download = 'process-diagram.png';
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+          }
+          URL.revokeObjectURL(url);
+        };
+        img.src = url;
+      } catch (err) {
+        console.error('Error exporting PNG:', err);
+      }
+    }
+  }));
 
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Initialize the viewer
-    // Keyboard binding is now implicit; explicit binding was removed in recent versions
     viewerRef.current = new BpmnViewer({
       container: containerRef.current
     });
 
-    // Clean up on unmount
     return () => {
       if (viewerRef.current) {
         viewerRef.current.destroy();
@@ -56,4 +102,6 @@ export function BPMNViewer({ xml }: BPMNViewerProps) {
       </div>
     </div>
   );
-}
+});
+
+BPMNViewer.displayName = 'BPMNViewer';
