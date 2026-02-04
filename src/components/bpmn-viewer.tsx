@@ -16,11 +16,9 @@ export function BPMNViewer({ xml }: BPMNViewerProps) {
     if (!containerRef.current) return;
 
     // Initialize the viewer
+    // Keyboard binding is now implicit; explicit binding was removed in recent versions
     viewerRef.current = new BpmnViewer({
-      container: containerRef.current,
-      keyboard: {
-        bindTo: window
-      }
+      container: containerRef.current
     });
 
     // Clean up on unmount
