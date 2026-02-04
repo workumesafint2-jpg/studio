@@ -1,0 +1,17 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "pwa-icon-192",
+      "description": "PWA Icon 192x192",
+      "imageUrl": "https://picsum.photos/seed/pwa-1/192/192",
+      "imageHint": "app icon"
+    },
+    {
+      "id": "pwa-icon-512",
+      "description": "PWA Icon 512x512",
+      "imageUrl": "https://picsum.photos/seed/pwa-2/512/512",
+      "imageHint": "app splash"
+    }
+  ]
+}

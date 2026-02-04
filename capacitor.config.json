@@ -1,0 +1,10 @@
+
+{
+  "appId": "com.worku.bpmn",
+  "appName": "Worku BPMN",
+  "webDir": "out",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}

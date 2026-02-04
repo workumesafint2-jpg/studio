@@ -30,7 +30,6 @@ export function BPMNFlowForgeApp() {
     }
     const result = generateBPMN(input);
     setXmlResult(result);
-    // Switch to diagram tab automatically on first generation if not already there
     if (!xmlResult) {
       setActiveTab("diagram");
     }
@@ -50,85 +49,85 @@ export function BPMNFlowForgeApp() {
   };
 
   return (
-    <div className="flex flex-col h-screen max-h-screen overflow-hidden">
+    <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-background">
       {/* Header */}
-      <header className="flex items-center justify-between px-8 py-4 bg-primary text-primary-foreground shadow-lg shrink-0">
+      <header className="flex items-center justify-between px-4 sm:px-8 py-4 bg-primary text-primary-foreground shadow-lg shrink-0">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-secondary rounded-lg">
             <FileCode className="w-6 h-6 text-primary" />
           </div>
-          <h1 className="text-xl font-bold tracking-tight font-headline uppercase">(ወርቁ)</h1>
+          <h1 className="text-xl font-bold tracking-tight uppercase">(ወርቁ)</h1>
         </div>
         <div className="flex items-center gap-4">
-          <Badge variant="secondary" className="px-3 py-1 bg-accent text-primary border-none font-medium">
-            Beta v1.1
+          <Badge variant="secondary" className="hidden sm:inline-flex px-3 py-1 bg-accent text-primary border-none font-medium">
+            Pro v1.2
           </Badge>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main className="flex flex-1 overflow-hidden p-6 gap-6">
+      <main className="flex flex-col lg:flex-row flex-1 overflow-hidden p-4 sm:p-6 gap-4 sm:gap-6">
         {/* Left Side: Input */}
-        <div className="flex-1 flex flex-col gap-4">
-          <Card className="flex-1 flex flex-col shadow-sm border-none bg-card">
+        <div className="w-full lg:w-[400px] xl:w-[450px] flex flex-col gap-4 shrink-0 overflow-y-auto lg:overflow-visible">
+          <Card className="flex flex-col shadow-sm border-none bg-card h-full lg:h-auto lg:flex-1">
             <CardHeader className="shrink-0 pb-2">
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                Process Flow Definition
+                Process Definition
               </CardTitle>
               <CardDescription>
-                List your process steps. Use question marks for decision gateways.
+                List steps. Use <code className="bg-muted px-1 rounded">?</code> for decisions.
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col gap-4">
-              <div className="relative flex-1">
+            <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
+              <div className="relative flex-1 min-h-[200px] lg:min-h-0">
                 <Textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder={"Enter your process steps...\nExample:\nRegister customer\nIs data valid?\nApprove request\nReject request"}
-                  className="w-full h-full min-h-[300px] resize-none font-body text-base border-muted focus:ring-primary focus:border-primary p-4 rounded-xl transition-all"
+                  className="w-full h-full resize-none font-body text-base border-muted focus:ring-primary focus:border-primary p-4 rounded-xl transition-all"
                 />
               </div>
-              <div className="flex items-center justify-between pt-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-2">
                 <Button 
                   variant="outline" 
                   onClick={handleClear}
-                  className="flex items-center gap-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                  className="flex items-center gap-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 className="w-4 h-4" /> Clear
                 </Button>
                 <Button 
                   onClick={handleGenerate}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-6 rounded-xl text-lg font-semibold shadow-md flex items-center gap-2 transition-transform active:scale-95"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-4 sm:py-6 rounded-xl text-lg font-semibold shadow-md flex items-center justify-center gap-2 transition-transform active:scale-95"
                 >
-                  <Play className="w-5 h-5 fill-current" /> Generate Flow
+                  <Play className="w-5 h-5 fill-current" /> Generate
                 </Button>
               </div>
             </CardContent>
           </Card>
           
-          <div className="bg-secondary/50 p-4 rounded-xl border border-secondary flex items-start gap-3">
+          <div className="bg-secondary/50 p-4 rounded-xl border border-secondary hidden sm:flex items-start gap-3">
             <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-            <div className="text-sm text-primary/80 leading-relaxed">
+            <div className="text-xs text-primary/80 leading-relaxed">
               <p className="font-semibold mb-1">Quick Tips:</p>
               <ul className="list-disc list-inside space-y-1">
-                <li>Lines with <code className="bg-accent px-1 rounded text-primary">?</code> become <strong>Gateways</strong>.</li>
-                <li>Everything else becomes a <strong>Task</strong>.</li>
-                <li>The visual diagram updates automatically on generate.</li>
+                <li>Lines with <code className="bg-accent px-1 rounded text-primary">?</code> are <strong>Gateways</strong>.</li>
+                <li><strong>Keywords:</strong> "reject", "fail" create terminal branches.</li>
+                <li><strong>Loops:</strong> Use "back to [task]" to loop.</li>
               </ul>
             </div>
           </div>
         </div>
 
         {/* Right Side: Output */}
-        <div className="flex-1 flex flex-col gap-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col gap-4 min-h-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
             <div className="flex items-center justify-between mb-2">
               <TabsList className="bg-muted p-1">
                 <TabsTrigger value="diagram" className="flex items-center gap-2">
-                  <Eye className="w-4 h-4" /> Visual Diagram
+                  <Eye className="w-4 h-4" /> <span className="hidden xs:inline">Diagram</span>
                 </TabsTrigger>
                 <TabsTrigger value="xml" className="flex items-center gap-2">
-                  <Code className="w-4 h-4" /> BPMN XML
+                  <Code className="w-4 h-4" /> <span className="hidden xs:inline">XML</span>
                 </TabsTrigger>
               </TabsList>
               
@@ -137,25 +136,25 @@ export function BPMNFlowForgeApp() {
                   variant="outline" 
                   size="sm"
                   onClick={handleCopy}
-                  className="flex items-center gap-2 transition-all"
+                  className="flex items-center gap-2"
                 >
-                  <Copy className="w-4 h-4" /> Copy XML
+                  <Copy className="w-4 h-4" /> <span className="hidden sm:inline">Copy</span>
                 </Button>
               )}
             </div>
 
-            <Card className="flex-1 flex flex-col shadow-sm border-none bg-white overflow-hidden">
-              <TabsContent value="diagram" className="flex-1 m-0 focus-visible:ring-0">
+            <Card className="flex-1 flex flex-col shadow-sm border-none bg-white overflow-hidden min-h-0">
+              <TabsContent value="diagram" className="flex-1 m-0 focus-visible:ring-0 h-full">
                 {xmlResult ? (
                   <div className="h-full w-full">
                     <BPMNViewer xml={xmlResult} />
                   </div>
                 ) : (
-                  <EmptyState message="Visual diagram will appear here after generation." />
+                  <EmptyState message="Diagram will appear here." />
                 )}
               </TabsContent>
               
-              <TabsContent value="xml" className="flex-1 m-0 focus-visible:ring-0">
+              <TabsContent value="xml" className="flex-1 m-0 focus-visible:ring-0 h-full">
                 {xmlResult ? (
                   <ScrollArea className="h-full w-full bg-slate-900">
                     <pre className="p-6 font-code text-sm leading-relaxed text-emerald-400 overflow-x-auto selection:bg-emerald-500/30">
@@ -170,9 +169,9 @@ export function BPMNFlowForgeApp() {
           </Tabs>
           
           {xmlResult && (
-            <div className="bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/20 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
-              <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-              <p className="text-sm text-emerald-700 font-medium">
+            <div className="bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/20 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-1">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+              <p className="text-xs text-emerald-700 font-medium">
                 Diagram rendered successfully!
               </p>
             </div>
@@ -181,11 +180,10 @@ export function BPMNFlowForgeApp() {
       </main>
       
       {/* Footer */}
-      <footer className="px-8 py-3 bg-white border-t border-muted flex items-center justify-between text-xs text-muted-foreground shrink-0">
-        <p>© {new Date().getFullYear()} (ወርቁ) - Precision Engineering for Process Design</p>
+      <footer className="px-8 py-2 bg-white border-t border-muted hidden sm:flex items-center justify-between text-[10px] text-muted-foreground shrink-0">
+        <p>© {new Date().getFullYear()} (ወርቁ) - Optimized for Tablets & Desktops</p>
         <p className="flex items-center gap-4">
-          <span>Privacy</span>
-          <span>Terms</span>
+          <span>PWA Ready</span>
           <span>Open Source</span>
         </p>
       </footer>
@@ -196,10 +194,10 @@ export function BPMNFlowForgeApp() {
 function EmptyState({ message }: { message: string }) {
   return (
     <div className="h-full w-full flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
-      <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-        <FileCode className="w-8 h-8 opacity-20" />
+      <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-4">
+        <FileCode className="w-6 h-6 opacity-20" />
       </div>
-      <p className="max-w-[280px]">
+      <p className="text-sm max-w-[200px]">
         {message}
       </p>
     </div>
