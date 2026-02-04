@@ -1,6 +1,11 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* bpmn-js styles */
+@import "bpmn-js/dist/assets/diagram-js.css";
+@import "bpmn-js/dist/assets/bpmn-font/css/bpmn.css";
 
 @layer base {
   :root {
@@ -55,4 +60,14 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Custom Overrides for bpmn-js in Dark Mode or Theme Consistency */
+.bjs-container {
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.djs-palette {
+  display: none !important; /* Hide palette for preview-only viewer */
 }
