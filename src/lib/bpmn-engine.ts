@@ -1,4 +1,4 @@
-export function generateBPMN(input: string): string {
+export function generateBPMN(input: string, title: string = "Process Diagram"): string {
   if (!input.trim()) return '';
 
   const lines = input.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
@@ -52,16 +52,14 @@ export function generateBPMN(input: string): string {
 
   // 2. Build Nodes and Primary Flows
   nodes.forEach((node, i) => {
-    // If it's a loop trigger like "Fix data", we try to find where it points
     let loopTargetId: string | null = null;
     if (node.isLoopTrigger) {
       const match = node.name.match(/(?:back to|goto|repeat|return to)\s+(.+)/i);
       const targetName = match ? match[1].trim().toLowerCase() : null;
       
-      // If no explicit target name, and it's just "Fix" or "Retry", point to previous task
       const targetNode = targetName 
         ? nodes.find(n => n.name.toLowerCase().includes(targetName) && n.index < i)
-        : nodes.slice(0, i).reverse().find(n => !n.isGateway); // Last task before this
+        : nodes.slice(0, i).reverse().find(n => !n.isGateway); 
         
       if (targetNode) loopTargetId = targetNode.id;
     }
@@ -72,15 +70,10 @@ export function generateBPMN(input: string): string {
     const renderY = nodeY - (h / 2);
     const nodeX = currentX;
 
-    // Node XML
     const type = node.isGateway ? 'bpmn:exclusiveGateway' : 'bpmn:task';
     processContent += `    <${type} id="${node.id}" name="${escapeXml(node.name)}">\n`;
     processContent += `      <bpmn:incoming>Flow_${lastNodeId}_to_${node.id}</bpmn:incoming>\n`;
     
-    // Outgoing logic:
-    // If it's a negative terminal node, it goes to its own end event
-    // If it's a gateway, it has two branches (usually next and branch down)
-    // If it's a loop, it goes back
     if (node.isNegative) {
       processContent += `      <bpmn:outgoing>Flow_${node.id}_to_End_Neg</bpmn:outgoing>\n`;
     } else if (i < nodes.length - 1) {
@@ -94,7 +87,6 @@ export function generateBPMN(input: string): string {
     }
     processContent += `    </${type}>\n`;
 
-    // Diagram Shape
     diagramContent += `
       <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}" isMarkerVisible="true">
         <dc:Bounds x="${nodeX}" y="${renderY}" width="${w}" height="${h}" />
@@ -103,11 +95,9 @@ export function generateBPMN(input: string): string {
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>`;
 
-    // Sequence Flow (Incoming)
     const flowId = `Flow_${lastNodeId}_to_${node.id}`;
     let flowLabel = "";
     
-    // If coming from a gateway, determine if this is "Yes" or "No"
     const prevNode = nodes.find(n => n.id === lastNodeId);
     if (prevNode?.isGateway) {
       flowLabel = node.isNegative ? "No" : "Yes";
@@ -115,7 +105,6 @@ export function generateBPMN(input: string): string {
 
     flowContent += `    <bpmn:sequenceFlow id="${flowId}" ${flowLabel ? `name="${flowLabel}"` : ''} sourceRef="${lastNodeId}" targetRef="${node.id}" />\n`;
 
-    // Diagram Edge (Incoming)
     const prevPos = positions[lastNodeId];
     diagramContent += `
       <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
@@ -127,7 +116,6 @@ export function generateBPMN(input: string): string {
         </bpmndi:BPMNLabel>` : ''}
       </bpmndi:BPMNEdge>`;
 
-    // End Event for Negative Paths
     if (node.isNegative) {
       const endNegId = `End_Neg_${node.id}`;
       const flowToEndNeg = `Flow_${node.id}_to_End_Neg`;
@@ -147,7 +135,6 @@ export function generateBPMN(input: string): string {
       </bpmndi:BPMNEdge>`;
     }
 
-    // Handle Loop Backs
     if (loopTargetId) {
       const loopFlowId = `Flow_Loop_${node.id}`;
       flowContent += `    <bpmn:sequenceFlow id="${loopFlowId}" sourceRef="${node.id}" targetRef="${loopTargetId}" />\n`;
@@ -166,14 +153,11 @@ export function generateBPMN(input: string): string {
     positions[node.id] = { x: nodeX, y: nodeY, w: w, h: h, renderY: renderY };
     currentX += w + STEP_X;
     
-    // Gateways usually branch, so the next node after a gateway might stay on the main line
-    // but we need to track the "Happy Path" continuation
     if (!node.isNegative) {
       lastNodeId = node.id;
     }
   });
 
-  // Final End Event (Happy Path)
   const lastMainNode = nodes.slice().reverse().find(n => !n.isNegative);
   if (lastMainNode) {
     const finalEndId = "EndEvent_Final";
@@ -203,7 +187,7 @@ export function generateBPMN(input: string): string {
                   targetNamespace="http://bpmn.io/schema/bpmn"
                   exporter="BPMN FlowForge" 
                   exporterVersion="1.3">
-  <bpmn:process id="Process_Professional" isExecutable="false">
+  <bpmn:process id="Process_Professional" name="${escapeXml(title)}" isExecutable="false">
 ${processContent}
 ${flowContent}
   </bpmn:process>

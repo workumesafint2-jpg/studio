@@ -3,6 +3,8 @@
 import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Copy, FileCode, Play, Trash2, CheckCircle2, Info, Eye, Code, Download } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
@@ -14,6 +16,7 @@ import { BPMNViewer, type BPMNViewerRef } from "@/components/bpmn-viewer";
 
 export function BPMNFlowForgeApp() {
   const [input, setInput] = useState("");
+  const [title, setTitle] = useState("Process Diagram");
   const [xmlResult, setXmlResult] = useState("");
   const [activeTab, setActiveTab] = useState("diagram");
   const viewerRef = useRef<BPMNViewerRef>(null);
@@ -28,7 +31,7 @@ export function BPMNFlowForgeApp() {
       });
       return;
     }
-    const result = generateBPMN(input);
+    const result = generateBPMN(input, title);
     setXmlResult(result);
     if (!xmlResult) {
       setActiveTab("diagram");
@@ -56,6 +59,7 @@ export function BPMNFlowForgeApp() {
   const handleClear = () => {
     setInput("");
     setXmlResult("");
+    setTitle("Process Diagram");
   };
 
   return (
@@ -85,16 +89,32 @@ export function BPMNFlowForgeApp() {
                 Process Definition
               </CardTitle>
               <CardDescription>
-                List steps. Use <code className="bg-muted px-1 rounded">?</code> for decisions.
+                Set a title and list your process steps.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
+              <div className="space-y-2">
+                <Label htmlFor="service-title" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                  Service Name / Title
+                </Label>
+                <Input
+                  id="service-title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g., Customer Registration"
+                  className="bg-muted/30 border-muted focus:ring-primary h-10 rounded-lg"
+                />
+              </div>
+
               <div className="relative flex-1 min-h-[200px] lg:min-h-0">
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 block">
+                  Process Steps
+                </Label>
                 <Textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder={"Enter your process steps...\nExample:\nRegister customer\nIs data valid?\nApprove request\nReject request"}
-                  className="w-full h-full resize-none font-body text-base border-muted focus:ring-primary focus:border-primary p-4 rounded-xl transition-all"
+                  className="w-full h-[calc(100%-24px)] resize-none font-body text-base border-muted focus:ring-primary focus:border-primary p-4 rounded-xl transition-all"
                 />
               </div>
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-2">
@@ -167,7 +187,7 @@ export function BPMNFlowForgeApp() {
               <TabsContent value="diagram" className="flex-1 m-0 focus-visible:ring-0 h-full">
                 {xmlResult ? (
                   <div className="h-full w-full">
-                    <BPMNViewer xml={xmlResult} ref={viewerRef} />
+                    <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
                   </div>
                 ) : (
                   <EmptyState message="Diagram will appear here." />
