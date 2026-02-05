@@ -25,17 +25,11 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
     const lowerText = text.toLowerCase();
     
-    // Rule: Loop Back - detect "Edit" or "Fix"
+    // Detect keywords
     const isLoop = lowerText.includes('fix') || lowerText.includes('edit');
-    
-    // Rule: Parallel Gateway - detect "Parallel:" and "Join"
-    const isParallelSplit = line.toLowerCase().startsWith('parallel:');
+    const isParallelSplit = lowerLine.startsWith('parallel:');
     const isJoin = lowerText === 'join';
-    
-    // Rule: Timer - detect "Wait"
     const isTimer = lowerText.includes('wait');
-    
-    // Rule: Cancel/End
     const isCancel = lowerText.includes('cancel') || lowerText.includes('reject') || lowerText.includes('stop') || lowerText.includes('terminate');
 
     nodeDefs.push({
@@ -53,181 +47,198 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     });
   });
 
-  let processContent = '';
-  let flowContent = '';
-  let diagramContent = '';
+  // Data structures for XML generation
+  const elements: string[] = [];
+  const flows: string[] = [];
+  const diElements: string[] = [];
+  const incomingFlows: Record<string, string[]> = {};
+  const outgoingFlows: Record<string, string[]> = {};
+
+  const registerFlow = (id: string, source: string, target: string, name: string = '') => {
+    flows.push(`    <bpmn:sequenceFlow id="${id}" name="${escapeXml(name)}" sourceRef="${source}" targetRef="${target}" />`);
+    if (!outgoingFlows[source]) outgoingFlows[source] = [];
+    if (!incomingFlows[target]) incomingFlows[target] = [];
+    outgoingFlows[source].push(id);
+    incomingFlows[target].push(id);
+  };
 
   // Layout Constants
   const Y_MAIN = 250;
-  const Y_TOP = 150;    // Top branch coordinate
-  const Y_BOTTOM = 350; // Bottom branch coordinate
-  const Y_NEG = 450;    // Terminal path
+  const Y_TOP = 120;
+  const Y_BOTTOM = 380;
+  const Y_NEG = 500;
+  const STEP_X = 220;
   
-  const TASK_W = 100;
-  const TASK_H = 80;
+  const TASK_W = 100, TASK_H = 80;
   const GATEWAY_SIZE = 50;
   const EVENT_SIZE = 36;
-  const STEP_X = 180;
 
   const positions: Record<string, { x: number, y: number, w: number, h: number }> = {
     "StartEvent": { x: 100, y: Y_MAIN, w: 36, h: 36 }
   };
 
-  // Start Event
-  processContent += '    <bpmn:startEvent id="StartEvent" name="Start">\n      <bpmn:outgoing>Flow_Start</bpmn:outgoing>\n    </bpmn:startEvent>\n';
-  diagramContent += `
-      <bpmndi:BPMNShape id="StartEvent_di" bpmnElement="StartEvent">
-        <dc:Bounds x="100" y="${Y_MAIN - 18}" width="36" height="36" />
-      </bpmndi:BPMNShape>`;
-
   let lastNodeId = "StartEvent";
-  let currentX = 220;
+  let currentX = 250;
   let activeParallelSplitId: string | null = null;
   let parallelBranches: string[] = [];
 
   nodeDefs.forEach((node) => {
-    // RULE 1: Loop Back (Edit/Fix) - NEVER create a new task box.
+    // RULE: Loop Back (Edit/Fix) - Don't create a box, just draw arrow back
     if (node.type === 'loop-back') {
-      const previousTasks = nodeDefs.slice(0, node.index).filter(n => n.type === 'task' || n.type === 'gateway').reverse();
-      const targetNode = previousTasks.length > 0 ? previousTasks[0] : null;
+      // Find the task before the current question gateway
+      const history = nodeDefs.slice(0, node.index).reverse();
+      const targetNode = history.find(n => n.type === 'task' || n.type === 'gateway');
       const targetId = targetNode ? targetNode.id : 'StartEvent';
       
       const flowId = `Flow_Loop_${node.id}`;
-      const label = node.flowLabel || node.name;
-      flowContent += `    <bpmn:sequenceFlow id="${flowId}" name="${escapeXml(label)}" sourceRef="${lastNodeId}" targetRef="${targetId}" />\n`;
+      registerFlow(flowId, lastNodeId, targetId, node.flowLabel || node.name);
       
       const sPos = positions[lastNodeId];
       const tPos = positions[targetId];
 
-      diagramContent += `
-        <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
-          <di:waypoint x="${sPos.x + (sPos.w / 2)}" y="${sPos.y - (sPos.h / 2)}" />
-          <di:waypoint x="${sPos.x + (sPos.w / 2)}" y="${Y_TOP - 70}" />
-          <di:waypoint x="${tPos.x + (tPos.w / 2)}" y="${Y_TOP - 70}" />
-          <di:waypoint x="${tPos.x + (tPos.w / 2)}" y="${tPos.y - (tPos.h / 2)}" />
-          <bpmndi:BPMNLabel>
-            <dc:Bounds x="${(sPos.x + tPos.x) / 2}" y="${Y_TOP - 90}" width="60" height="14" />
-          </bpmndi:BPMNLabel>
-        </bpmndi:BPMNEdge>`;
+      diElements.push(`
+      <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
+        <di:waypoint x="${sPos.x + (sPos.w / 2)}" y="${sPos.y - (sPos.h / 2)}" />
+        <di:waypoint x="${sPos.x + (sPos.w / 2)}" y="${Y_TOP - 80}" />
+        <di:waypoint x="${tPos.x + (tPos.w / 2)}" y="${Y_TOP - 80}" />
+        <di:waypoint x="${tPos.x + (tPos.w / 2)}" y="${tPos.y - (tPos.h / 2)}" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="${(sPos.x + tPos.x) / 2}" y="${Y_TOP - 100}" width="60" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>`);
       return;
     }
 
-    // RULE 2: Cancel/Reject
-    if (node.type === 'cancel-end') {
-      const endId = `End_${node.id}`;
-      processContent += `    <bpmn:endEvent id="${endId}" name="${escapeXml(node.name)}" />\n`;
-      positions[endId] = { x: currentX, y: Y_NEG, w: EVENT_SIZE, h: EVENT_SIZE };
-      
-      const sPos = positions[lastNodeId];
-      const flowId = `Flow_Cancel_${node.id}`;
-      flowContent += `    <bpmn:sequenceFlow id="${flowId}" name="${escapeXml(node.flowLabel || 'No')}" sourceRef="${lastNodeId}" targetRef="${endId}" />\n`;
-      
-      diagramContent += `
-        <bpmndi:BPMNShape id="${endId}_di" bpmnElement="${endId}">
-          <dc:Bounds x="${currentX}" y="${Y_NEG - 18}" width="${EVENT_SIZE}" height="${EVENT_SIZE}" />
-        </bpmndi:BPMNShape>
-        <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
-          <di:waypoint x="${sPos.x + (sPos.w / 2)}" y="${sPos.y + (sPos.h / 2)}" />
-          <di:waypoint x="${sPos.x + (sPos.w / 2)}" y="${Y_NEG}" />
-          <di:waypoint x="${currentX}" y="${Y_NEG}" />
-          <bpmndi:BPMNLabel>
-            <dc:Bounds x="${sPos.x + 30}" y="${Y_NEG - 20}" width="30" height="14" />
-          </bpmndi:BPMNLabel>
-        </bpmndi:BPMNEdge>`;
-      return;
-    }
-
+    // Determine Y position
     let nodeY = Y_MAIN;
     if (activeParallelSplitId) {
       nodeY = parallelBranches.length % 2 === 0 ? Y_TOP : Y_BOTTOM;
     }
 
-    // Node rendering
-    if (node.type === 'gateway') {
-      processContent += `    <bpmn:exclusiveGateway id="${node.id}" name="${escapeXml(node.name)}" />\n`;
-      positions[node.id] = { x: currentX, y: nodeY, w: GATEWAY_SIZE, h: GATEWAY_SIZE };
-      diagramContent += `
-        <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}" isMarkerVisible="true">
-          <dc:Bounds x="${currentX}" y="${nodeY - 25}" width="${GATEWAY_SIZE}" height="${GATEWAY_SIZE}" />
-        </bpmndi:BPMNShape>`;
-    } else if (node.type === 'timer') {
-      processContent += `    <bpmn:intermediateCatchEvent id="${node.id}" name="${escapeXml(node.name)}">\n      <bpmn:timerEventDefinition id="T_${node.id}" />\n    </bpmn:intermediateCatchEvent>\n`;
-      positions[node.id] = { x: currentX, y: nodeY, w: EVENT_SIZE, h: EVENT_SIZE };
-      diagramContent += `
-        <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}">
-          <dc:Bounds x="${currentX}" y="${nodeY - 18}" width="${EVENT_SIZE}" height="${EVENT_SIZE}" />
-        </bpmndi:BPMNShape>`;
-    } else if (node.type === 'parallel-split') {
-      processContent += `    <bpmn:parallelGateway id="${node.id}" name="Split" />\n`;
-      positions[node.id] = { x: currentX, y: Y_MAIN, w: GATEWAY_SIZE, h: GATEWAY_SIZE };
-      diagramContent += `
-        <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}">
-          <dc:Bounds x="${currentX}" y="${Y_MAIN - 25}" width="${GATEWAY_SIZE}" height="${GATEWAY_SIZE}" />
-        </bpmndi:BPMNShape>`;
-      activeParallelSplitId = node.id;
-    } else if (node.type === 'parallel-join') {
-      processContent += `    <bpmn:parallelGateway id="${node.id}" name="Join" />\n`;
-      positions[node.id] = { x: currentX, y: Y_MAIN, w: GATEWAY_SIZE, h: GATEWAY_SIZE };
-      diagramContent += `
-        <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}">
-          <dc:Bounds x="${currentX}" y="${Y_MAIN - 25}" width="${GATEWAY_SIZE}" height="${GATEWAY_SIZE}" />
-        </bpmndi:BPMNShape>`;
+    // Node Rendering Logic
+    if (node.type === 'cancel-end') {
+      const endId = `End_${node.id}`;
+      positions[endId] = { x: currentX, y: Y_NEG, w: EVENT_SIZE, h: EVENT_SIZE };
+      const flowId = `Flow_Cancel_${node.id}`;
+      registerFlow(flowId, lastNodeId, endId, node.flowLabel || 'No');
       
-      parallelBranches.forEach(bId => {
-        const bFlow = `Flow_${bId}_to_${node.id}`;
-        const bPos = positions[bId];
-        flowContent += `    <bpmn:sequenceFlow id="${bFlow}" sourceRef="${bId}" targetRef="${node.id}" />\n`;
-        diagramContent += `
-          <bpmndi:BPMNEdge id="${bFlow}_di" bpmnElement="${bFlow}">
-            <di:waypoint x="${bPos.x + bPos.w}" y="${bPos.y}" />
-            <di:waypoint x="${currentX}" y="${Y_MAIN}" />
-          </bpmndi:BPMNEdge>`;
-      });
-      activeParallelSplitId = null;
-      parallelBranches = [];
-    } else {
-      processContent += `    <bpmn:task id="${node.id}" name="${escapeXml(node.name)}" />\n`;
-      positions[node.id] = { x: currentX, y: nodeY, w: TASK_W, h: TASK_H };
-      diagramContent += `
-        <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}">
-          <dc:Bounds x="${currentX}" y="${nodeY - 40}" width="${TASK_W}" height="${TASK_H}" />
-        </bpmndi:BPMNShape>`;
+      diElements.push(`
+      <bpmndi:BPMNShape id="${endId}_di" bpmnElement="${endId}">
+        <dc:Bounds x="${currentX}" y="${Y_NEG - 18}" width="${EVENT_SIZE}" height="${EVENT_SIZE}" />
+      </bpmndi:BPMNShape>`);
+      
+      const sPos = positions[lastNodeId];
+      diElements.push(`
+      <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
+        <di:waypoint x="${sPos.x + (sPos.w / 2)}" y="${sPos.y + (sPos.h / 2)}" />
+        <di:waypoint x="${sPos.x + (sPos.w / 2)}" y="${Y_NEG}" />
+        <di:waypoint x="${currentX}" y="${Y_NEG}" />
+      </bpmndi:BPMNEdge>`);
+      return;
     }
 
-    // Sequence Flow
+    // Create element metadata
+    positions[node.id] = { x: currentX, y: nodeY, w: (node.type === 'task' ? TASK_W : (node.type === 'gateway' || node.type === 'parallel-split' || node.type === 'parallel-join' ? GATEWAY_SIZE : EVENT_SIZE)), h: (node.type === 'task' ? TASK_H : (node.type === 'gateway' || node.type === 'parallel-split' || node.type === 'parallel-join' ? GATEWAY_SIZE : EVENT_SIZE)) };
+
+    // Draw standard sequence flow
     const flowId = `Flow_${lastNodeId}_to_${node.id}`;
-    const flowLabel = node.flowLabel || '';
-    flowContent += `    <bpmn:sequenceFlow id="${flowId}" name="${escapeXml(flowLabel)}" sourceRef="${lastNodeId}" targetRef="${node.id}" />\n`;
+    registerFlow(flowId, lastNodeId, node.id, node.flowLabel);
     
     const pPos = positions[lastNodeId];
-    diagramContent += `
+    diElements.push(`
       <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
         <di:waypoint x="${pPos.x + pPos.w}" y="${pPos.y}" />
         <di:waypoint x="${currentX}" y="${nodeY}" />
-        ${flowLabel ? `<bpmndi:BPMNLabel><dc:Bounds x="${pPos.x + 40}" y="${pPos.y - 25}" width="30" height="14" /></bpmndi:BPMNLabel>` : ''}
-      </bpmndi:BPMNEdge>`;
+        ${node.flowLabel ? `<bpmndi:BPMNLabel><dc:Bounds x="${pPos.x + 40}" y="${pPos.y - 30}" width="30" height="14" /></bpmndi:BPMNLabel>` : ''}
+      </bpmndi:BPMNEdge>`);
 
-    if (activeParallelSplitId && node.type !== 'parallel-split') {
+    if (node.type === 'parallel-join') {
+      // Connect existing parallel branches to the join gateway
+      parallelBranches.forEach(bId => {
+        const joinFlowId = `Flow_Join_${bId}`;
+        registerFlow(joinFlowId, bId, node.id);
+        const bPos = positions[bId];
+        diElements.push(`
+        <bpmndi:BPMNEdge id="${joinFlowId}_di" bpmnElement="${joinFlowId}">
+          <di:waypoint x="${bPos.x + bPos.w}" y="${bPos.y}" />
+          <di:waypoint x="${currentX}" y="${Y_MAIN}" />
+        </bpmndi:BPMNEdge>`);
+      });
+      activeParallelSplitId = null;
+      parallelBranches = [];
+      lastNodeId = node.id;
+    } else if (activeParallelSplitId && node.type !== 'parallel-split') {
       parallelBranches.push(node.id);
     } else {
       lastNodeId = node.id;
+      if (node.type === 'parallel-split') activeParallelSplitId = node.id;
     }
 
-    currentX += (positions[node.id].w || TASK_W) + STEP_X;
+    currentX += positions[node.id].w + STEP_X;
   });
 
+  // Final End Event
   const finalEndId = 'FinalEndEvent';
-  processContent += `    <bpmn:endEvent id="${finalEndId}" name="End" />\n`;
+  registerFlow('Flow_Final_End', lastNodeId, finalEndId);
   const lastPos = positions[lastNodeId];
-  flowContent += `    <bpmn:sequenceFlow id="Flow_Final_End" sourceRef="${lastNodeId}" targetRef="${finalEndId}" />\n`;
-  diagramContent += `
+  positions[finalEndId] = { x: lastPos.x + lastPos.w + 100, y: Y_MAIN, w: 36, h: 36 };
+
+  // Construct XML Elements with incoming/outgoing tags
+  elements.push(`    <bpmn:startEvent id="StartEvent" name="Start">
+      ${(outgoingFlows["StartEvent"] || []).map(f => `<bpmn:outgoing>${f}</bpmn:outgoing>`).join('\n      ')}
+    </bpmn:startEvent>`);
+  
+  diElements.push(`
+      <bpmndi:BPMNShape id="StartEvent_di" bpmnElement="StartEvent">
+        <dc:Bounds x="100" y="${Y_MAIN - 18}" width="36" height="36" />
+      </bpmndi:BPMNShape>`);
+
+  nodeDefs.forEach(node => {
+    if (node.type === 'loop-back') return;
+    const pos = positions[node.id];
+    const incoming = (incomingFlows[node.id] || []).map(f => `      <bpmn:incoming>${f}</bpmn:incoming>`).join('\n');
+    const outgoing = (outgoingFlows[node.id] || []).map(f => `      <bpmn:outgoing>${f}</bpmn:outgoing>`).join('\n');
+
+    if (node.type === 'gateway') {
+      elements.push(`    <bpmn:exclusiveGateway id="${node.id}" name="${escapeXml(node.name)}">\n${incoming}\n${outgoing}\n    </bpmn:exclusiveGateway>`);
+      diElements.push(`
+      <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}" isMarkerVisible="true">
+        <dc:Bounds x="${pos.x}" y="${pos.y - 25}" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="${pos.x}" y="${pos.y + 30}" width="50" height="14" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>`);
+    } else if (node.type === 'parallel-split' || node.type === 'parallel-join') {
+      elements.push(`    <bpmn:parallelGateway id="${node.id}" name="${escapeXml(node.name)}">\n${incoming}\n${outgoing}\n    </bpmn:parallelGateway>`);
+      diElements.push(`
+      <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}">
+        <dc:Bounds x="${pos.x}" y="${pos.y - 25}" width="50" height="50" />
+      </bpmndi:BPMNShape>`);
+    } else if (node.type === 'timer') {
+      elements.push(`    <bpmn:intermediateCatchEvent id="${node.id}" name="${escapeXml(node.name)}">\n${incoming}\n${outgoing}\n      <bpmn:timerEventDefinition id="TimerDef_${node.id}" />\n    </bpmn:intermediateCatchEvent>`);
+      diElements.push(`
+      <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}">
+        <dc:Bounds x="${pos.x}" y="${pos.y - 18}" width="36" height="36" />
+      </bpmndi:BPMNShape>`);
+    } else if (node.type === 'cancel-end') {
+      const endId = `End_${node.id}`;
+      elements.push(`    <bpmn:endEvent id="${endId}" name="${escapeXml(node.name)}">\n      <bpmn:incoming>${incomingFlows[endId]}</bpmn:incoming>\n    </bpmn:endEvent>`);
+    } else {
+      elements.push(`    <bpmn:task id="${node.id}" name="${escapeXml(node.name)}">\n${incoming}\n${outgoing}\n    </bpmn:task>`);
+      diElements.push(`
+      <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}">
+        <dc:Bounds x="${pos.x}" y="${pos.y - 40}" width="100" height="80" />
+      </bpmndi:BPMNShape>`);
+    }
+  });
+
+  elements.push(`    <bpmn:endEvent id="${finalEndId}" name="End">\n      <bpmn:incoming>Flow_Final_End</bpmn:incoming>\n    </bpmn:endEvent>`);
+  diElements.push(`
       <bpmndi:BPMNShape id="${finalEndId}_di" bpmnElement="${finalEndId}">
-        <dc:Bounds x="${lastPos.x + lastPos.w + 100}" y="${Y_MAIN - 18}" width="36" height="36" />
+        <dc:Bounds x="${positions[finalEndId].x}" y="${Y_MAIN - 18}" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_Final_End_di" bpmnElement="Flow_Final_End">
         <di:waypoint x="${lastPos.x + lastPos.w}" y="${lastPos.y}" />
-        <di:waypoint x="${lastPos.x + lastPos.w + 100}" y="${Y_MAIN}" />
-      </bpmndi:BPMNEdge>`;
+        <di:waypoint x="${positions[finalEndId].x}" y="${Y_MAIN}" />
+      </bpmndi:BPMNEdge>`);
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" 
@@ -236,12 +247,12 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
                   xmlns:di="http://www.omg.org/spec/DD/20100524/DI" 
                   targetNamespace="http://bpmn.io/schema/bpmn">
   <bpmn:process id="Process_1" name="${escapeXml(title)}" isExecutable="false">
-${processContent}
-${flowContent}
+${elements.join('\n')}
+${flows.join('\n')}
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
-${diagramContent}
+${diElements.join('\n')}
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>`;
