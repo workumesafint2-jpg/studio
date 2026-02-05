@@ -28,9 +28,11 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
         const url = URL.createObjectURL(svgBlob);
         
         const img = new Image();
+        img.crossOrigin = 'anonymous';
+        
         img.onload = () => {
-          const padding = 60;
-          const headerHeight = 80;
+          const padding = 100;
+          const headerHeight = 100;
           
           canvas.width = img.width + padding * 2;
           canvas.height = img.height + padding * 2 + headerHeight;
@@ -38,30 +40,28 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
           const ctx = canvas.getContext('2d');
           if (ctx) {
             // Background
-            ctx.fillStyle = 'white';
+            ctx.fillStyle = '#FFFFFF';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
             // Draw Title Header
-            ctx.fillStyle = '#1a365d'; // Professional Navy
-            ctx.font = 'bold 32px Inter, sans-serif';
+            ctx.fillStyle = '#111827'; 
+            ctx.font = 'bold 40px "Inter", sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText(title, canvas.width / 2, 50);
+            ctx.fillText(title, canvas.width / 2, 60);
             
-            // Draw a subtle line under title
-            ctx.strokeStyle = '#e2e8f0';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(padding, 70);
-            ctx.lineTo(canvas.width - padding, 70);
-            ctx.stroke();
+            // Subtle Border
+            ctx.strokeStyle = '#E5E7EB';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
             
             // Draw Diagram
             ctx.drawImage(img, padding, padding + headerHeight);
             
-            const pngUrl = canvas.toDataURL('image/png');
+            // standard PNG encoding
+            const pngUrl = canvas.toDataURL('image/png', 1.0);
             const downloadLink = document.createElement('a');
             downloadLink.href = pngUrl;
-            downloadLink.download = `${title.replace(/\s+/g, '-').toLowerCase()}-diagram.png`;
+            downloadLink.download = `${title.replace(/\s+/g, '-').toLowerCase()}-bpmn.png`;
             document.body.appendChild(downloadLink);
             downloadLink.click();
             document.body.removeChild(downloadLink);
@@ -79,7 +79,10 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
     if (!containerRef.current) return;
 
     viewerRef.current = new BpmnViewer({
-      container: containerRef.current
+      container: containerRef.current,
+      keyboard: {
+        bindTo: window
+      }
     });
 
     return () => {
@@ -106,21 +109,20 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
   }, [xml]);
 
   return (
-    <div className="w-full h-full relative group">
-      {/* Title Overlay in Viewer */}
-      <div className="absolute top-0 left-0 right-0 z-10 bg-white/90 backdrop-blur-md py-3 px-6 border-b border-muted flex items-center justify-center">
-        <h2 className="text-xl font-bold text-primary truncate">
+    <div className="w-full h-full relative group bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+      <div className="absolute top-0 left-0 right-0 z-10 bg-white/80 backdrop-blur-sm py-2 px-4 border-b border-slate-100 flex items-center justify-center">
+        <h2 className="text-sm font-semibold text-slate-900 truncate uppercase tracking-tight">
           {title}
         </h2>
       </div>
 
       <div 
         ref={containerRef} 
-        className="w-full h-full min-h-[500px] bg-white rounded-xl shadow-inner border border-muted pt-14"
+        className="w-full h-full min-h-[500px] pt-12"
       />
       
-      <div className="absolute bottom-4 right-4 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full text-[10px] text-muted-foreground border border-muted shadow-sm pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-        Use mouse wheel to zoom • Drag to pan
+      <div className="absolute bottom-4 right-4 bg-slate-900/5 text-slate-500 px-3 py-1 rounded-full text-[10px] font-medium pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+        Scroll to Zoom • Drag to Pan
       </div>
     </div>
   );
