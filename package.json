@@ -3,6 +3,8 @@
   "name": "ወርቁ-bpmn",
   "version": "1.0.0",
   "private": true,
+  "description": "Professional BPMN Diagram Generator (ወርቁ)",
+  "author": "Worku Team",
   "main": "main.js",
   "scripts": {
     "dev": "next dev --turbopack -p 9002",
@@ -76,8 +78,8 @@
   },
   "build": {
     "appId": "com.worku.bpmn",
-    "productName": "Worku BPMN",
-    "copyright": "Copyright © 2024 ወርቁ",
+    "productName": "Worku-BPMN",
+    "copyright": "Copyright © 2024 (ወርቁ)",
     "directories": {
       "output": "dist_electron"
     },
@@ -88,9 +90,14 @@
     ],
     "win": {
       "target": [
-        "nsis"
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
-      "artifactName": "${productName}-Setup-${version}.${ext}"
+      "icon": "out/favicon.ico"
     },
     "nsis": {
       "oneClick": false,

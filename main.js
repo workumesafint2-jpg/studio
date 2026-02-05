@@ -1,11 +1,11 @@
 
-const { app, BrowserWindow, Menu } = require('electron');
+const { app, BrowserWindow, shell } = require('electron');
 const path = require('path');
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 1280,
-    height: 800,
+    width: 1400,
+    height: 900,
     minWidth: 1024,
     minHeight: 768,
     webPreferences: {
@@ -30,13 +30,18 @@ function createWindow() {
     });
   }
 
-  // Handle external links securely
+  // Handle external links securely - open in system browser
   win.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('https:')) {
-      require('electron').shell.openExternal(url);
+    if (url.startsWith('https:') || url.startsWith('http:')) {
+      shell.openExternal(url);
     }
     return { action: 'deny' };
   });
+
+  // Optional: Open dev tools in dev mode
+  if (isDev) {
+    win.webContents.openDevTools();
+  }
 }
 
 app.whenReady().then(() => {
