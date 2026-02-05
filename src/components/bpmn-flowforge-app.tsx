@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Copy, FileCode, Play, Trash2, CheckCircle2, Info, Eye, Code, Download } from "lucide-react";
+import { Copy, FileCode, Play, Trash2, CheckCircle2, Info, Eye, Code, Download, FileJson } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -46,6 +46,23 @@ export function BPMNFlowForgeApp() {
     });
   };
 
+  const handleDownloadXML = () => {
+    // Rule 4: Ensure Blob type is application/bpmn20-xml;charset=utf-8
+    const blob = new Blob([xmlResult], { type: "application/bpmn20-xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${title.replace(/\s+/g, '-').toLowerCase()}.bpmn`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast({
+      title: "Downloading...",
+      description: "BPMN XML file is being saved.",
+    });
+  };
+
   const handleDownloadPNG = async () => {
     if (viewerRef.current) {
       await viewerRef.current.exportPNG();
@@ -74,7 +91,7 @@ export function BPMNFlowForgeApp() {
         </div>
         <div className="flex items-center gap-4">
           <Badge variant="secondary" className="hidden sm:inline-flex px-3 py-1 bg-accent text-primary border-none font-medium">
-            Pro v1.2
+            Pro v1.3
           </Badge>
         </div>
       </header>
@@ -166,10 +183,18 @@ export function BPMNFlowForgeApp() {
                   <Button 
                     variant="outline" 
                     size="sm"
+                    onClick={handleDownloadXML}
+                    className="flex items-center gap-2"
+                  >
+                    <FileJson className="w-4 h-4" /> <span className="hidden sm:inline">Download XML</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
                     onClick={handleDownloadPNG}
                     className="flex items-center gap-2"
                   >
-                    <Download className="w-4 h-4" /> <span className="hidden sm:inline">Download PNG</span>
+                    <Download className="w-4 h-4" /> <span className="hidden sm:inline">PNG</span>
                   </Button>
                   <Button 
                     variant="outline" 
@@ -177,7 +202,7 @@ export function BPMNFlowForgeApp() {
                     onClick={handleCopy}
                     className="flex items-center gap-2"
                   >
-                    <Copy className="w-4 h-4" /> <span className="hidden sm:inline">Copy XML</span>
+                    <Copy className="w-4 h-4" /> <span className="hidden sm:inline">Copy</span>
                   </Button>
                 </div>
               )}
