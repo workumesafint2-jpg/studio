@@ -3,6 +3,7 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   output: 'export',
+  trailingSlash: true, // Crucial for static export file paths in Electron
   typescript: {
     ignoreBuildErrors: true,
   },
