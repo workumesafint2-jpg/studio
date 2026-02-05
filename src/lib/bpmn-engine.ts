@@ -1,3 +1,4 @@
+
 export function generateBPMN(input: string, title: string = "Process Diagram"): string {
   if (!input.trim()) return '';
 
@@ -39,8 +40,8 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
   // Layout Constants
   const Y_MAIN = 225;
-  const Y_UP = 150;    // Requested Y for Branch A
-  const Y_DOWN = 300;  // Requested Y for Branch B
+  const Y_UP = 150;    // Branch A
+  const Y_DOWN = 300;  // Branch B
   const Y_NEG = 375;   // Terminal/Negative track
   const TASK_W = 100;
   const TASK_H = 80;
@@ -69,8 +70,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   nodeDefs.forEach((node, i) => {
     if (node.type === 'loop') {
       // Find the "target" (the task before the one that asked the question, or the previous task)
-      // If we have: 1. Task A, 2. Question?, 3. Edit (loop)
-      // We want to loop from Node_1 back to Node_0.
       let targetNode = nodeDefs.slice(0, i).reverse().find(n => n.type === 'task' || n.type === 'timer');
       if (!targetNode) targetNode = nodeDefs[0];
       
@@ -90,8 +89,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
             <dc:Bounds x="${(sourcePos.x + targetPos.x) / 2}" y="${Y_UP - 120}" width="40" height="14" />
           </bpmndi:BPMNLabel>
         </bpmndi:BPMNEdge>`;
-      
-      // Loops don't advance the "main" cursor usually, or they indicate a dead-end branch in this linear logic.
       return;
     }
 
@@ -105,11 +102,9 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       const joinId = `${node.id}_join`;
       const parts = node.name.split(/ and | & /).map(p => p.trim());
       
-      // Gateways
       processContent += `    <bpmn:parallelGateway id="${splitId}" name="Split" />\n`;
       processContent += `    <bpmn:parallelGateway id="${joinId}" name="Join" />\n`;
       
-      // Shapes for Gateways
       diagramContent += `
         <bpmndi:BPMNShape id="${splitId}_di" bpmnElement="${splitId}">
           <dc:Bounds x="${currentX}" y="${Y_MAIN - 25}" width="${GATEWAY_SIZE}" height="${GATEWAY_SIZE}" />
@@ -118,7 +113,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
           <dc:Bounds x="${currentX + 250}" y="${Y_MAIN - 25}" width="${GATEWAY_SIZE}" height="${GATEWAY_SIZE}" />
         </bpmndi:BPMNShape>`;
 
-      // Flow from Previous to Split
       const prevPos = positions[lastNodeId];
       flowContent += `    <bpmn:sequenceFlow id="${flowId}" sourceRef="${lastNodeId}" targetRef="${splitId}" />\n`;
       diagramContent += `
@@ -127,7 +121,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
           <di:waypoint x="${currentX}" y="${Y_MAIN}" />
         </bpmndi:BPMNEdge>`;
 
-      // Branches
       parts.forEach((branchName, bIdx) => {
         const branchTaskId = `${node.id}_B${bIdx}`;
         const branchY = bIdx === 0 ? Y_UP : Y_DOWN;
@@ -232,7 +225,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     }
   });
 
-  // Final End
   const finalEndId = "EndEvent_Final";
   processContent += `    <bpmn:endEvent id="${finalEndId}" name="Completed" />\n`;
   flowContent += `    <bpmn:sequenceFlow id="Flow_Final" sourceRef="${lastNodeId}" targetRef="${finalEndId}" />\n`;

@@ -13,6 +13,7 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
+  manifest: '/manifest.json',
 };
 
 export const viewport: Viewport = {
