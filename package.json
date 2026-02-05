@@ -3,7 +3,7 @@
   "name": "ወርቁ-bpmn",
   "version": "0.1.0",
   "private": true,
-  "main": "electron-main.js",
+  "main": "main.js",
   "scripts": {
     "dev": "next dev --turbopack -p 9002",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
@@ -83,7 +83,7 @@
     },
     "files": [
       "out/**/*",
-      "electron-main.js",
+      "main.js",
       "package.json"
     ],
     "win": {

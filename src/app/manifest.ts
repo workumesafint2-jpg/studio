@@ -10,6 +10,8 @@ export default function manifest(): MetadataRoute.Manifest {
     display: 'standalone',
     background_color: '#f4f4f5',
     theme_color: '#1a365d',
+    orientation: 'any',
+    scope: '/',
     icons: [
       {
         src: 'https://picsum.photos/seed/pwa/192/192',
