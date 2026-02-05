@@ -9,22 +9,26 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   lines.forEach((text, index) => {
     const lowerText = text.toLowerCase();
     
-    // Explicit Keywords
-    const isParallelSplit = lowerText.startsWith('parallel:') || lowerText === 'parallel';
+    // Rule 1: Loop Back (Edit/Fix)
+    const isLoopTrigger = lowerText.includes('edit') || lowerText.includes('fix');
+    // Rule 2 & 3: Parallel Gateways
+    const isParallelSplit = lowerText.startsWith('parallel:');
     const isJoin = lowerText === 'join';
-    const isTimer = lowerText.includes('wait') || lowerText.includes('timer');
-    const isLoopTrigger = lowerText.match(/edit|fix|retry|back to|repeat|return/i);
-    const isQuestion = text.includes('?') || lowerText.startsWith('is ') || lowerText.startsWith('check ');
+    // Rule 4: Timer (Wait)
+    const isTimer = lowerText.includes('wait');
+    // Decision Gateway
+    const isQuestion = text.includes('?');
+    // Negative path
     const isNegative = lowerText.match(/reject|cancel|fail|error|invalid|stop|terminate/i);
     
     nodeDefs.push({
       id: `Node_${index}`,
       originalText: text,
       name: text,
-      type: isParallelSplit ? 'parallel-split' : 
+      type: isLoopTrigger ? 'loop' : 
+            (isParallelSplit ? 'parallel-split' : 
             (isJoin ? 'parallel-join' : 
             (isTimer ? 'timer' : 
-            (isLoopTrigger ? 'loop' : 
             (isQuestion ? 'gateway' : 'task')))),
       isNegative: !!isNegative,
       index
@@ -37,8 +41,8 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
   // Layout Constants
   const Y_MAIN = 225;
-  const Y_UP = 120;    // Branch A
-  const Y_DOWN = 330;  // Branch B
+  const Y_UP = 120;    // Parallel Branch 1
+  const Y_DOWN = 330;  // Parallel Branch 2
   const Y_NEG = 450;   // Terminal/Negative track
   const TASK_W = 100;
   const TASK_H = 80;
@@ -67,31 +71,37 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
   // 2. Build Nodes and Flows
   nodeDefs.forEach((node, i) => {
-    // Handle Loops (Curved backwards arrow)
+    // Rule 1: Loop Back (Edit/Fix) - Draw arrow back to previous task, no box
     if (node.type === 'loop') {
-      let targetNode = nodeDefs.slice(0, i).reverse().find(n => n.type === 'task' || n.type === 'timer');
-      if (!targetNode) targetNode = { id: 'StartEvent' };
+      // Find the most recent task or timer to loop back to
+      let targetNode = nodeDefs.slice(0, i).reverse().find(n => n.type === 'task' || n.type === 'timer' || n.id === 'StartEvent');
+      const targetId = targetNode ? targetNode.id : 'StartEvent';
       
       const flowId = `Flow_Loop_${node.index}`;
-      processContent += `    <bpmn:sequenceFlow id="${flowId}" name="Loop back" sourceRef="${lastNodeId}" targetRef="${targetNode.id}" />\n`;
+      processContent += `    <bpmn:sequenceFlow id="${flowId}" name="${escapeXml(node.name)}" sourceRef="${lastNodeId}" targetRef="${targetId}" />\n`;
       
       const sourcePos = positions[lastNodeId];
-      const targetPos = positions[targetNode.id];
+      const targetPos = positions[targetId] || positions["StartEvent"];
       
+      // Draw curved loop-back arrow
       diagramContent += `
         <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
           <di:waypoint x="${sourcePos.x + (sourcePos.w / 2)}" y="${sourcePos.y - (sourcePos.h / 2)}" />
           <di:waypoint x="${sourcePos.x + (sourcePos.w / 2)}" y="${Y_UP - 80}" />
           <di:waypoint x="${targetPos.x + (targetPos.w / 2)}" y="${Y_UP - 80}" />
           <di:waypoint x="${targetPos.x + (targetPos.w / 2)}" y="${targetPos.y - (targetPos.h / 2)}" />
+          <bpmndi:BPMNLabel>
+            <dc:Bounds x="${(sourcePos.x + targetPos.x) / 2}" y="${Y_UP - 100}" width="40" height="14" />
+          </bpmndi:BPMNLabel>
         </bpmndi:BPMNEdge>`;
       return;
     }
 
+    // Rule 2: Parallel Gateway (Split)
     if (node.type === 'parallel-split') {
       activeParallelSplitId = node.id;
       parallelBranches = [];
-      processContent += `    <bpmn:parallelGateway id="${node.id}" name="Parallel" gatewayDirection="Diverging" />\n`;
+      processContent += `    <bpmn:parallelGateway id="${node.id}" name="Split" />\n`;
       
       diagramContent += `
         <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}">
@@ -113,16 +123,17 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       return;
     }
 
+    // Rule 3: Parallel Gateway (Join)
     if (node.type === 'parallel-join') {
-      processContent += `    <bpmn:parallelGateway id="${node.id}" name="Join" gatewayDirection="Converging" />\n`;
+      processContent += `    <bpmn:parallelGateway id="${node.id}" name="Join" />\n`;
       diagramContent += `
         <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}">
           <dc:Bounds x="${currentX}" y="${Y_MAIN - 25}" width="${GATEWAY_SIZE}" height="${GATEWAY_SIZE}" />
         </bpmndi:BPMNShape>`;
 
-      // Connect all branches to the join
-      parallelBranches.forEach((branchTaskId, bIdx) => {
-        const branchFlowId = `Flow_${branchTaskId}_to_Join`;
+      // Connect all recorded parallel branches into this join gateway
+      parallelBranches.forEach((branchTaskId) => {
+        const branchFlowId = `Flow_${branchTaskId}_to_Join_${node.index}`;
         const branchPos = positions[branchTaskId];
         flowContent += `    <bpmn:sequenceFlow id="${branchFlowId}" sourceRef="${branchTaskId}" targetRef="${node.id}" />\n`;
         diagramContent += `
@@ -141,10 +152,10 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       return;
     }
 
-    // Standard Node Generation
+    // Standard Node Positioning
     let nodeY = Y_MAIN;
     if (activeParallelSplitId) {
-      // Branching logic: alternate Y between UP and DOWN
+      // Rule 2: Branch tasks into different Y-coordinates (vertical stack)
       nodeY = parallelBranches.length % 2 === 0 ? Y_UP : Y_DOWN;
     } else if (node.isNegative) {
       nodeY = Y_NEG;
@@ -155,6 +166,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
                         ? (node.isNegative ? "No" : "Yes") 
                         : "";
 
+    // Rule 4: Timer Event (Wait)
     if (node.type === 'timer') {
       processContent += `    <bpmn:intermediateCatchEvent id="${node.id}" name="${escapeXml(node.name)}">\n`;
       processContent += `      <bpmn:timerEventDefinition id="Timer_${node.id}" />\n`;
@@ -185,12 +197,8 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       positions[node.id] = { x: currentX, y: nodeY, w: TASK_W, h: TASK_H };
     }
 
-    // Create Sequence Flow
-    let sourceRef = lastNodeId;
-    if (activeParallelSplitId && lastNodeId === activeParallelSplitId) {
-      sourceRef = activeParallelSplitId;
-    }
-
+    // Connect last node to current
+    const sourceRef = lastNodeId;
     flowContent += `    <bpmn:sequenceFlow id="${flowId}" ${flowLabel ? `name="${flowLabel}"` : ''} sourceRef="${sourceRef}" targetRef="${node.id}" />\n`;
     
     const prevPos = positions[sourceRef];
@@ -206,10 +214,13 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
     if (activeParallelSplitId) {
       parallelBranches.push(node.id);
+      // We don't advance 'lastNodeId' to the branch node so the next parallel branch starts from the split gateway
+      // However, for the first node after split, we want to stay at the split gate
     } else {
       lastNodeId = node.id;
     }
 
+    // Terminal logic for negative paths
     if (node.isNegative) {
       const endNegId = `End_Neg_${node.id}`;
       processContent += `    <bpmn:endEvent id="${endNegId}" name="Rejected" />\n`;
@@ -227,6 +238,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     currentX += positions[node.id].w + STEP_X;
   });
 
+  // Final End Event
   const finalEndId = "EndEvent_Final";
   processContent += `    <bpmn:endEvent id="${finalEndId}" name="Completed" />\n`;
   flowContent += `    <bpmn:sequenceFlow id="Flow_Final" sourceRef="${lastNodeId}" targetRef="${finalEndId}" />\n`;
@@ -241,13 +253,14 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       <di:waypoint x="${lastPos.x + lastPos.w + 100}" y="${Y_MAIN}" />
     </bpmndi:BPMNEdge>`;
 
+  // Rule 5: Don't overwrite - Wrap in definitions including the Service Title
   return `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" 
                   xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" 
                   xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" 
                   xmlns:di="http://www.omg.org/spec/DD/20100524/DI" 
                   targetNamespace="http://bpmn.io/schema/bpmn"
-                  exporter="BPMN FlowForge" exporterVersion="1.9">
+                  exporter="BPMN FlowForge" exporterVersion="2.0">
   <bpmn:process id="Process_1" name="${escapeXml(title)}" isExecutable="false">
 ${processContent}
 ${flowContent}
