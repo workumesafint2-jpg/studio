@@ -8,7 +8,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Professional BPMN diagram generator with AI-ready logic.',
     start_url: '/',
     display: 'standalone',
-    background_color: '#ffffff',
+    background_color: '#f4f4f5',
     theme_color: '#1a365d',
     icons: [
       {
