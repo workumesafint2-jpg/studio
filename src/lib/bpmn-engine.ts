@@ -47,7 +47,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   // Layout Constants
   const Y_MAIN = 250;
   const Y_REJECT = 450;
-  const Y_LOOP_TOP = 100;
+  const Y_LOOP_TOP = 100; // High clearance (Rule 3)
   const STEP_X = 220;
   const TASK_W = 120, TASK_H = 80;
   const GATEWAY_SIZE = 50;
@@ -63,11 +63,15 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   let currentX = 250;
 
   nodeDefs.forEach((node) => {
-    // RULE 3: Loop-Back Logic (Point back to lastTaskId, no new box)
+    // RULE 1: No New Box for Edit
+    // RULE 2: Create U-Turn Arrow
+    // RULE 3: High Clearance Waypoints
     if (node.type === 'loop-back') {
       const sourceId = currentGatewayId || lastNodeId;
       const targetId = lastTaskId; 
       const flowId = `Flow_Loop_${node.id}`;
+      
+      // RULE 5: Explicit "No" label for loop
       const flowLabel = node.originalText.toLowerCase().includes('no') ? "No" : "Fix";
       
       registerFlow(flowId, sourceId, targetId, flowLabel);
@@ -87,10 +91,10 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
           </bpmndi:BPMNLabel>
         </bpmndi:BPMNEdge>`);
       }
-      return;
+      return; // Skip box creation
     }
 
-    // RULE 4: Cancel Path (Moves downward to Y_REJECT)
+    // RULE 4 & 5: Cancel Path (Leads to Rejected end event)
     if (node.type === 'cancel-path') {
       const sourceId = currentGatewayId || lastNodeId;
       const cancelEndId = `${node.id}_End`;
@@ -121,14 +125,14 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       return;
     }
 
-    // Linear Path (Task, XOR Gateway, Timer)
+    // Main Linear Path
     const width = (node.type === 'task' ? TASK_W : (node.type === 'gateway' ? GATEWAY_SIZE : EVENT_SIZE));
     const height = (node.type === 'task' ? TASK_H : (node.type === 'gateway' ? GATEWAY_SIZE : EVENT_SIZE));
     positions[node.id] = { x: currentX, y: Y_MAIN, w: width, h: height };
 
     const sourceId = lastNodeId;
-    // Auto-label Yes for linear path following a gateway
-    const flowLabel = (currentGatewayId === sourceId || node.originalText.toLowerCase().includes('yes')) ? "Yes" : "";
+    const isFromGateway = currentGatewayId === sourceId;
+    const flowLabel = (isFromGateway || node.originalText.toLowerCase().includes('yes')) ? "Yes" : "";
     const flowId = `Flow_${sourceId}_to_${node.id}`;
     registerFlow(flowId, sourceId, node.id, flowLabel);
 
@@ -190,6 +194,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     const outgoing = (outgoingFlows[node.id] || []).map(f => `      <bpmn:outgoing>${f}</bpmn:outgoing>`).join('\n');
 
     if (node.type === 'gateway') {
+      // RULE 4: XOR Marker Visible
       elements.push(`    <bpmn:exclusiveGateway id="${node.id}" name="${escapeXml(node.name)}" isMarkerVisible="true">\n${incoming}\n${outgoing}\n    </bpmn:exclusiveGateway>`);
       diElements.push(`
       <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}" isMarkerVisible="true">
