@@ -3,7 +3,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
   const rawLines = input.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
   
-  // 1. Identify Node Types and Roles
+  // 1. Identify Node Types
   const nodeDefs: any[] = [];
   rawLines.forEach((line, index) => {
     const lowerLine = line.toLowerCase();
@@ -11,11 +11,11 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     // XOR Gateway detection (Standard and Amharic)
     const isGateway = line.includes('?') || line.includes('፧') || line.includes('？');
     
-    // Loop-Back detection (Edit/Fix) - Must not create a box
-    const isLoopTrigger = lowerLine.includes('edit') || lowerLine.includes('fix') || lowerLine.includes('re-verify');
+    // RULE 1: Loop-Back detection (Edit/Fix) - Must not create a box
+    const isLoopTrigger = lowerLine.includes('edit') || lowerLine.includes('fix');
     
-    // Cancel Path detection
-    const isCancelPath = lowerLine.startsWith('cancel') || lowerLine.includes('reject');
+    // RULE 3: Cancel Path detection
+    const isCancelPath = lowerLine.startsWith('cancel') || lowerLine.startsWith('reject');
 
     // Timer detection
     const isTimer = lowerLine.includes('wait');
@@ -70,18 +70,18 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   let currentX = 250;
 
   nodeDefs.forEach((node) => {
-    // RULE: Loop-Back Logic (Non-Box, High-Clearance)
+    // RULE 1: Loop-Back Logic (Non-Box, High-Clearance)
     if (node.type === 'loop-back') {
       const sourceId = currentGatewayId || lastNodeId;
       const targetId = lastTaskId; // Points back to the previous actual task box
       const flowId = `Flow_Loop_${node.id}`;
-      registerFlow(flowId, sourceId, targetId, "Edit/Fix");
+      registerFlow(flowId, sourceId, targetId, "No");
       
       const sPos = positions[sourceId];
       const tPos = positions[targetId];
 
       if (sPos && tPos) {
-        // Draw U-shaped arrow ABOVE tasks for clarity
+        // Draw U-shaped arrow ABOVE tasks (y=100) for clarity
         diElements.push(`
         <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
           <di:waypoint x="${sPos.x + (sPos.w / 2)}" y="${sPos.y - (sPos.h / 2)}" />
@@ -89,14 +89,14 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
           <di:waypoint x="${tPos.x + (tPos.w / 2)}" y="100" />
           <di:waypoint x="${tPos.x + (tPos.w / 2)}" y="${tPos.y - (tPos.h / 2)}" />
           <bpmndi:BPMNLabel>
-            <dc:Bounds x="${(sPos.x + tPos.x) / 2 - 20}" y="80" width="40" height="14" />
+            <dc:Bounds x="${(sPos.x + tPos.x) / 2 - 10}" y="80" width="20" height="14" />
           </bpmndi:BPMNLabel>
         </bpmndi:BPMNEdge>`);
       }
       return;
     }
 
-    // RULE: Cancel/Reject Path (Task + End Event)
+    // RULE 3: Cancel Path (Separate branch to "Rejected" state)
     if (node.type === 'cancel-path') {
       const sourceId = currentGatewayId || lastNodeId;
       const cancelTaskId = `${node.id}_CancelTask`;
@@ -114,7 +114,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         <di:waypoint x="${sPos.x + (sPos.w / 2)}" y="450" />
         <di:waypoint x="${currentX}" y="450" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="${sPos.x + 10}" y="410" width="40" height="14" />
+          <dc:Bounds x="${sPos.x + 10}" y="410" width="20" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>`);
 
@@ -129,7 +129,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       elements.push(`    <bpmn:task id="${cancelTaskId}" name="${escapeXml(node.name)}" />`);
       elements.push(`    <bpmn:endEvent id="${cancelEndId}" name="Rejected">
       <bpmn:incoming>${flowToEnd}</bpmn:incoming>
-      <bpmn:terminateEventDefinition id="Terminate_${node.id}" />
     </bpmn:endEvent>`);
 
       diElements.push(`
@@ -144,7 +143,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       return;
     }
 
-    // Standard node positioning (Task, Gateway, Timer)
+    // RULE 4: Linear Flow (Task, Gateway, Timer)
     const width = (node.type === 'task' ? TASK_W : (node.type === 'gateway' ? GATEWAY_SIZE : EVENT_SIZE));
     const height = (node.type === 'task' ? TASK_H : (node.type === 'gateway' ? GATEWAY_SIZE : EVENT_SIZE));
     positions[node.id] = { x: currentX, y: Y_MAIN, w: width, h: height };
@@ -163,7 +162,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
         <di:waypoint x="${sPos.x + sPos.w}" y="${sPos.y}" />
         <di:waypoint x="${currentX}" y="${Y_MAIN}" />
-        ${flowLabel ? `<bpmndi:BPMNLabel><dc:Bounds x="${sPos.x + 60}" y="${sPos.y - 20}" width="40" height="14" /></bpmndi:BPMNLabel>` : ''}
+        ${flowLabel ? `<bpmndi:BPMNLabel><dc:Bounds x="${sPos.x + 60}" y="${sPos.y - 20}" width="20" height="14" /></bpmndi:BPMNLabel>` : ''}
       </bpmndi:BPMNEdge>`);
 
     if (node.type === 'gateway') {
@@ -212,7 +211,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     const outgoing = (outgoingFlows[node.id] || []).map(f => `      <bpmn:outgoing>${f}</bpmn:outgoing>`).join('\n');
 
     if (node.type === 'gateway') {
-      // RULE: Exclusive Gateway with 'X' marker
+      // RULE 2: XOR Gateway (Diamond with 'X')
       elements.push(`    <bpmn:exclusiveGateway id="${node.id}" name="${escapeXml(node.name)}" isMarkerVisible="true">\n${incoming}\n${outgoing}\n    </bpmn:exclusiveGateway>`);
       diElements.push(`
       <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}" isMarkerVisible="true">
