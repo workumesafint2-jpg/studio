@@ -34,11 +34,11 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   let flowContent = '';
   let diagramContent = '';
 
-  // Layout Constants
+  // Layout Constants (Rule 3: match sketch)
   const Y_MAIN = 250;
-  const Y_TOP = 150;    // Parallel Branch 1
-  const Y_BOTTOM = 350; // Parallel Branch 2
-  const Y_NEG = 450;    // Terminal/Negative path
+  const Y_TOP = 150;    // Parallel Branch A
+  const Y_BOTTOM = 350; // Parallel Branch B
+  const Y_NEG = 450;    // Negative/Terminal paths
   
   const TASK_W = 100;
   const TASK_H = 80;
@@ -64,11 +64,11 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
   // 2. Generate Nodes and Sequence Flows
   nodeDefs.forEach((node) => {
-    // RULE 2: Looping (Edit/Fix) - No box, just a flow back
+    // RULE 2: Loop Back (The Fix) - DO NOT create a new box.
     if (node.type === 'loop') {
       // Find the most recent task box or gateway to loop back to
       const previousNodes = nodeDefs.slice(0, node.index).reverse();
-      const targetNode = previousNodes.find(n => n.type === 'task' || n.type === 'gateway' || n.id === 'StartEvent');
+      const targetNode = previousNodes.find(n => (n.type === 'task' || n.type === 'gateway' || n.type === 'timer') && n.id !== lastNodeId);
       const targetId = targetNode ? targetNode.id : 'StartEvent';
       
       const flowId = `Flow_Loop_${node.index}`;
@@ -77,18 +77,24 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       const sPos = positions[lastNodeId];
       const tPos = positions[targetId];
       
+      // Calculate mid-point for the label
+      const midX = (sPos.x + tPos.x) / 2;
+
+      // Curved flow back (Rule 2)
       diagramContent += `
         <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
           <di:waypoint x="${sPos.x + (sPos.w / 2)}" y="${sPos.y - (sPos.h / 2)}" />
-          <di:waypoint x="${sPos.x + (sPos.w / 2)}" y="${Y_TOP - 100}" />
-          <di:waypoint x="${tPos.x + (tPos.w / 2)}" y="${Y_TOP - 100}" />
+          <di:waypoint x="${sPos.x + (sPos.w / 2)}" y="${Y_TOP - 80}" />
+          <di:waypoint x="${tPos.x + (tPos.w / 2)}" y="${Y_TOP - 80}" />
           <di:waypoint x="${tPos.x + (tPos.w / 2)}" y="${tPos.y - (tPos.h / 2)}" />
-          <bpmndi:BPMNLabel><dc:Bounds x="${(sPos.x + tPos.x) / 2}" y="${Y_TOP - 120}" width="60" height="14" /></bpmndi:BPMNLabel>
+          <bpmndi:BPMNLabel>
+            <dc:Bounds x="${midX}" y="${Y_TOP - 100}" width="60" height="14" />
+          </bpmndi:BPMNLabel>
         </bpmndi:BPMNEdge>`;
       return;
     }
 
-    // RULE 3: Parallel Splitting (+)
+    // RULE 3: Parallel Split (+)
     if (node.type === 'parallel-split') {
       activeParallelSplitId = node.id;
       parallelBranches = [];
@@ -114,7 +120,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       return;
     }
 
-    // RULE 3: Parallel Joining (+)
+    // RULE 3: Parallel Join (+)
     if (node.type === 'parallel-join') {
       processContent += `    <bpmn:parallelGateway id="${node.id}" name="Join" />\n`;
       positions[node.id] = { x: currentX, y: Y_MAIN, w: GATEWAY_SIZE, h: GATEWAY_SIZE };
@@ -143,16 +149,16 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       return;
     }
 
-    // Standard positioning with Rule 2 (Y-axis offset)
+    // Standard positioning with Rule 3 (Y-axis offset)
     let nodeY = Y_MAIN;
     if (activeParallelSplitId) {
-      // RULE 3: Crucial Y levels (150 and 350)
+      // RULE 3: Branch tasks vertically: Task A at 150, Task B at 350
       nodeY = parallelBranches.length % 2 === 0 ? Y_TOP : Y_BOTTOM;
     } else if (node.isNegative) {
       nodeY = Y_NEG;
     }
 
-    // RULE 1: XOR Gateway (X)
+    // RULE 1: Exclusive Gateway (XOR Diamond)
     if (node.type === 'gateway') {
       processContent += `    <bpmn:exclusiveGateway id="${node.id}" name="${escapeXml(node.name)}" />\n`;
       positions[node.id] = { x: currentX, y: nodeY, w: GATEWAY_SIZE, h: GATEWAY_SIZE };
@@ -160,8 +166,9 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}" isMarkerVisible="true">
           <dc:Bounds x="${currentX}" y="${nodeY - 25}" width="${GATEWAY_SIZE}" height="${GATEWAY_SIZE}" />
         </bpmndi:BPMNShape>`;
-    } else if (node.type === 'timer') {
-      // Timers (Intermediate Catch Event)
+    } 
+    // RULE 4: Timer (Intermediate Catch Event)
+    else if (node.type === 'timer') {
       processContent += `    <bpmn:intermediateCatchEvent id="${node.id}" name="${escapeXml(node.name)}">\n      <bpmn:timerEventDefinition id="T_${node.id}" />\n    </bpmn:intermediateCatchEvent>\n`;
       positions[node.id] = { x: currentX, y: nodeY, w: EVENT_SIZE, h: EVENT_SIZE };
       diagramContent += `
@@ -169,8 +176,9 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
           <dc:Bounds x="${currentX}" y="${nodeY - 18}" width="${EVENT_SIZE}" height="${EVENT_SIZE}" />
           <bpmndi:BPMNLabel><dc:Bounds x="${currentX - 10}" y="${nodeY + 25}" width="60" height="14" /></bpmndi:BPMNLabel>
         </bpmndi:BPMNShape>`;
-    } else {
-      // Standard Task
+    } 
+    // Standard Task Box
+    else {
       processContent += `    <bpmn:task id="${node.id}" name="${escapeXml(node.name)}" />\n`;
       positions[node.id] = { x: currentX, y: nodeY, w: TASK_W, h: TASK_H };
       diagramContent += `
@@ -182,22 +190,23 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     // Connect flow
     const flowId = `Flow_${lastNodeId}_to_${node.id}`;
     
-    // RULE 1: Labels "Yes" and "No"
+    // RULE 1: Label 'Yes ->' and 'No ->' paths
     let flowLabel = "";
     if (lastNodeId.includes('Node')) {
       const prevNode = nodeDefs.find(n => n.id === lastNodeId);
       if (prevNode && prevNode.type === 'gateway') {
-        flowLabel = node.isNegative ? "No" : "Yes";
+        flowLabel = node.isNegative ? "No ->" : "Yes ->";
       }
     }
     
     flowContent += `    <bpmn:sequenceFlow id="${flowId}" ${flowLabel ? `name="${flowLabel}"` : ''} sourceRef="${lastNodeId}" targetRef="${node.id}" />\n`;
     const pPos = positions[lastNodeId];
+    
     diagramContent += `
       <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
         <di:waypoint x="${pPos.x + pPos.w}" y="${pPos.y}" />
         <di:waypoint x="${currentX}" y="${nodeY}" />
-        ${flowLabel ? `<bpmndi:BPMNLabel><dc:Bounds x="${pPos.x + 30}" y="${pPos.y - 15}" width="20" height="14" /></bpmndi:BPMNLabel>` : ''}
+        ${flowLabel ? `<bpmndi:BPMNLabel><dc:Bounds x="${pPos.x + 35}" y="${pPos.y - 20}" width="35" height="14" /></bpmndi:BPMNLabel>` : ''}
       </bpmndi:BPMNEdge>`;
 
     if (activeParallelSplitId) {
@@ -209,7 +218,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     currentX += positions[node.id].w + STEP_X;
   });
 
-  // Final End
+  // Final End Event
   processContent += '    <bpmn:endEvent id="EndEvent" name="End" />\n';
   const lastPos = positions[lastNodeId];
   flowContent += `    <bpmn:sequenceFlow id="Flow_End" sourceRef="${lastNodeId}" targetRef="EndEvent" />\n`;
@@ -222,7 +231,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         <di:waypoint x="${lastPos.x + lastPos.w + 100}" y="${Y_MAIN}" />
       </bpmndi:BPMNEdge>`;
 
-  // RULE 4: Add Service Heading (Title)
+  // RULE 5: Keep 'Service Name' display logic
   return `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" 
                   xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" 
