@@ -37,11 +37,6 @@ function createWindow() {
     }
     return { action: 'deny' };
   });
-
-  // Optional: Open dev tools in dev mode
-  if (isDev) {
-    win.webContents.openDevTools();
-  }
 }
 
 app.whenReady().then(() => {

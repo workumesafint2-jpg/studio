@@ -22,7 +22,8 @@ To get the standalone `.exe` installer for your Lenovo or any Windows laptop:
    - Double-click `Worku-BPMN-Setup-1.0.0.exe` to install it.
 
 ## Key Features
-- **XOR Gateways**: Automatically creates diamonds with 'X' markers for question steps.
-- **High-Clearance Loops**: "Edit" or "Fix" steps create arrows back to previous tasks without extra boxes.
-- **Professional Layout**: Parallel splits and joins handled on separate vertical tracks.
-- **Exporting**: Download diagrams as high-quality PNGs or copy the raw BPMN XML.
+- **Professional Branching**: Main paths at Y=250, No/Cancel paths at Y=450.
+- **XOR Gateways**: Diamonds with 'X' markers for all decision steps.
+- **High-Clearance Loops**: "Edit" or "Fix" steps create arrows back to previous tasks without redundant boxes.
+- **Terminal Rejections**: Cancel paths lead to a "Rejected" end event.
+- **Exporting**: Download diagrams as high-quality PNGs.
