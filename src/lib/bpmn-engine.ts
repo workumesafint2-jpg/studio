@@ -25,10 +25,11 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     }
 
     const lowerText = text.toLowerCase();
-    const isGateway = text.includes('?');
+    // Detect multiple question mark types for Amharic support
+    const isGateway = text.includes('?') || text.includes('፧') || text.includes('？');
     
     // Detect keywords
-    const isLoop = lowerText.includes('fix') || lowerText.includes('edit') || lowerText.includes('back');
+    const isLoop = (isNo || lowerText.includes('fix') || lowerText.includes('edit') || lowerText.includes('back')) && (isNo || lowerText.length < 50);
     const isParallelSplit = lowerLine.startsWith('parallel:');
     const isJoin = lowerText === 'join';
     const isTimer = lowerText.includes('wait');
@@ -38,9 +39,10 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       id: `Node_${index}`,
       originalText: line,
       name: text.replace(/^parallel:/i, '').trim() || (isParallelSplit ? "Split" : text),
+      // Branches that just say "Fix" shouldn't be boxes
       type: isParallelSplit ? 'parallel-split' : 
             isJoin ? 'parallel-join' : 
-            isLoop ? 'loop-back' :
+            (isLoop && (isNo || flowLabel)) ? 'loop-back' :
             isGateway ? 'gateway' : 
             isTimer ? 'timer' : 
             isCancel ? 'cancel-end' : 'task',
@@ -68,7 +70,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const Y_MAIN = 250;
   const Y_TOP = 120;
   const Y_BOTTOM = 380;
-  const Y_NEG = 500;
   const STEP_X = 220;
   
   const TASK_W = 100, TASK_H = 80;
@@ -88,11 +89,10 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   nodeDefs.forEach((node) => {
     // If it's a loop back, we don't create a shape, just a flow
     if (node.type === 'loop-back') {
-      // Source is the current active gateway or last node
       const sourceId = activeGatewayId || lastNodeId;
-      // Target is the task before the active gateway or a few steps back
+      // Target is the task before the active gateway
       const history = nodeDefs.slice(0, node.index).reverse();
-      const targetNode = history.find(n => (n.type === 'task' || n.type === 'gateway') && n.id !== sourceId);
+      const targetNode = history.find(n => (n.type === 'task') && n.id !== sourceId);
       const targetId = targetNode ? targetNode.id : 'StartEvent';
 
       const flowId = `Flow_Loop_${node.id}`;
@@ -102,20 +102,15 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       const tPos = positions[targetId];
 
       if (sPos && tPos) {
-        // Source shape top (absolute Y)
-        const sTop = sPos.y - (sourceId === activeGatewayId ? 25 : 40);
-        // Target shape top (absolute Y)
-        const tTop = tPos.y - (targetId.includes('Node') ? 40 : 18);
-        
-        // Draw a loop above at fixed Y=40
+        // Draw a loop above
         diElements.push(`
         <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
-          <di:waypoint x="${sPos.x + (sPos.w / 2)}" y="${sTop}" />
-          <di:waypoint x="${sPos.x + (sPos.w / 2)}" y="40" />
-          <di:waypoint x="${tPos.x + (tPos.w / 2)}" y="40" />
-          <di:waypoint x="${tPos.x + (tPos.w / 2)}" y="${tTop}" />
+          <di:waypoint x="${sPos.x + (sPos.w / 2)}" y="${sPos.y - (sPos.h / 2)}" />
+          <di:waypoint x="${sPos.x + (sPos.w / 2)}" y="60" />
+          <di:waypoint x="${tPos.x + (tPos.w / 2)}" y="60" />
+          <di:waypoint x="${tPos.x + (tPos.w / 2)}" y="${tPos.y - (tPos.h / 2)}" />
           <bpmndi:BPMNLabel>
-            <dc:Bounds x="${(sPos.x + tPos.x) / 2}" y="20" width="60" height="14" />
+            <dc:Bounds x="${(sPos.x + tPos.x) / 2}" y="40" width="60" height="14" />
           </bpmndi:BPMNLabel>
         </bpmndi:BPMNEdge>`);
       }
@@ -156,7 +151,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     } else if (node.type === 'parallel-split') {
       activeParallelSplitId = node.id;
     } else if (node.type === 'parallel-join') {
-      // Connect existing parallel branches to the join gateway
       parallelBranches.forEach(bId => {
         const joinFlowId = `Flow_Join_${bId}`;
         registerFlow(joinFlowId, bId, node.id);
@@ -177,7 +171,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     currentX += width + STEP_X;
   });
 
-  // Final End Event
   const finalEndId = 'FinalEndEvent';
   const lastPos = positions[lastNodeId];
   if (lastPos) {
@@ -186,7 +179,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   }
 
   // XML Construction
-  // Start Event
   elements.push(`    <bpmn:startEvent id="StartEvent" name="Start">
       ${(outgoingFlows["StartEvent"] || []).map(f => `<bpmn:outgoing>${f}</bpmn:outgoing>`).join('\n      ')}
     </bpmn:startEvent>`);
@@ -195,7 +187,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         <dc:Bounds x="100" y="${Y_MAIN - 18}" width="36" height="36" />
       </bpmndi:BPMNShape>`);
 
-  // Nodes
   nodeDefs.forEach(node => {
     if (node.type === 'loop-back') return;
     const pos = positions[node.id];
@@ -236,7 +227,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     }
   });
 
-  // Final End
   const fPos = positions[finalEndId];
   if (fPos) {
     const fIncoming = (incomingFlows[finalEndId] || []).map(f => `      <bpmn:incoming>${f}</bpmn:incoming>`).join('\n');
