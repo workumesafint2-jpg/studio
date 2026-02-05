@@ -47,8 +47,8 @@ export function BPMNFlowForgeApp() {
   };
 
   const handleDownloadXML = () => {
-    // Rule 4: Ensure Blob type is application/bpmn20-xml;charset=utf-8
-    const blob = new Blob([xmlResult], { type: "application/bpmn20-xml;charset=utf-8" });
+    // Add UTF-8 BOM (\uFEFF) for strict compatibility with desktop applications on Windows/Mac
+    const blob = new Blob(["\uFEFF", xmlResult], { type: "application/bpmn20-xml;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -59,7 +59,7 @@ export function BPMNFlowForgeApp() {
     URL.revokeObjectURL(url);
     toast({
       title: "Downloading...",
-      description: "BPMN XML file is being saved.",
+      description: "BPMN XML file is being saved with UTF-8 encoding.",
     });
   };
 

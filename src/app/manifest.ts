@@ -1,11 +1,10 @@
-
 import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: '(ወርቁ) - Smart BPMN Generator',
     short_name: 'ወርቁ',
-    description: 'Professional BPMN diagram generator with AI-ready logic.',
+    description: 'Professional BPMN diagram generator with AI-ready logic for desktop and mobile.',
     start_url: '/',
     display: 'standalone',
     background_color: '#f4f4f5',
