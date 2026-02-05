@@ -38,7 +38,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const Y_MAIN = 250;
   const Y_TOP = 150;    // Parallel Branch 1
   const Y_BOTTOM = 350; // Parallel Branch 2
-  const Y_NEG = 450;    // Terminal path
+  const Y_NEG = 450;    // Terminal/Negative path
   
   const TASK_W = 100;
   const TASK_H = 80;
@@ -64,11 +64,11 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
   // 2. Generate Nodes and Sequence Flows
   nodeDefs.forEach((node) => {
-    // Rule 4: Looping (Edit) - No box, just a flow back
+    // RULE 2: Looping (Edit/Fix) - No box, just a flow back
     if (node.type === 'loop') {
-      // Find the most recent task to loop back to
+      // Find the most recent task box or gateway to loop back to
       const previousNodes = nodeDefs.slice(0, node.index).reverse();
-      const targetNode = previousNodes.find(n => n.type === 'task' || n.id === 'StartEvent');
+      const targetNode = previousNodes.find(n => n.type === 'task' || n.type === 'gateway' || n.id === 'StartEvent');
       const targetId = targetNode ? targetNode.id : 'StartEvent';
       
       const flowId = `Flow_Loop_${node.index}`;
@@ -83,11 +83,12 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
           <di:waypoint x="${sPos.x + (sPos.w / 2)}" y="${Y_TOP - 100}" />
           <di:waypoint x="${tPos.x + (tPos.w / 2)}" y="${Y_TOP - 100}" />
           <di:waypoint x="${tPos.x + (tPos.w / 2)}" y="${tPos.y - (tPos.h / 2)}" />
+          <bpmndi:BPMNLabel><dc:Bounds x="${(sPos.x + tPos.x) / 2}" y="${Y_TOP - 120}" width="60" height="14" /></bpmndi:BPMNLabel>
         </bpmndi:BPMNEdge>`;
       return;
     }
 
-    // Rule 1: Parallel Splitting (+)
+    // RULE 3: Parallel Splitting (+)
     if (node.type === 'parallel-split') {
       activeParallelSplitId = node.id;
       parallelBranches = [];
@@ -113,7 +114,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       return;
     }
 
-    // Rule 3: The Join (+)
+    // RULE 3: Parallel Joining (+)
     if (node.type === 'parallel-join') {
       processContent += `    <bpmn:parallelGateway id="${node.id}" name="Join" />\n`;
       positions[node.id] = { x: currentX, y: Y_MAIN, w: GATEWAY_SIZE, h: GATEWAY_SIZE };
@@ -145,13 +146,22 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     // Standard positioning with Rule 2 (Y-axis offset)
     let nodeY = Y_MAIN;
     if (activeParallelSplitId) {
+      // RULE 3: Crucial Y levels (150 and 350)
       nodeY = parallelBranches.length % 2 === 0 ? Y_TOP : Y_BOTTOM;
     } else if (node.isNegative) {
       nodeY = Y_NEG;
     }
 
-    // Rule 5: Timers (Catch Event)
-    if (node.type === 'timer') {
+    // RULE 1: XOR Gateway (X)
+    if (node.type === 'gateway') {
+      processContent += `    <bpmn:exclusiveGateway id="${node.id}" name="${escapeXml(node.name)}" />\n`;
+      positions[node.id] = { x: currentX, y: nodeY, w: GATEWAY_SIZE, h: GATEWAY_SIZE };
+      diagramContent += `
+        <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}" isMarkerVisible="true">
+          <dc:Bounds x="${currentX}" y="${nodeY - 25}" width="${GATEWAY_SIZE}" height="${GATEWAY_SIZE}" />
+        </bpmndi:BPMNShape>`;
+    } else if (node.type === 'timer') {
+      // Timers (Intermediate Catch Event)
       processContent += `    <bpmn:intermediateCatchEvent id="${node.id}" name="${escapeXml(node.name)}">\n      <bpmn:timerEventDefinition id="T_${node.id}" />\n    </bpmn:intermediateCatchEvent>\n`;
       positions[node.id] = { x: currentX, y: nodeY, w: EVENT_SIZE, h: EVENT_SIZE };
       diagramContent += `
@@ -159,14 +169,8 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
           <dc:Bounds x="${currentX}" y="${nodeY - 18}" width="${EVENT_SIZE}" height="${EVENT_SIZE}" />
           <bpmndi:BPMNLabel><dc:Bounds x="${currentX - 10}" y="${nodeY + 25}" width="60" height="14" /></bpmndi:BPMNLabel>
         </bpmndi:BPMNShape>`;
-    } else if (node.type === 'gateway') {
-      processContent += `    <bpmn:exclusiveGateway id="${node.id}" name="${escapeXml(node.name)}" />\n`;
-      positions[node.id] = { x: currentX, y: nodeY, w: GATEWAY_SIZE, h: GATEWAY_SIZE };
-      diagramContent += `
-        <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}" isMarkerVisible="true">
-          <dc:Bounds x="${currentX}" y="${nodeY - 25}" width="${GATEWAY_SIZE}" height="${GATEWAY_SIZE}" />
-        </bpmndi:BPMNShape>`;
     } else {
+      // Standard Task
       processContent += `    <bpmn:task id="${node.id}" name="${escapeXml(node.name)}" />\n`;
       positions[node.id] = { x: currentX, y: nodeY, w: TASK_W, h: TASK_H };
       diagramContent += `
@@ -177,8 +181,15 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
     // Connect flow
     const flowId = `Flow_${lastNodeId}_to_${node.id}`;
-    const flowLabel = (lastNodeId.includes('Node') && nodeDefs.find(n => n.id === lastNodeId)?.type === 'gateway') 
-                        ? (node.isNegative ? "No" : "Yes") : "";
+    
+    // RULE 1: Labels "Yes" and "No"
+    let flowLabel = "";
+    if (lastNodeId.includes('Node')) {
+      const prevNode = nodeDefs.find(n => n.id === lastNodeId);
+      if (prevNode && prevNode.type === 'gateway') {
+        flowLabel = node.isNegative ? "No" : "Yes";
+      }
+    }
     
     flowContent += `    <bpmn:sequenceFlow id="${flowId}" ${flowLabel ? `name="${flowLabel}"` : ''} sourceRef="${lastNodeId}" targetRef="${node.id}" />\n`;
     const pPos = positions[lastNodeId];
@@ -211,6 +222,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         <di:waypoint x="${lastPos.x + lastPos.w + 100}" y="${Y_MAIN}" />
       </bpmndi:BPMNEdge>`;
 
+  // RULE 4: Add Service Heading (Title)
   return `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" 
                   xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" 
