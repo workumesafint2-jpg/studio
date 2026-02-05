@@ -8,6 +8,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   rawLines.forEach((line, index) => {
     const lowerLine = line.toLowerCase();
     
+    // Support standard and Amharic question marks
     const isGateway = line.includes('?') || line.includes('፧') || line.includes('？');
     const isLoopTrigger = lowerLine.includes('edit') || lowerLine.includes('fix') || lowerLine.includes('correct') || lowerLine.includes('back');
     const isCancelPath = lowerLine.includes('cancel') || lowerLine.includes('reject') || lowerLine.includes('fail');
@@ -43,7 +44,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     return id;
   };
 
-  // Layout Constants & Auto-Wrapping Logic
+  // Layout Constants & Snake (Z-Pattern) Logic
   const MAX_COLS = 5;
   const COL_SPACING = 240;
   const ROW_SPACING = 250;
@@ -62,7 +63,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   let visualNodeCount = 0;
 
   nodeDefs.forEach((node) => {
-    // RULE 3: Loop back without new box
+    // RULE: Loop back without new box (High Clearance)
     if (node.type === 'loop-back') {
       const sourceId = currentGatewayId || lastNodeId;
       const targetId = lastTaskId; 
@@ -75,19 +76,20 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       const tPos = positions[targetId];
 
       if (sPos && tPos) {
+        // Draw a high U-shape arrow back to the previous task
         const loopY = Math.min(sPos.y, tPos.y) - 120;
         diElements.push(`
         <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
-          <di:waypoint x="${sPos.x + (sPos.w / 2)}" y="${sPos.y - (sPos.h / 2)}" />
-          <di:waypoint x="${sPos.x + (sPos.w / 2)}" y="${loopY}" />
-          <di:waypoint x="${tPos.x + (tPos.w / 2)}" y="${loopY}" />
-          <di:waypoint x="${tPos.x + (tPos.w / 2)}" y="${tPos.y - (tPos.h / 2)}" />
+          <di:waypoint x="${sPos.x}" y="${sPos.y - (sPos.h / 2)}" />
+          <di:waypoint x="${sPos.x}" y="${loopY}" />
+          <di:waypoint x="${tPos.x}" y="${loopY}" />
+          <di:waypoint x="${tPos.x}" y="${tPos.y - (tPos.h / 2)}" />
         </bpmndi:BPMNEdge>`);
       }
       return;
     }
 
-    // RULE 4: Cancel Path
+    // RULE: Cancel Path (Lower track)
     if (node.type === 'cancel-path') {
       const sourceId = currentGatewayId || lastNodeId;
       const cancelEndId = `${node.id}_End`;
@@ -95,7 +97,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       
       const sPos = positions[sourceId];
       const cancelX = sPos.x;
-      const cancelY = sPos.y + 150;
+      const cancelY = sPos.y + 150; // Move to Y=450 track
       
       positions[cancelEndId] = { x: cancelX, y: cancelY, w: 36, h: 36, row: sPos.row, col: sPos.col };
       const flowToCancel = registerFlow(`Flow_${sourceId}_to_Cancel`, sourceId, cancelEndId, flowLabel);
@@ -105,8 +107,8 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         <dc:Bounds x="${cancelX - 18}" y="${cancelY - 18}" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="${flowToCancel}_di" bpmnElement="${flowToCancel}">
-        <di:waypoint x="${sPos.x + (sPos.w / 2)}" y="${sPos.y + (sPos.h / 2)}" />
-        <di:waypoint x="${sPos.x + (sPos.w / 2)}" y="${cancelY - 18}" />
+        <di:waypoint x="${sPos.x}" y="${sPos.y + (sPos.h / 2)}" />
+        <di:waypoint x="${sPos.x}" y="${cancelY - 18}" />
       </bpmndi:BPMNEdge>`);
 
       elements.push(`    <bpmn:endEvent id="${cancelEndId}" name="Rejected">
@@ -115,7 +117,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       return;
     }
 
-    // Main Path with Auto-Wrapping
+    // Main Path with Snake (Z-Pattern) Wrapping
     const col = visualNodeCount % MAX_COLS;
     const row = Math.floor(visualNodeCount / MAX_COLS);
     const nodeX = 100 + (col + 1) * COL_SPACING;
@@ -132,8 +134,9 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     const flowId = `Flow_${sourceId}_to_${node.id}`;
     registerFlow(flowId, sourceId, node.id, flowLabel);
 
-    // Waypoints with Z-wrapping bending
+    // Manhattan/Orthogonal Waypoints for Z-pattern wrapping
     if (sPos.row === row) {
+      // Normal horizontal flow
       diElements.push(`
       <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
         <di:waypoint x="${sPos.x + sPos.w / (sourceId === 'StartEvent' ? 1 : 2)}" y="${sPos.y}" />
@@ -141,16 +144,16 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       </bpmndi:BPMNEdge>`);
     } else {
       // Row Wrap Bend (Z-shape)
-      const bendX = sPos.x + 100;
-      const nextBendX = 100;
+      const bendX = sPos.x + 100; // Extend past current task
+      const nextRowEntryX = 100; // Reset to start of next row
       const midY = sPos.y + ROW_SPACING / 2;
       diElements.push(`
       <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
         <di:waypoint x="${sPos.x + sPos.w / 2}" y="${sPos.y}" />
         <di:waypoint x="${bendX}" y="${sPos.y}" />
         <di:waypoint x="${bendX}" y="${midY}" />
-        <di:waypoint x="${nextBendX}" y="${midY}" />
-        <di:waypoint x="${nextBendX}" y="${nodeY}" />
+        <di:waypoint x="${nextRowEntryX}" y="${midY}" />
+        <di:waypoint x="${nextRowEntryX}" y="${nodeY}" />
         <di:waypoint x="${nodeX - width / 2}" y="${nodeY}" />
       </bpmndi:BPMNEdge>`);
     }
@@ -181,7 +184,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       </bpmndi:BPMNEdge>`);
   }
 
-  // XML Construction (Standard BPMN 2.0)
+  // XML Construction (Standard BPMN 2.0 with UTF-8)
   elements.push(`    <bpmn:startEvent id="StartEvent" name="Start">
       ${(outgoingFlows["StartEvent"] || []).map(f => `<bpmn:outgoing>${f}</bpmn:outgoing>`).join('\n      ')}
     </bpmn:startEvent>`);
@@ -231,7 +234,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
                   id="Definitions_1"
                   targetNamespace="http://bpmn.io/schema/bpmn"
                   exporter="Worku BPMN" 
-                  exporterVersion="1.2">
+                  exporterVersion="1.3">
   <bpmn:process id="Process_1" name="${escapeXml(title)}" isExecutable="false">
 ${elements.join('\n')}
 ${flows.join('\n')}

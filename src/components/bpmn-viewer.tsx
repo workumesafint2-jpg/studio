@@ -24,6 +24,7 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
         const { svg } = await viewerRef.current.saveSVG();
         
         const canvas = document.createElement('canvas');
+        // Ensure UTF-8 for SVG export integrity
         const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
         const url = URL.createObjectURL(svgBlob);
         
@@ -39,17 +40,17 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
           
           const ctx = canvas.getContext('2d');
           if (ctx) {
-            // Background
+            // High quality white background
             ctx.fillStyle = '#FFFFFF';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Draw Title Header
+            // Draw Title Header (Professional desktop style)
             ctx.fillStyle = '#111827'; 
             ctx.font = 'bold 40px "Inter", sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText(title, canvas.width / 2, 60);
             
-            // Subtle Border
+            // Subtle Border for professional feel
             ctx.strokeStyle = '#E5E7EB';
             ctx.lineWidth = 1;
             ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
@@ -57,7 +58,7 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
             // Draw Diagram
             ctx.drawImage(img, padding, padding + headerHeight);
             
-            // standard PNG encoding
+            // Standard PNG encoding
             const pngUrl = canvas.toDataURL('image/png', 1.0);
             const downloadLink = document.createElement('a');
             downloadLink.href = pngUrl;
@@ -78,11 +79,9 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
   useEffect(() => {
     if (!containerRef.current) return;
 
+    // Initialize without keyboard: { bindTo: window } to fix library conflicts
     viewerRef.current = new BpmnViewer({
-      container: containerRef.current,
-      keyboard: {
-        bindTo: window
-      }
+      container: containerRef.current
     });
 
     return () => {
@@ -96,9 +95,13 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
     const importDiagram = async () => {
       if (viewerRef.current && xml) {
         try {
+          // Await full initialization before any canvas manipulation to fix 'root-0' error
           await viewerRef.current.importXML(xml);
+          
           const canvas = viewerRef.current.get('canvas');
-          canvas.zoom('fit-viewport');
+          if (canvas) {
+            canvas.zoom('fit-viewport');
+          }
         } catch (err) {
           console.error('Error rendering BPMN diagram:', err);
         }
