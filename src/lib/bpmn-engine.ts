@@ -136,7 +136,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       continue;
     }
 
-    // RULE: PARALLEL SPLIT/JOIN (Symmetrical Branches)
+    // RULE: SYMMETRICAL PARALLEL SPLIT/JOIN
     if (node.type === 'parallel-gateway' && i + 2 < nodeDefs.length) {
       const splitId = node.id;
       const taskA = nodeDefs[++i];
@@ -148,10 +148,10 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       const baseX = X_START + col * COL_SPACING;
       const baseY = Y_START + row * ROW_SPACING;
 
-      // Positions
+      // Positions (Rule 1: One Above, One Below)
       positions[splitId] = { x: baseX, y: baseY, w: 50, h: 50, row, col };
-      positions[taskA.id] = { x: baseX + 180, y: baseY - 100, w: 120, h: 80, row, col };
-      positions[taskB.id] = { x: baseX + 180, y: baseY + 100, w: 120, h: 80, row, col };
+      positions[taskA.id] = { x: baseX + 180, y: baseY - 120, w: 120, h: 80, row, col };
+      positions[taskB.id] = { x: baseX + 180, y: baseY + 120, w: 120, h: 80, row, col };
       positions[joinId] = { x: baseX + 360, y: baseY, w: 50, h: 50, row, col };
 
       // Split Flows
@@ -168,10 +168,10 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         <dc:Bounds x="${baseX - 25}" y="${baseY - 25}" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="${taskA.id}_di" bpmnElement="${taskA.id}">
-        <dc:Bounds x="${baseX + 180 - 60}" y="${baseY - 100 - 40}" width="120" height="80" />
+        <dc:Bounds x="${baseX + 180 - 60}" y="${baseY - 120 - 40}" width="120" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="${taskB.id}_di" bpmnElement="${taskB.id}">
-        <dc:Bounds x="${baseX + 180 - 60}" y="${baseY + 100 - 40}" width="120" height="80" />
+        <dc:Bounds x="${baseX + 180 - 60}" y="${baseY + 120 - 40}" width="120" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="${joinId}_di" bpmnElement="${joinId}">
         <dc:Bounds x="${baseX + 360 - 25}" y="${baseY - 25}" width="50" height="50" />
@@ -183,22 +183,22 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="${f_s_a}_di" bpmnElement="${f_s_a}">
         <di:waypoint x="${baseX}" y="${baseY - 25}" />
-        <di:waypoint x="${baseX}" y="${baseY - 100}" />
-        <di:waypoint x="${baseX + 180 - 60}" y="${baseY - 100}" />
+        <di:waypoint x="${baseX}" y="${baseY - 120}" />
+        <di:waypoint x="${baseX + 180 - 60}" y="${baseY - 120}" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="${f_s_b}_di" bpmnElement="${f_s_b}">
         <di:waypoint x="${baseX}" y="${baseY + 25}" />
-        <di:waypoint x="${baseX}" y="${baseY + 100}" />
-        <di:waypoint x="${baseX + 180 - 60}" y="${baseY + 100}" />
+        <di:waypoint x="${baseX}" y="${baseY + 120}" />
+        <di:waypoint x="${baseX + 180 - 60}" y="${baseY + 120}" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="${f_a_j}_di" bpmnElement="${f_a_j}">
-        <di:waypoint x="${baseX + 180 + 60}" y="${baseY - 100}" />
-        <di:waypoint x="${baseX + 360}" y="${baseY - 100}" />
+        <di:waypoint x="${baseX + 180 + 60}" y="${baseY - 120}" />
+        <di:waypoint x="${baseX + 360}" y="${baseY - 120}" />
         <di:waypoint x="${baseX + 360}" y="${baseY - 25}" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="${f_b_j}_di" bpmnElement="${f_b_j}">
-        <di:waypoint x="${baseX + 180 + 60}" y="${baseY + 100}" />
-        <di:waypoint x="${baseX + 360}" y="${baseY + 100}" />
+        <di:waypoint x="${baseX + 180 + 60}" y="${baseY + 120}" />
+        <di:waypoint x="${baseX + 360}" y="${baseY + 120}" />
         <di:waypoint x="${baseX + 360}" y="${baseY + 25}" />
       </bpmndi:BPMNEdge>`);
 
@@ -213,7 +213,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       continue;
     }
 
-    // STANDARD GRID LOGIC (Locked Snap-to-Border)
+    // STANDARD GRID LOGIC
     const row = Math.floor(visualNodeCount / MAX_COLS);
     const col = visualNodeCount % MAX_COLS;
     const nodeX = X_START + col * COL_SPACING;
@@ -230,7 +230,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
     const sPos = positions[lastNodeId];
     if (sPos.row === row) {
-      // RULE 2: PERFECT CONNECTIVITY (East-West Snap)
       const exitX = sPos.x + sPos.w / 2;
       const entryX = nodeX - width / 2;
       diElements.push(`
@@ -243,7 +242,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         </bpmndi:BPMNLabel>` : ''}
       </bpmndi:BPMNEdge>`);
     } else {
-      // Row Transition Snap
       diElements.push(`
       <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
         <di:waypoint x="${sPos.x}" y="${sPos.y + sPos.h / 2}" />

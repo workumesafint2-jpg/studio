@@ -32,9 +32,19 @@ export function BPMNFlowForgeApp() {
       return;
     }
     const result = generateBPMN(input, title);
-    setXmlResult(result);
-    if (!xmlResult) {
+    if (result) {
+      setXmlResult(result);
       setActiveTab("diagram");
+      toast({
+        title: "Architecture Generated",
+        description: "Your BPMN 2.0 diagram is ready.",
+      });
+    } else {
+      toast({
+        title: "Generation Error",
+        description: "Could not parse process logic. Please check your steps.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -47,7 +57,6 @@ export function BPMNFlowForgeApp() {
   };
 
   const handleDownloadXML = () => {
-    // Task 3: UTF-8 Encoded BPMN 2.0 XML for Camunda Modeler
     const blob = new Blob(["\uFEFF", xmlResult], { type: "application/bpmn20-xml;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -132,7 +141,7 @@ export function BPMNFlowForgeApp() {
                 <Textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder={"Describe the flow...\nExample:\nReceive digital request (service)\nVerify documents (user)\nIs data valid? (gateway)\nProcess application (service)\nReject request (cancel)"}
+                  placeholder={"Describe the flow...\nExample:\nReceive digital request (service)\nParallel\nVerify documents (user)\nNotify user (service)\nProcess application (service)\nIs data valid? (gateway)\nUpdate records (service)\nFix application (edit)"}
                   className="w-full h-[calc(100%-24px)] resize-none font-body text-sm border-muted focus:ring-primary focus:border-primary p-4 rounded-xl shadow-inner bg-slate-50"
                 />
               </div>
