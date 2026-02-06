@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Copy, FileCode, Play, Trash2, CheckCircle2, Info, Eye, Code, Download, FileJson } from "lucide-react";
+import { Copy, FileCode, Play, Trash2, CheckCircle2, Info, Eye, Code, Download, FileJson, Share2 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -16,7 +16,7 @@ import { BPMNViewer, type BPMNViewerRef } from "@/components/bpmn-viewer";
 
 export function BPMNFlowForgeApp() {
   const [input, setInput] = useState("");
-  const [title, setTitle] = useState("Process Diagram");
+  const [title, setTitle] = useState("Service 21: e-Government Process");
   const [xmlResult, setXmlResult] = useState("");
   const [activeTab, setActiveTab] = useState("diagram");
   const viewerRef = useRef<BPMNViewerRef>(null);
@@ -26,7 +26,7 @@ export function BPMNFlowForgeApp() {
     if (!input.trim()) {
       toast({
         title: "No steps provided",
-        description: "Please enter some process steps to generate BPMN.",
+        description: "Please enter process steps to generate your diagram.",
         variant: "destructive",
       });
       return;
@@ -47,7 +47,7 @@ export function BPMNFlowForgeApp() {
   };
 
   const handleDownloadXML = () => {
-    // Add UTF-8 BOM (\uFEFF) for strict compatibility with desktop applications on Windows/Mac
+    // Task 3: UTF-8 Encoded BPMN 2.0 XML for Camunda Modeler
     const blob = new Blob(["\uFEFF", xmlResult], { type: "application/bpmn20-xml;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -58,8 +58,8 @@ export function BPMNFlowForgeApp() {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     toast({
-      title: "Downloading...",
-      description: "BPMN XML file is being saved with UTF-8 encoding.",
+      title: "Downloading BPMN...",
+      description: "Compatible with Camunda Modeler and Desktop modeling tools.",
     });
   };
 
@@ -67,8 +67,8 @@ export function BPMNFlowForgeApp() {
     if (viewerRef.current) {
       await viewerRef.current.exportPNG();
       toast({
-        title: "Exporting...",
-        description: "Your diagram is being saved as a PNG.",
+        title: "Exporting PNG...",
+        description: "High-contrast professional output generated.",
       });
     }
   };
@@ -76,90 +76,95 @@ export function BPMNFlowForgeApp() {
   const handleClear = () => {
     setInput("");
     setXmlResult("");
-    setTitle("Process Diagram");
   };
 
   return (
     <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-background">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 sm:px-8 py-4 bg-primary text-primary-foreground shadow-lg shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="p-2 bg-secondary rounded-lg">
+      <header className="flex items-center justify-between px-6 py-4 bg-primary text-primary-foreground shadow-xl shrink-0 border-b border-primary/20">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-white rounded-xl shadow-inner">
             <FileCode className="w-6 h-6 text-primary" />
           </div>
-          <h1 className="text-xl font-bold tracking-tight uppercase">(ወርቁ)</h1>
+          <div>
+            <h1 className="text-xl font-black tracking-tighter uppercase">(ወርቁ) Pro</h1>
+            <p className="text-[10px] opacity-70 font-medium tracking-widest uppercase">BPMN Architect</p>
+          </div>
         </div>
         <div className="flex items-center gap-4">
-          <Badge variant="secondary" className="hidden sm:inline-flex px-3 py-1 bg-accent text-primary border-none font-medium">
-            Pro v1.3
+          <Badge variant="secondary" className="px-3 py-1 bg-accent text-primary border-none font-bold animate-pulse">
+            Camunda 2.0 Ready
           </Badge>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main className="flex flex-col lg:flex-row flex-1 overflow-hidden p-4 sm:p-6 gap-4 sm:gap-6">
+      <main className="flex flex-col lg:flex-row flex-1 overflow-hidden p-6 gap-6">
         {/* Left Side: Input */}
-        <div className="w-full lg:w-[400px] xl:w-[450px] flex flex-col gap-4 shrink-0 overflow-y-auto lg:overflow-visible">
-          <Card className="flex flex-col shadow-sm border-none bg-card h-full lg:h-auto lg:flex-1">
-            <CardHeader className="shrink-0 pb-2">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+        <div className="w-full lg:w-[420px] flex flex-col gap-4 shrink-0 overflow-y-auto lg:overflow-visible">
+          <Card className="flex flex-col shadow-2xl border-none bg-card h-full lg:h-auto lg:flex-1 rounded-2xl overflow-hidden">
+            <CardHeader className="shrink-0 bg-muted/30 pb-4">
+              <CardTitle className="text-lg font-bold flex items-center gap-2">
                 Process Definition
               </CardTitle>
-              <CardDescription>
-                Set a title and list your process steps.
+              <CardDescription className="text-xs">
+                Describe your digitalization service steps below.
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
+            <CardContent className="flex-1 flex flex-col gap-4 p-5">
               <div className="space-y-2">
-                <Label htmlFor="service-title" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                  Service Name / Title
+                <Label htmlFor="service-title" className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                  Service / Module Title
                 </Label>
                 <Input
                   id="service-title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g., Customer Registration"
-                  className="bg-muted/30 border-muted focus:ring-primary h-10 rounded-lg"
+                  placeholder="e.g., Service 21: e-Government"
+                  className="bg-muted/50 border-muted focus:ring-primary h-11 rounded-xl font-medium"
                 />
               </div>
 
-              <div className="relative flex-1 min-h-[200px] lg:min-h-0">
-                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 block">
-                  Process Steps
+              <div className="relative flex-1 min-h-[250px] lg:min-h-0">
+                <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2 block">
+                  Workflow Logic (Tasks & Flow)
                 </Label>
                 <Textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder={"Enter your process steps...\nExample:\nRegister customer\nIs data valid?\nApprove request\nReject request"}
-                  className="w-full h-[calc(100%-24px)] resize-none font-body text-base border-muted focus:ring-primary focus:border-primary p-4 rounded-xl transition-all"
+                  placeholder={"Describe the flow...\nExample:\nReceive digital request (service)\nVerify documents (user)\nIs data valid? (gateway)\nProcess application (service)\nReject request (cancel)"}
+                  className="w-full h-[calc(100%-24px)] resize-none font-body text-sm border-muted focus:ring-primary focus:border-primary p-4 rounded-xl shadow-inner bg-slate-50"
                 />
               </div>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
                 <Button 
                   variant="outline" 
                   onClick={handleClear}
-                  className="flex items-center gap-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  className="flex items-center gap-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 border-muted rounded-xl h-12"
                 >
-                  <Trash2 className="w-4 h-4" /> Clear
+                  <Trash2 className="w-4 h-4" /> Reset
                 </Button>
                 <Button 
                   onClick={handleGenerate}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-4 sm:py-6 rounded-xl text-lg font-semibold shadow-md flex items-center justify-center gap-2 transition-transform active:scale-95"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 h-12 rounded-xl text-base font-bold shadow-lg flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
                 >
-                  <Play className="w-5 h-5 fill-current" /> Generate
+                  <Play className="w-4 h-4 fill-current" /> Generate Architect
                 </Button>
               </div>
             </CardContent>
           </Card>
           
-          <div className="bg-secondary/50 p-4 rounded-xl border border-secondary hidden sm:flex items-start gap-3">
-            <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-            <div className="text-xs text-primary/80 leading-relaxed">
-              <p className="font-semibold mb-1">Quick Tips:</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>Lines with <code className="bg-accent px-1 rounded text-primary">?</code> are <strong>Gateways</strong>.</li>
-                <li><strong>Keywords:</strong> "reject", "fail" create terminal branches.</li>
-                <li><strong>Loops:</strong> Use "back to [task]" to loop.</li>
+          <div className="bg-primary/5 p-5 rounded-2xl border border-primary/10 hidden sm:flex items-start gap-4">
+            <div className="bg-primary/10 p-2 rounded-lg">
+              <Share2 className="w-5 h-5 text-primary shrink-0" />
+            </div>
+            <div className="text-[11px] text-primary/80 leading-relaxed">
+              <p className="font-bold mb-1 uppercase tracking-wider text-primary">Architecture Rules:</p>
+              <ul className="space-y-1 opacity-90">
+                <li>• <strong>Service Task:</strong> Use "send", "notify", "update".</li>
+                <li>• <strong>User Task:</strong> Use "review", "approve", "verify".</li>
+                <li>• <strong>Parallelism:</strong> Use "parallel" or "simultaneously".</li>
+                <li>• <strong>Loop:</strong> Use "edit" or "fix" for return arrows.</li>
               </ul>
             </div>
           </div>
@@ -169,87 +174,92 @@ export function BPMNFlowForgeApp() {
         <div className="flex-1 flex flex-col gap-4 min-h-0">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
             <div className="flex items-center justify-between mb-2">
-              <TabsList className="bg-muted p-1">
-                <TabsTrigger value="diagram" className="flex items-center gap-2">
-                  <Eye className="w-4 h-4" /> <span className="hidden xs:inline">Diagram</span>
+              <TabsList className="bg-muted/50 p-1 rounded-xl">
+                <TabsTrigger value="diagram" className="flex items-center gap-2 rounded-lg px-4 font-bold">
+                  <Eye className="w-4 h-4" /> <span className="hidden xs:inline">Live Canvas</span>
                 </TabsTrigger>
-                <TabsTrigger value="xml" className="flex items-center gap-2">
-                  <Code className="w-4 h-4" /> <span className="hidden xs:inline">XML</span>
+                <TabsTrigger value="xml" className="flex items-center gap-2 rounded-lg px-4 font-bold">
+                  <Code className="w-4 h-4" /> <span className="hidden xs:inline">BPMN 2.0 Source</span>
                 </TabsTrigger>
               </TabsList>
               
               {xmlResult && (
                 <div className="flex items-center gap-2">
                   <Button 
-                    variant="outline" 
+                    variant="secondary" 
                     size="sm"
                     onClick={handleDownloadXML}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 font-bold shadow-sm rounded-lg"
                   >
-                    <FileJson className="w-4 h-4" /> <span className="hidden sm:inline">Download XML</span>
+                    <FileJson className="w-4 h-4" /> <span className="hidden sm:inline">XML Export</span>
                   </Button>
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={handleDownloadPNG}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 font-bold rounded-lg"
                   >
                     <Download className="w-4 h-4" /> <span className="hidden sm:inline">PNG</span>
                   </Button>
                   <Button 
-                    variant="outline" 
+                    variant="ghost" 
                     size="sm"
                     onClick={handleCopy}
-                    className="flex items-center gap-2"
+                    className="h-9 w-9 p-0"
+                    title="Copy XML"
                   >
-                    <Copy className="w-4 h-4" /> <span className="hidden sm:inline">Copy</span>
+                    <Copy className="w-4 h-4" />
                   </Button>
                 </div>
               )}
             </div>
 
-            <Card className="flex-1 flex flex-col shadow-sm border-none bg-white overflow-hidden min-h-0">
+            <Card className="flex-1 flex flex-col shadow-2xl border-none bg-white rounded-3xl overflow-hidden min-h-0 ring-1 ring-slate-200">
               <TabsContent value="diagram" className="flex-1 m-0 focus-visible:ring-0 h-full">
                 {xmlResult ? (
                   <div className="h-full w-full">
                     <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
                   </div>
                 ) : (
-                  <EmptyState message="Diagram will appear here." />
+                  <EmptyState message="Your professional BPMN diagram will be rendered here." />
                 )}
               </TabsContent>
               
               <TabsContent value="xml" className="flex-1 m-0 focus-visible:ring-0 h-full">
                 {xmlResult ? (
                   <ScrollArea className="h-full w-full bg-slate-900">
-                    <pre className="p-6 font-code text-sm leading-relaxed text-emerald-400 overflow-x-auto selection:bg-emerald-500/30">
+                    <pre className="p-8 font-code text-xs leading-relaxed text-blue-300 overflow-x-auto selection:bg-blue-500/30">
                       <code>{xmlResult}</code>
                     </pre>
                   </ScrollArea>
                 ) : (
-                  <EmptyState message="Generated XML will appear here." />
+                  <EmptyState message="XML source code for Camunda Modeler will appear here." />
                 )}
               </TabsContent>
             </Card>
           </Tabs>
           
           {xmlResult && (
-            <div className="bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/20 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-1">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-              <p className="text-xs text-emerald-700 font-medium">
-                Diagram rendered successfully!
-              </p>
+            <div className="bg-emerald-500/5 p-4 rounded-2xl border border-emerald-500/10 flex items-center justify-between animate-in fade-in slide-in-from-bottom-2">
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                <p className="text-xs text-emerald-800 font-bold tracking-tight">
+                  Diagram validated for Service 21 Implementation.
+                </p>
+              </div>
+              <Badge variant="outline" className="text-[9px] border-emerald-500/30 text-emerald-600 font-black">STABLE v5.0</Badge>
             </div>
           )}
         </div>
       </main>
       
       {/* Footer */}
-      <footer className="px-8 py-2 bg-white border-t border-muted hidden sm:flex items-center justify-between text-[10px] text-muted-foreground shrink-0">
-        <p>© {new Date().getFullYear()} (ወርቁ) - Optimized for Tablets & Desktops</p>
-        <p className="flex items-center gap-4">
-          <span>PWA Ready</span>
-          <span>Open Source</span>
+      <footer className="px-8 py-3 bg-white border-t border-muted hidden sm:flex items-center justify-between text-[10px] text-muted-foreground shrink-0 uppercase tracking-widest font-bold">
+        <p>© {new Date().getFullYear()} (ወርቁ) - Senior BPMN Architect Edition</p>
+        <p className="flex items-center gap-6">
+          <span className="text-primary">APK Optimized</span>
+          <span>Lenovo Laptop Ready</span>
+          <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-500">Service 21 Context</span>
         </p>
       </footer>
     </div>
@@ -258,11 +268,11 @@ export function BPMNFlowForgeApp() {
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="h-full w-full flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
-      <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-4">
-        <FileCode className="w-6 h-6 opacity-20" />
+    <div className="h-full w-full flex flex-col items-center justify-center p-12 text-center text-muted-foreground/50">
+      <div className="w-20 h-20 bg-muted/30 rounded-full flex items-center justify-center mb-6 shadow-inner">
+        <FileCode className="w-10 h-10 opacity-10" />
       </div>
-      <p className="text-sm max-w-[200px]">
+      <p className="text-sm font-bold max-w-[280px] leading-relaxed italic uppercase tracking-wider">
         {message}
       </p>
     </div>
