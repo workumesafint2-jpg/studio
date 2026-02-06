@@ -30,10 +30,11 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       taskSubtype = isService ? 'serviceTask' : 'userTask';
     }
 
-    // Rule 1: Content Purity - Remove logic and commands from the box text
+    // Rule 1: Pure Content - Remove logic and commands from the box text
     let pureName = line
-      .replace(/^(cancel|reject|edit|fix|yes|no|wait|back|parallel|simultaneously|if|when|then)\s*[:\->\s]*/i, '')
+      .replace(/^(cancel|reject|edit|fix|yes|no|wait|back|parallel|simultaneously|if|when|then|ወደ|እንደገና|አይ|አዎ)\s*[:\->\s]*/i, '')
       .replace(/\?$/, '')
+      .replace(/[፧？]$/, '')
       .trim();
 
     nodeDefs.push({
@@ -79,12 +80,12 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   let visualNodeCount = 0;
 
   nodeDefs.forEach((node) => {
-    // Rule 2: Loop-Backs to Top Anchor
+    // Rule: Professional Loop-Backs (targeting top anchor)
     if (node.type === 'loop-back') {
       const sourceId = currentGatewayId || lastNodeId;
       const targetId = lastTaskId; 
       const flowId = `Flow_Loop_${node.id}`;
-      const flowLabel = "Return for Fix";
+      const flowLabel = "Fix/Edit Loop";
       registerFlow(flowId, sourceId, targetId, flowLabel);
       
       const sPos = positions[sourceId];
@@ -105,7 +106,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       return;
     }
 
-    // Rule 3: Terminal End Event (Cancel Path)
+    // Rule: Terminal Terminate Event
     if (node.type === 'cancel-path') {
       const sourceId = currentGatewayId || lastNodeId;
       const cancelEndId = `${node.id}_Terminate`;
@@ -128,13 +129,14 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>`);
 
-      elements.push(`    <bpmn:endEvent id="${cancelEndId}" name="Process Terminated">
+      elements.push(`    <bpmn:endEvent id="${cancelEndId}" name="Rejected">
       <bpmn:incoming>${flowToCancel}</bpmn:incoming>
       <bpmn:terminateEventDefinition id="TerminateEventDefinition_${node.id}" />
     </bpmn:endEvent>`);
       return;
     }
 
+    // Rule: Z-Pattern (Snake) Logic
     const row = Math.floor(visualNodeCount / MAX_COLS);
     const col = visualNodeCount % MAX_COLS;
     const direction = (row % 2 === 0) ? 'L-R' : 'R-L';
@@ -152,22 +154,27 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     
     positions[node.id] = { x: nodeX, y: nodeY, w: width, h: height, row, col, direction };
 
-    // Rule 2: Snap-to-Border Connectivity
+    // Rule 2 & 5: Precision Connectivity (Zero-Gap) and Smart Labeling
     const flowId = `Flow_${lastNodeId}_to_${node.id}`;
     const flowLabel = (currentGatewayId === lastNodeId) ? "Yes" : "";
     registerFlow(flowId, lastNodeId, node.id, flowLabel);
 
     const sPos = positions[lastNodeId];
     if (sPos.row === row) {
+      // Linear flow within same row
       const exitX = sPos.direction === 'L-R' ? sPos.x + sPos.w / 2 : sPos.x - sPos.w / 2;
       const entryX = direction === 'L-R' ? nodeX - width / 2 : nodeX + width / 2;
       diElements.push(`
       <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
         <di:waypoint x="${exitX}" y="${sPos.y}" />
         <di:waypoint x="${entryX}" y="${nodeY}" />
-        ${flowLabel ? `<bpmndi:BPMNLabel><dc:Bounds x="${(exitX + entryX) / 2 - 10}" y="${sPos.y - 20}" width="20" height="14" /></bpmndi:BPMNLabel>` : ''}
+        ${flowLabel ? `
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="${(exitX + entryX) / 2 - 10}" y="${sPos.y - 20}" width="20" height="14" />
+        </bpmndi:BPMNLabel>` : ''}
       </bpmndi:BPMNEdge>`);
     } else {
+      // Row transition flow
       diElements.push(`
       <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
         <di:waypoint x="${sPos.x}" y="${sPos.y + sPos.h / 2}" />
@@ -185,7 +192,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const lastPos = positions[lastNodeId];
   if (lastPos && lastNodeId !== 'StartEvent') {
     const finalFlowId = 'Flow_Final_Complete';
-    registerFlow(finalFlowId, lastNodeId, finalEndId);
+    registerFlow(finalFlowId, lastNodeId, finalEndId, "Success");
     const endX = lastPos.direction === 'L-R' ? lastPos.x + 150 : lastPos.x - 150;
     positions[finalEndId] = { x: endX, y: lastPos.y, w: 36, h: 36, row: lastPos.row, col: lastPos.col + 1, direction: lastPos.direction };
 
@@ -196,9 +203,13 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       <bpmndi:BPMNEdge id="${finalFlowId}_di" bpmnElement="${finalFlowId}">
         <di:waypoint x="${lastPos.direction === 'L-R' ? lastPos.x + lastPos.w / 2 : lastPos.x - lastPos.w / 2}" y="${lastPos.y}" />
         <di:waypoint x="${endX - (lastPos.direction === 'L-R' ? 18 : -18)}" y="${lastPos.y}" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="${(lastPos.x + endX) / 2 - 20}" y="${lastPos.y - 20}" width="40" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>`);
   }
 
+  // Rule 5: Standard Start Event
   elements.push(`    <bpmn:startEvent id="StartEvent" name="Start">
       ${(outgoingFlows["StartEvent"] || []).map(f => `<bpmn:outgoing>${f}</bpmn:outgoing>`).join('\n      ')}
     </bpmn:startEvent>`);
@@ -214,13 +225,13 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     const outgoing = (outgoingFlows[node.id] || []).map(f => `      <bpmn:outgoing>${f}</bpmn:outgoing>`).join('\n');
 
     if (node.type === 'gateway') {
-      elements.push(`    <bpmn:exclusiveGateway id="${node.id}" name="${escapeXml(node.name)}" isMarkerVisible="true">\n${incoming}\n${outgoing}\n    </bpmn:exclusiveGateway>`);
+      elements.push(`    <bpmn:exclusiveGateway id="${node.id}" name="XOR Decision" isMarkerVisible="true">\n${incoming}\n${outgoing}\n    </bpmn:exclusiveGateway>`);
       diElements.push(`
       <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}" isMarkerVisible="true">
         <dc:Bounds x="${pos.x - 25}" y="${pos.y - 25}" width="50" height="50" />
       </bpmndi:BPMNShape>`);
     } else if (node.type === 'parallel-gateway') {
-      elements.push(`    <bpmn:parallelGateway id="${node.id}" name="${escapeXml(node.name)}">\n${incoming}\n${outgoing}\n    </bpmn:parallelGateway>`);
+      elements.push(`    <bpmn:parallelGateway id="${node.id}" name="AND Split">\n${incoming}\n${outgoing}\n    </bpmn:parallelGateway>`);
       diElements.push(`
       <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}">
         <dc:Bounds x="${pos.x - 25}" y="${pos.y - 25}" width="50" height="50" />
@@ -236,28 +247,28 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   });
 
   if (positions[finalEndId]) {
-    elements.push(`    <bpmn:endEvent id="${finalEndId}" name="Process Completed">
+    elements.push(`    <bpmn:endEvent id="${finalEndId}" name="Success">
       ${(incomingFlows[finalEndId] || []).map(f => `<bpmn:incoming>${f}</bpmn:incoming>`).join('\n      ')}
     </bpmn:endEvent>`);
   }
 
-  // Rule 4: Valid UTF-8 encoded BPMN 2.0 XML
+  // Rule 3: Valid UTF-8 encoded BPMN 2.0 XML for Camunda Modeler
   return `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" 
                   xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" 
                   xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" 
                   xmlns:di="http://www.omg.org/spec/DD/20100524/DI" 
                   xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-                  id="Definitions_1"
+                  id="Definitions_Worku"
                   targetNamespace="http://bpmn.io/schema/bpmn"
-                  exporter="Worku BPMN Pro Architect" 
-                  exporterVersion="6.0">
-  <bpmn:process id="Process_Service_21" name="${escapeXml(title)}" isExecutable="true">
+                  exporter="Worku (ወርቁ) Pro Architect" 
+                  exporterVersion="6.5">
+  <bpmn:process id="Process_Worku_Auto" name="${escapeXml(title)}" isExecutable="true">
 ${elements.join('\n')}
 ${flows.join('\n')}
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_Service_21">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_Worku_Auto">
 ${diElements.join('\n')}
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
