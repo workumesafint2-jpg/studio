@@ -3,7 +3,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
   const rawLines = input.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
   
-  // 1. Identify Node Types (Strictly preserve parsing logic)
+  // 1. Identify Node Types (Strictly preserved parsing logic)
   const nodeDefs: any[] = [];
   rawLines.forEach((line, index) => {
     const lowerLine = line.toLowerCase();
@@ -42,19 +42,18 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     return id;
   };
 
-  // Layout Constants (Optimized for Z-Pattern / Snake Flow)
+  // Layout Constants
   const MAX_COLS = 5;
   const COL_SPACING = 250;
   const ROW_SPACING = 250; 
-  const X_START = 250;
-  const Y_START = 200;
-  const START_EVENT_X = 80;
+  const X_START = 200;
+  const Y_START = 150;
   const TASK_W = 120, TASK_H = 80;
   const GATEWAY_SIZE = 50;
   const EVENT_SIZE = 36;
 
-  const positions: Record<string, { x: number, y: number, w: number, h: number, row: number, col: number }> = {
-    "StartEvent": { x: START_EVENT_X, y: Y_START, w: 36, h: 36, row: 0, col: -1 }
+  const positions: Record<string, { x: number, y: number, w: number, h: number, row: number, col: number, direction: 'L-R' | 'R-L' }> = {
+    "StartEvent": { x: 80, y: Y_START, w: 36, h: 36, row: 0, col: -1, direction: 'L-R' }
   };
 
   let lastNodeId = "StartEvent";
@@ -63,7 +62,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   let visualNodeCount = 0;
 
   nodeDefs.forEach((node) => {
-    // Loop back logic (Strictly preserve high-clearance arrows)
+    // Loop back logic (Rule 1 & 3: Preserved high-clearance loops)
     if (node.type === 'loop-back') {
       const sourceId = currentGatewayId || lastNodeId;
       const targetId = lastTaskId; 
@@ -76,7 +75,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       const tPos = positions[targetId];
 
       if (sPos && tPos) {
-        // Higher clearance loop back above all rows
         const loopY = Math.min(sPos.y, tPos.y) - 120;
         diElements.push(`
         <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
@@ -89,7 +87,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       return;
     }
 
-    // Cancel Path logic (Strictly preserve rejected track)
+    // Cancel Path logic (Rule 1: Preserved rejected track)
     if (node.type === 'cancel-path') {
       const sourceId = currentGatewayId || lastNodeId;
       const cancelEndId = `${node.id}_End`;
@@ -99,7 +97,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       const cancelX = sPos.x;
       const cancelY = sPos.y + 120;
       
-      positions[cancelEndId] = { x: cancelX, y: cancelY, w: 36, h: 36, row: sPos.row, col: sPos.col };
+      positions[cancelEndId] = { x: cancelX, y: cancelY, w: 36, h: 36, row: sPos.row, col: sPos.col, direction: sPos.direction };
       const flowToCancel = registerFlow(`Flow_${sourceId}_to_Cancel`, sourceId, cancelEndId, flowLabel);
 
       diElements.push(`
@@ -117,15 +115,23 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       return;
     }
 
-    // Main Path: Orthogonal Snake Pattern (Row calculation)
-    const col = visualNodeCount % MAX_COLS;
+    // Directional Calculation (Rule 2: Zig-Zag layout)
     const row = Math.floor(visualNodeCount / MAX_COLS);
-    const nodeX = X_START + col * COL_SPACING;
+    const col = visualNodeCount % MAX_COLS;
+    const direction = (row % 2 === 0) ? 'L-R' : 'R-L';
+
+    let nodeX;
+    if (direction === 'L-R') {
+      nodeX = X_START + col * COL_SPACING;
+    } else {
+      nodeX = X_START + (MAX_COLS - 1 - col) * COL_SPACING;
+    }
     const nodeY = Y_START + row * ROW_SPACING;
 
     const width = (node.type === 'task' ? TASK_W : (node.type === 'gateway' ? GATEWAY_SIZE : (node.type === 'timer' ? 36 : EVENT_SIZE)));
     const height = (node.type === 'task' ? TASK_H : (node.type === 'gateway' ? GATEWAY_SIZE : (node.type === 'timer' ? 36 : EVENT_SIZE)));
-    positions[node.id] = { x: nodeX, y: nodeY, w: width, h: height, row, col };
+    
+    positions[node.id] = { x: nodeX, y: nodeY, w: width, h: height, row, col, direction };
 
     const sourceId = lastNodeId;
     const sPos = positions[sourceId];
@@ -134,32 +140,23 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     const flowId = `Flow_${sourceId}_to_${node.id}`;
     registerFlow(flowId, sourceId, node.id, flowLabel);
 
-    // Orthogonal Connectors (90-degree)
-    const rightExitX = sPos.x + sPos.w / 2;
-    const leftEntryX = nodeX - width / 2;
-
+    // Connector Anchoring (Rule 3: Directional connections)
     if (sPos.row === row) {
-      // Same Row (Straight Horizontal)
-      diElements.push(`
-      <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
-        <di:waypoint x="${rightExitX}" y="${sPos.y}" />
-        <di:waypoint x="${leftEntryX}" y="${nodeY}" />
-      </bpmndi:BPMNEdge>`);
-    } else {
-      // Row Wrap: Drop down and go to far left of next row (Z-pattern)
-      const margin = 50; // Clearance for orthogonal turns
-      const bendX = rightExitX + margin;
-      const entryBendX = leftEntryX - margin;
-      const midY = sPos.y + (nodeY - sPos.y) / 2;
+      // Same row connector
+      const exitX = sPos.direction === 'L-R' ? sPos.x + sPos.w / 2 : sPos.x - sPos.w / 2;
+      const entryX = sPos.direction === 'L-R' ? nodeX - width / 2 : nodeX + width / 2;
       
       diElements.push(`
       <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
-        <di:waypoint x="${rightExitX}" y="${sPos.y}" />
-        <di:waypoint x="${bendX}" y="${sPos.y}" />
-        <di:waypoint x="${bendX}" y="${midY}" />
-        <di:waypoint x="${entryBendX}" y="${midY}" />
-        <di:waypoint x="${entryBendX}" y="${nodeY}" />
-        <di:waypoint x="${leftEntryX}" y="${nodeY}" />
+        <di:waypoint x="${exitX}" y="${sPos.y}" />
+        <di:waypoint x="${entryX}" y="${nodeY}" />
+      </bpmndi:BPMNEdge>`);
+    } else {
+      // Row transition (Vertical drop in Snake pattern)
+      diElements.push(`
+      <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
+        <di:waypoint x="${sPos.x}" y="${sPos.y + sPos.h / 2}" />
+        <di:waypoint x="${nodeX}" y="${nodeY - height / 2}" />
       </bpmndi:BPMNEdge>`);
     }
 
@@ -170,22 +167,25 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     visualNodeCount++;
   });
 
-  // Final Completion Node
+  // Final Completion Node (Rule 4: Valid BPMN Standard)
   const finalEndId = 'FinalEndEvent';
   const lastPos = positions[lastNodeId];
   if (lastPos && lastNodeId !== 'StartEvent') {
     const finalFlowId = 'Flow_Final_End';
     registerFlow(finalFlowId, lastNodeId, finalEndId);
-    const endX = lastPos.x + 150;
-    positions[finalEndId] = { x: endX, y: lastPos.y, w: 36, h: 36, row: lastPos.row, col: lastPos.col + 1 };
+    
+    const direction = lastPos.direction;
+    const endX = direction === 'L-R' ? lastPos.x + 150 : lastPos.x - 150;
+    
+    positions[finalEndId] = { x: endX, y: lastPos.y, w: 36, h: 36, row: lastPos.row, col: lastPos.col + 1, direction };
 
     diElements.push(`
       <bpmndi:BPMNShape id="${finalEndId}_di" bpmnElement="${finalEndId}">
         <dc:Bounds x="${endX - 18}" y="${lastPos.y - 18}" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="${finalFlowId}_di" bpmnElement="${finalFlowId}">
-        <di:waypoint x="${lastPos.x + lastPos.w / 2}" y="${lastPos.y}" />
-        <di:waypoint x="${endX - 18}" y="${lastPos.y}" />
+        <di:waypoint x="${direction === 'L-R' ? lastPos.x + lastPos.w / 2 : lastPos.x - lastPos.w / 2}" y="${lastPos.y}" />
+        <di:waypoint x="${endX - (direction === 'L-R' ? 18 : -18)}" y="${lastPos.y}" />
       </bpmndi:BPMNEdge>`);
   }
 
@@ -195,10 +195,10 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     </bpmn:startEvent>`);
   diElements.push(`
       <bpmndi:BPMNShape id="StartEvent_di" bpmnElement="StartEvent">
-        <dc:Bounds x="${START_EVENT_X - 18}" y="${Y_START - 18}" width="36" height="36" />
+        <dc:Bounds x="${positions["StartEvent"].x - 18}" y="${Y_START - 18}" width="36" height="36" />
       </bpmndi:BPMNShape>`);
 
-  // Node Element Generation (Strictly preserve XOR diamonds with X markers)
+  // Node Element Generation (XOR diamonds with X markers)
   nodeDefs.forEach(node => {
     if (node.type === 'loop-back' || node.type === 'cancel-path') return;
     const pos = positions[node.id];
