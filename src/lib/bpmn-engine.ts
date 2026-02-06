@@ -3,25 +3,46 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
   const rawLines = input.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
   
-  // 1. Identify Node Types (Strictly preserved parsing logic)
+  // Classification Keywords
+  const userKeywords = ['approve', 'review', 'check', 'fill', 'input', 'verify', 'inspect', 'decide', 'manually', 'user', 'manager'];
+  const serviceKeywords = ['send', 'notify', 'email', 'calculate', 'update', 'save', 'fetch', 'api', 'system', 'automatically', 'generate', 'process'];
+
+  // 1. Identify Node Types and Technical Elements
   const nodeDefs: any[] = [];
   rawLines.forEach((line, index) => {
     const lowerLine = line.toLowerCase();
     const isGateway = line.includes('?') || line.includes('፧') || line.includes('？');
+    const isParallel = lowerLine.includes('simultaneously') || lowerLine.includes('parallel') || lowerLine.includes('at the same time');
     const isLoopTrigger = lowerLine.includes('edit') || lowerLine.includes('fix') || lowerLine.includes('correct') || lowerLine.includes('back');
     const isCancelPath = lowerLine.includes('cancel') || lowerLine.includes('reject') || lowerLine.includes('fail');
     const isTimer = lowerLine.includes('wait') || lowerLine.includes('delay');
 
     let nodeType = 'task';
-    if (isGateway) nodeType = 'gateway';
-    else if (isLoopTrigger) nodeType = 'loop-back';
-    else if (isCancelPath) nodeType = 'cancel-path';
-    else if (isTimer) nodeType = 'timer';
+    let taskSubtype = 'task'; // Default
+
+    if (isGateway) {
+      nodeType = 'gateway';
+    } else if (isParallel) {
+      nodeType = 'parallel-gateway';
+    } else if (isLoopTrigger) {
+      nodeType = 'loop-back';
+    } else if (isCancelPath) {
+      nodeType = 'cancel-path';
+    } else if (isTimer) {
+      nodeType = 'timer';
+    } else {
+      // Differentiate Tasks
+      const isUser = userKeywords.some(k => lowerLine.includes(k));
+      const isService = serviceKeywords.some(k => lowerLine.includes(k));
+      if (isUser) taskSubtype = 'userTask';
+      else if (isService) taskSubtype = 'serviceTask';
+    }
 
     nodeDefs.push({
       id: `Node_${index}`,
-      name: line.replace(/^(cancel|reject|edit|fix|yes|no|wait|back)\s*[:\->\s]*/i, '').trim(),
+      name: line.replace(/^(cancel|reject|edit|fix|yes|no|wait|back|parallel|simultaneously)\s*[:\->\s]*/i, '').trim(),
       type: nodeType,
+      taskSubtype,
       originalText: line,
       index
     });
@@ -62,7 +83,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   let visualNodeCount = 0;
 
   nodeDefs.forEach((node) => {
-    // Loop back logic (Rule 1 & 3: Preserved high-clearance loops)
+    // Loop back logic
     if (node.type === 'loop-back') {
       const sourceId = currentGatewayId || lastNodeId;
       const targetId = lastTaskId; 
@@ -87,7 +108,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       return;
     }
 
-    // Cancel Path logic (Rule 1: Preserved rejected track)
+    // Cancel Path logic
     if (node.type === 'cancel-path') {
       const sourceId = currentGatewayId || lastNodeId;
       const cancelEndId = `${node.id}_End`;
@@ -115,7 +136,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       return;
     }
 
-    // Directional Calculation (Rule 2: Zig-Zag layout)
+    // Directional Calculation (Snake pattern)
     const row = Math.floor(visualNodeCount / MAX_COLS);
     const col = visualNodeCount % MAX_COLS;
     const direction = (row % 2 === 0) ? 'L-R' : 'R-L';
@@ -128,8 +149,8 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     }
     const nodeY = Y_START + row * ROW_SPACING;
 
-    const width = (node.type === 'task' ? TASK_W : (node.type === 'gateway' ? GATEWAY_SIZE : (node.type === 'timer' ? 36 : EVENT_SIZE)));
-    const height = (node.type === 'task' ? TASK_H : (node.type === 'gateway' ? GATEWAY_SIZE : (node.type === 'timer' ? 36 : EVENT_SIZE)));
+    const width = (node.type.includes('task') ? TASK_W : (node.type.includes('gateway') ? GATEWAY_SIZE : (node.type === 'timer' ? 36 : EVENT_SIZE)));
+    const height = (node.type.includes('task') ? TASK_H : (node.type.includes('gateway') ? GATEWAY_SIZE : (node.type === 'timer' ? 36 : EVENT_SIZE)));
     
     positions[node.id] = { x: nodeX, y: nodeY, w: width, h: height, row, col, direction };
 
@@ -140,9 +161,8 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     const flowId = `Flow_${sourceId}_to_${node.id}`;
     registerFlow(flowId, sourceId, node.id, flowLabel);
 
-    // Connector Anchoring (Rule 3: Directional connections)
+    // Connector Anchoring
     if (sPos.row === row) {
-      // Same row connector
       const exitX = sPos.direction === 'L-R' ? sPos.x + sPos.w / 2 : sPos.x - sPos.w / 2;
       const entryX = sPos.direction === 'L-R' ? nodeX - width / 2 : nodeX + width / 2;
       
@@ -152,7 +172,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         <di:waypoint x="${entryX}" y="${nodeY}" />
       </bpmndi:BPMNEdge>`);
     } else {
-      // Row transition (Vertical drop in Snake pattern)
       diElements.push(`
       <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
         <di:waypoint x="${sPos.x}" y="${sPos.y + sPos.h / 2}" />
@@ -161,13 +180,12 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     }
 
     if (node.type === 'task') lastTaskId = node.id;
-    if (node.type === 'gateway') currentGatewayId = node.id; else currentGatewayId = null;
+    if (node.type.includes('gateway')) currentGatewayId = node.id; else currentGatewayId = null;
 
     lastNodeId = node.id;
     visualNodeCount++;
   });
 
-  // Final Completion Node (Rule 4: Valid BPMN Standard)
   const finalEndId = 'FinalEndEvent';
   const lastPos = positions[lastNodeId];
   if (lastPos && lastNodeId !== 'StartEvent') {
@@ -189,7 +207,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       </bpmndi:BPMNEdge>`);
   }
 
-  // Start Event Generation
+  // Start Event
   elements.push(`    <bpmn:startEvent id="StartEvent" name="Start">
       ${(outgoingFlows["StartEvent"] || []).map(f => `<bpmn:outgoing>${f}</bpmn:outgoing>`).join('\n      ')}
     </bpmn:startEvent>`);
@@ -198,7 +216,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         <dc:Bounds x="${positions["StartEvent"].x - 18}" y="${Y_START - 18}" width="36" height="36" />
       </bpmndi:BPMNShape>`);
 
-  // Node Element Generation (XOR diamonds with X markers)
+  // Node Element Generation
   nodeDefs.forEach(node => {
     if (node.type === 'loop-back' || node.type === 'cancel-path') return;
     const pos = positions[node.id];
@@ -211,6 +229,12 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}" isMarkerVisible="true">
         <dc:Bounds x="${pos.x - 25}" y="${pos.y - 25}" width="50" height="50" />
       </bpmndi:BPMNShape>`);
+    } else if (node.type === 'parallel-gateway') {
+      elements.push(`    <bpmn:parallelGateway id="${node.id}" name="${escapeXml(node.name)}">\n${incoming}\n${outgoing}\n    </bpmn:parallelGateway>`);
+      diElements.push(`
+      <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}">
+        <dc:Bounds x="${pos.x - 25}" y="${pos.y - 25}" width="50" height="50" />
+      </bpmndi:BPMNShape>`);
     } else if (node.type === 'timer') {
       elements.push(`    <bpmn:intermediateCatchEvent id="${node.id}" name="${escapeXml(node.name)}">\n${incoming}\n${outgoing}\n      <bpmn:timerEventDefinition id="TimerDef_${node.id}" />\n    </bpmn:intermediateCatchEvent>`);
       diElements.push(`
@@ -218,7 +242,8 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         <dc:Bounds x="${pos.x - 18}" y="${pos.y - 18}" width="36" height="36" />
       </bpmndi:BPMNShape>`);
     } else {
-      elements.push(`    <bpmn:task id="${node.id}" name="${escapeXml(node.name)}">\n${incoming}\n${outgoing}\n    </bpmn:task>`);
+      const tagName = node.taskSubtype === 'userTask' ? 'userTask' : (node.taskSubtype === 'serviceTask' ? 'serviceTask' : 'task');
+      elements.push(`    <bpmn:${tagName} id="${node.id}" name="${escapeXml(node.name)}">\n${incoming}\n${outgoing}\n    </bpmn:${tagName}>`);
       diElements.push(`
       <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}">
         <dc:Bounds x="${pos.x - 60}" y="${pos.y - 40}" width="120" height="80" />
@@ -237,16 +262,17 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
                   xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" 
                   xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" 
                   xmlns:di="http://www.omg.org/spec/DD/20100524/DI" 
+                  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
                   id="Definitions_1"
                   targetNamespace="http://bpmn.io/schema/bpmn"
                   exporter="Worku BPMN" 
-                  exporterVersion="1.3">
-  <bpmn:process id="Process_1" name="${escapeXml(title)}" isExecutable="false">
+                  exporterVersion="2.0">
+  <bpmn:process id="Process_Camunda_1" name="${escapeXml(title)}" isExecutable="true">
 ${elements.join('\n')}
 ${flows.join('\n')}
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_Camunda_1">
 ${diElements.join('\n')}
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
