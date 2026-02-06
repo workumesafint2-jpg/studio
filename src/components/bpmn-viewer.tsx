@@ -24,7 +24,6 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
         const { svg } = await viewerRef.current.saveSVG();
         
         const canvas = document.createElement('canvas');
-        // Ensure UTF-8 for SVG export integrity
         const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
         const url = URL.createObjectURL(svgBlob);
         
@@ -33,32 +32,28 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
         
         img.onload = () => {
           const padding = 100;
-          const headerHeight = 100;
+          const headerHeight = 120;
           
           canvas.width = img.width + padding * 2;
           canvas.height = img.height + padding * 2 + headerHeight;
           
           const ctx = canvas.getContext('2d');
           if (ctx) {
-            // High quality white background
+            // Rule 4: High resolution Laptop rendering
             ctx.fillStyle = '#FFFFFF';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Draw Title Header (Professional desktop style)
-            ctx.fillStyle = '#111827'; 
-            ctx.font = 'bold 40px "Inter", sans-serif';
+            ctx.fillStyle = '#1e3a8a'; 
+            ctx.font = 'bold 48px "Inter", "Segoe UI", sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText(title, canvas.width / 2, 60);
+            ctx.fillText(title, canvas.width / 2, 70);
             
-            // Subtle Border for professional feel
-            ctx.strokeStyle = '#E5E7EB';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
             
-            // Draw Diagram
             ctx.drawImage(img, padding, padding + headerHeight);
             
-            // Standard PNG encoding
             const pngUrl = canvas.toDataURL('image/png', 1.0);
             const downloadLink = document.createElement('a');
             downloadLink.href = pngUrl;
@@ -79,7 +74,6 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Initialize without keyboard: { bindTo: window } to fix library conflicts
     viewerRef.current = new BpmnViewer({
       container: containerRef.current
     });
@@ -95,7 +89,6 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
     const importDiagram = async () => {
       if (viewerRef.current && xml) {
         try {
-          // Await full initialization before any canvas manipulation to fix 'root-0' error
           await viewerRef.current.importXML(xml);
           
           const canvas = viewerRef.current.get('canvas');
@@ -112,20 +105,20 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
   }, [xml]);
 
   return (
-    <div className="w-full h-full relative group bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-      <div className="absolute top-0 left-0 right-0 z-10 bg-white/80 backdrop-blur-sm py-2 px-4 border-b border-slate-100 flex items-center justify-center">
-        <h2 className="text-sm font-semibold text-slate-900 truncate uppercase tracking-tight">
+    <div className="w-full h-full relative group bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+      <div className="absolute top-0 left-0 right-0 z-10 bg-white/90 backdrop-blur-md py-3 px-6 border-b border-slate-100 flex items-center justify-center">
+        <h2 className="text-sm font-bold text-primary truncate uppercase tracking-widest">
           {title}
         </h2>
       </div>
 
       <div 
         ref={containerRef} 
-        className="w-full h-full min-h-[500px] pt-12"
+        className="w-full h-full min-h-[500px] pt-14"
       />
       
-      <div className="absolute bottom-4 right-4 bg-slate-900/5 text-slate-500 px-3 py-1 rounded-full text-[10px] font-medium pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-        Scroll to Zoom • Drag to Pan
+      <div className="absolute bottom-6 right-6 bg-slate-900/10 text-slate-600 px-4 py-1.5 rounded-full text-[10px] font-bold pointer-events-none opacity-0 group-hover:opacity-100 transition-all">
+        Pan: Drag • Zoom: Scroll
       </div>
     </div>
   );

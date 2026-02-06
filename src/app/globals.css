@@ -7,47 +7,26 @@
 
 @layer base {
   :root {
-    --background: 0 0% 94%;
-    --foreground: 275 100% 5%;
+    --background: 0 0% 98%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 275 100% 5%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 275 100% 5%;
-    --primary: 275 100% 25%;
-    --primary-foreground: 240 67% 98%;
-    --secondary: 240 67% 94%;
-    --secondary-foreground: 275 100% 15%;
-    --muted: 240 20% 90%;
-    --muted-foreground: 275 20% 40%;
-    --accent: 240 67% 94%;
-    --accent-foreground: 275 100% 25%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 275 20% 85%;
-    --input: 275 20% 85%;
-    --ring: 275 100% 25%;
-    --radius: 0.75rem;
-  }
-  .dark {
-    --background: 275 40% 5%;
-    --foreground: 240 67% 94%;
-    --card: 275 40% 8%;
-    --card-foreground: 240 67% 94%;
-    --popover: 275 40% 8%;
-    --popover-foreground: 240 67% 94%;
-    --primary: 275 100% 70%;
-    --primary-foreground: 275 40% 5%;
-    --secondary: 275 30% 15%;
-    --secondary-foreground: 240 67% 94%;
-    --muted: 275 30% 15%;
-    --muted-foreground: 275 20% 65%;
-    --accent: 275 30% 20%;
-    --accent-foreground: 240 67% 94%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 275 30% 20%;
-    --input: 275 30% 20%;
-    --ring: 275 100% 70%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 221 83% 53%;
+    --radius: 1rem;
   }
 }
 
@@ -56,16 +35,24 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }
 
-/* Custom Overrides for bpmn-js in Dark Mode or Theme Consistency */
 .bjs-container {
   border-radius: var(--radius);
   overflow: hidden;
 }
 
 .djs-palette {
-  display: none !important; /* Hide palette for preview-only viewer */
+  display: none !important;
+}
+
+/* Rule 4: High resolution text rendering for diagrams */
+.djs-visual text {
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 500 !important;
+  font-smooth: always !important;
+  -webkit-font-smoothing: antialiased !important;
 }
