@@ -9,6 +9,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const nodeDefs: any[] = [];
   rawLines.forEach((line, index) => {
     const lowerLine = line.toLowerCase();
+    const isTimer = lowerLine.startsWith('timer:');
     const isGateway = line.includes('?') || ['ውሳኔ', 'ከሆነ', 'መመደብ', '፧', '？'].some(k => line.includes(k));
     const isParallel = lowerLine.includes('simultaneously') || lowerLine.includes('parallel') || lowerLine.includes('tandem');
     const isLoopTrigger = lowerLine.includes('edit') || lowerLine.includes('fix') || lowerLine.includes('correct') || lowerLine.includes('back') || lowerLine.includes('incomplete') || lowerLine.includes('no');
@@ -17,7 +18,9 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     let nodeType = 'task';
     let taskSubtype = 'userTask'; 
 
-    if (isParallel) {
+    if (isTimer) {
+      nodeType = 'timer-event';
+    } else if (isParallel) {
       nodeType = 'parallel-gateway';
     } else if (isGateway) {
       nodeType = 'gateway';
@@ -32,7 +35,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
     // Rule 1: PURE TEXT - Locked Logic
     let pureName = line
-      .replace(/^(cancel|reject|edit|fix|yes|no|wait|back|go back to|return to|parallel|simultaneously|if|when|then|ወደ|እንደገና|አይ|አዎ|ከሆነ)\s*[:\->\s]*/i, '')
+      .replace(/^(timer|cancel|reject|edit|fix|yes|no|wait|back|go back to|return to|parallel|simultaneously|if|when|then|ወደ|እንደገና|አይ|አዎ|ከሆነ)\s*[:\->\s]*/i, '')
       .replace(/\?$/, '')
       .replace(/[፧？]$/, '')
       .trim();
@@ -294,6 +297,14 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       diElements.push(`
       <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}" isMarkerVisible="true">
         <dc:Bounds x="${pos.x - 25}" y="${pos.y - 25}" width="50" height="50" />
+      </bpmndi:BPMNShape>`);
+    } else if (node.type === 'timer-event') {
+      elements.push(`    <bpmn:intermediateCatchEvent id="${node.id}" name="${escapeXml(node.name)}">
+      <bpmn:timerEventDefinition id="TimerEventDefinition_${node.id}" />
+    </bpmn:intermediateCatchEvent>`);
+      diElements.push(`
+      <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}">
+        <dc:Bounds x="${pos.x - 18}" y="${pos.y - 18}" width="36" height="36" />
       </bpmndi:BPMNShape>`);
     } else {
       elements.push(`    <bpmn:${node.taskSubtype} id="${node.id}" name="${escapeXml(node.name)}" />`);
