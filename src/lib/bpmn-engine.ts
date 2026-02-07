@@ -66,7 +66,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
   const MAX_COLS = 5;
   const COL_SPACING = 250;
-  const ROW_SPACING = 250; 
+  const ROW_SPACING = 280; 
   const X_START = 200;
   const Y_START = 250;
   const TASK_W = 120, TASK_H = 80;
@@ -136,21 +136,32 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       continue;
     }
 
+    // Snake logic: wrap to new line and reverse direction
+    const row = Math.floor(visualNodeCount / MAX_COLS);
+    const rawCol = visualNodeCount % MAX_COLS;
+    const isEvenRow = row % 2 === 0;
+    const col = isEvenRow ? rawCol : (MAX_COLS - 1 - rawCol);
+    
+    const nodeX = X_START + col * COL_SPACING;
+    const nodeY = Y_START + row * ROW_SPACING;
+
     if (node.type === 'parallel-gateway' && i + 2 < nodeDefs.length) {
       const splitId = node.id;
       const taskA = nodeDefs[++i];
       const taskB = nodeDefs[++i];
       const joinId = `${splitId}_Join`;
 
-      const row = Math.floor(visualNodeCount / MAX_COLS);
-      const col = visualNodeCount % MAX_COLS;
-      const baseX = X_START + col * COL_SPACING;
-      const baseY = Y_START + row * ROW_SPACING;
+      // For parallel, we take up two "slots" horizontally in the snake if possible, 
+      // but to keep it simple and valid, we render them as a block at the current snake nodeX/nodeY
+      positions[splitId] = { x: nodeX, y: nodeY, w: 50, h: 50, row, col };
+      
+      const offsetDirection = isEvenRow ? 1 : -1;
+      const branchX = nodeX + (180 * offsetDirection);
+      const endX = nodeX + (360 * offsetDirection);
 
-      positions[splitId] = { x: baseX, y: baseY, w: 50, h: 50, row, col };
-      positions[taskA.id] = { x: baseX + 180, y: baseY - 120, w: 120, h: 80, row, col };
-      positions[taskB.id] = { x: baseX + 180, y: baseY + 120, w: 120, h: 80, row, col };
-      positions[joinId] = { x: baseX + 360, y: baseY, w: 50, h: 50, row, col };
+      positions[taskA.id] = { x: branchX, y: nodeY - 120, w: 120, h: 80, row, col };
+      positions[taskB.id] = { x: branchX, y: nodeY + 120, w: 120, h: 80, row, col };
+      positions[joinId] = { x: endX, y: nodeY, w: 50, h: 50, row, col };
 
       const f_to_split = registerFlow(`F_${lastNodeId}_S`, lastNodeId, splitId);
       const f_s_a = registerFlow(`F_S_A_${taskA.id}`, splitId, taskA.id);
@@ -161,41 +172,41 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       const sP = positions[lastNodeId];
       diElements.push(`
       <bpmndi:BPMNShape id="${splitId}_di" bpmnElement="${splitId}">
-        <dc:Bounds x="${baseX - 25}" y="${baseY - 25}" width="50" height="50" />
+        <dc:Bounds x="${nodeX - 25}" y="${nodeY - 25}" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="${taskA.id}_di" bpmnElement="${taskA.id}">
-        <dc:Bounds x="${baseX + 180 - 60}" y="${baseY - 120 - 40}" width="120" height="80" />
+        <dc:Bounds x="${branchX - 60}" y="${nodeY - 120 - 40}" width="120" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="${taskB.id}_di" bpmnElement="${taskB.id}">
-        <dc:Bounds x="${baseX + 180 - 60}" y="${baseY + 120 - 40}" width="120" height="80" />
+        <dc:Bounds x="${branchX - 60}" y="${nodeY + 120 - 40}" width="120" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="${joinId}_di" bpmnElement="${joinId}">
-        <dc:Bounds x="${baseX + 360 - 25}" y="${baseY - 25}" width="50" height="50" />
+        <dc:Bounds x="${endX - 25}" y="${nodeY - 25}" width="50" height="50" />
       </bpmndi:BPMNShape>
       
       <bpmndi:BPMNEdge id="${f_to_split}_di" bpmnElement="${f_to_split}">
-        <di:waypoint x="${sP.x + sP.w / 2}" y="${sP.y}" />
-        <di:waypoint x="${baseX - 25}" y="${baseY}" />
+        <di:waypoint x="${sP.x}" y="${sP.y}" />
+        <di:waypoint x="${nodeX}" y="${nodeY}" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="${f_s_a}_di" bpmnElement="${f_s_a}">
-        <di:waypoint x="${baseX}" y="${baseY - 25}" />
-        <di:waypoint x="${baseX}" y="${baseY - 120}" />
-        <di:waypoint x="${baseX + 180 - 60}" y="${baseY - 120}" />
+        <di:waypoint x="${nodeX}" y="${nodeY - 25}" />
+        <di:waypoint x="${nodeX}" y="${nodeY - 120}" />
+        <di:waypoint x="${branchX - 60}" y="${nodeY - 120}" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="${f_s_b}_di" bpmnElement="${f_s_b}">
-        <di:waypoint x="${baseX}" y="${baseY + 25}" />
-        <di:waypoint x="${baseX}" y="${baseY + 120}" />
-        <di:waypoint x="${baseX + 180 - 60}" y="${baseY + 120}" />
+        <di:waypoint x="${nodeX}" y="${nodeY + 25}" />
+        <di:waypoint x="${nodeX}" y="${nodeY + 120}" />
+        <di:waypoint x="${branchX - 60}" y="${nodeY + 120}" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="${f_a_j}_di" bpmnElement="${f_a_j}">
-        <di:waypoint x="${baseX + 180 + 60}" y="${baseY - 120}" />
-        <di:waypoint x="${baseX + 360}" y="${baseY - 120}" />
-        <di:waypoint x="${baseX + 360}" y="${baseY - 25}" />
+        <di:waypoint x="${branchX + 60}" y="${nodeY - 120}" />
+        <di:waypoint x="${endX}" y="${nodeY - 120}" />
+        <di:waypoint x="${endX}" y="${nodeY - 25}" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="${f_b_j}_di" bpmnElement="${f_b_j}">
-        <di:waypoint x="${baseX + 180 + 60}" y="${baseY + 120}" />
-        <di:waypoint x="${baseX + 360}" y="${baseY + 120}" />
-        <di:waypoint x="${baseX + 360}" y="${baseY + 25}" />
+        <di:waypoint x="${branchX + 60}" y="${nodeY + 120}" />
+        <di:waypoint x="${endX}" y="${nodeY + 120}" />
+        <di:waypoint x="${endX}" y="${nodeY + 25}" />
       </bpmndi:BPMNEdge>`);
 
       elements.push(`    <bpmn:parallelGateway id="${splitId}" name="Split" />`);
@@ -205,14 +216,9 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
       lastNodeId = joinId;
       lastTaskId = taskB.id;
-      visualNodeCount += 2;
+      visualNodeCount += 2; // parallel structure consumes roughly 2 logical horizontal steps
       continue;
     }
-
-    const row = Math.floor(visualNodeCount / MAX_COLS);
-    const col = visualNodeCount % MAX_COLS;
-    const nodeX = X_START + col * COL_SPACING;
-    const nodeY = Y_START + row * ROW_SPACING;
 
     const width = node.type.includes('task') ? TASK_W : (node.type.includes('gateway') ? GATEWAY_SIZE : 36);
     const height = node.type.includes('task') ? TASK_H : (node.type.includes('gateway') ? GATEWAY_SIZE : 36);
@@ -224,9 +230,11 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     registerFlow(flowId, lastNodeId, node.id, flowLabel);
 
     const sPos = positions[lastNodeId];
+    // Snake Waypoint Logic
     if (sPos.row === row) {
-      const exitX = sPos.x + sPos.w / 2;
-      const entryX = nodeX - width / 2;
+      // Horizontal flow (could be LTR or RTL)
+      const exitX = sPos.x + (sPos.w / 2 * (isEvenRow ? 1 : -1));
+      const entryX = nodeX - (width / 2 * (isEvenRow ? 1 : -1));
       diElements.push(`
       <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
         <di:waypoint x="${exitX}" y="${sPos.y}" />
@@ -237,9 +245,12 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         </bpmndi:BPMNLabel>` : ''}
       </bpmndi:BPMNEdge>`);
     } else {
+      // Row transition (Vertical drop)
       diElements.push(`
       <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
         <di:waypoint x="${sPos.x}" y="${sPos.y + sPos.h / 2}" />
+        <di:waypoint x="${sPos.x}" y="${nodeY - (height / 2) - 40}" />
+        <di:waypoint x="${nodeX}" y="${nodeY - (height / 2) - 40}" />
         <di:waypoint x="${nodeX}" y="${nodeY - height / 2}" />
       </bpmndi:BPMNEdge>`);
     }
@@ -255,16 +266,19 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   if (lastPos && lastNodeId !== 'StartEvent') {
     const finalFlowId = 'Flow_Final_Complete';
     registerFlow(finalFlowId, lastNodeId, finalEndId, "Success");
-    const endX = lastPos.x + 150;
-    positions[finalEndId] = { x: endX, y: lastPos.y, w: 36, h: 36, row: lastPos.row, col: lastPos.col + 1 };
+    
+    // Position final event relative to last node in snake flow
+    const isEven = lastPos.row % 2 === 0;
+    const endX = lastPos.x + (150 * (isEven ? 1 : -1));
+    positions[finalEndId] = { x: endX, y: lastPos.y, w: 36, h: 36, row: lastPos.row, col: -1 };
 
     diElements.push(`
       <bpmndi:BPMNShape id="${finalEndId}_di" bpmnElement="${finalEndId}">
         <dc:Bounds x="${endX - 18}" y="${lastPos.y - 18}" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="${finalFlowId}_di" bpmnElement="${finalFlowId}">
-        <di:waypoint x="${lastPos.x + lastPos.w / 2}" y="${lastPos.y}" />
-        <di:waypoint x="${endX - 18}" y="${lastPos.y}" />
+        <di:waypoint x="${lastPos.x + (lastPos.w / 2 * (isEven ? 1 : -1))}" y="${lastPos.y}" />
+        <di:waypoint x="${endX - (18 * (isEven ? 1 : -1))}" y="${lastPos.y}" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="${(lastPos.x + endX) / 2 - 20}" y="${lastPos.y - 20}" width="40" height="14" />
         </bpmndi:BPMNLabel>
