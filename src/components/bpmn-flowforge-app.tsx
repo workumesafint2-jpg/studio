@@ -123,7 +123,7 @@ export function BPMNFlowForgeApp() {
             <CardContent className="flex-1 flex flex-col gap-4 p-5">
               <div className="space-y-2">
                 <Label htmlFor="service-title" className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                  Service / Module Title
+                  የአገልግሎት ስም ያስገቡ
                 </Label>
                 <Input
                   id="service-title"
