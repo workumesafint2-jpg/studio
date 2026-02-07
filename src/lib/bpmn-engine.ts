@@ -33,7 +33,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       taskSubtype = isService ? 'serviceTask' : 'userTask';
     }
 
-    // Rule 1: PURE TEXT - Locked Logic
     let pureName = line
       .replace(/^(timer|cancel|reject|edit|fix|yes|no|wait|back|go back to|return to|parallel|simultaneously|if|when|then|ወደ|እንደገና|አይ|አዎ|ከሆነ)\s*[:\->\s]*/i, '')
       .replace(/\?$/, '')
@@ -85,7 +84,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   for (let i = 0; i < nodeDefs.length; i++) {
     const node = nodeDefs[i];
 
-    // RULE 1: LOOP-BACK (Top Anchor Logic)
     if (node.type === 'loop-back') {
       const sourceId = currentGatewayId || lastNodeId;
       const targetId = lastTaskId; 
@@ -110,7 +108,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       continue;
     }
 
-    // RULE 2: CANCEL-PATH (Vertical Down Logic)
     if (node.type === 'cancel-path') {
       const sourceId = currentGatewayId || lastNodeId;
       const cancelEndId = `${node.id}_Terminate`;
@@ -139,7 +136,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       continue;
     }
 
-    // RULE: SYMMETRICAL PARALLEL SPLIT/JOIN
     if (node.type === 'parallel-gateway' && i + 2 < nodeDefs.length) {
       const splitId = node.id;
       const taskA = nodeDefs[++i];
@@ -151,20 +147,17 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       const baseX = X_START + col * COL_SPACING;
       const baseY = Y_START + row * ROW_SPACING;
 
-      // Positions (Rule 1: One Above, One Below)
       positions[splitId] = { x: baseX, y: baseY, w: 50, h: 50, row, col };
       positions[taskA.id] = { x: baseX + 180, y: baseY - 120, w: 120, h: 80, row, col };
       positions[taskB.id] = { x: baseX + 180, y: baseY + 120, w: 120, h: 80, row, col };
       positions[joinId] = { x: baseX + 360, y: baseY, w: 50, h: 50, row, col };
 
-      // Split Flows
       const f_to_split = registerFlow(`F_${lastNodeId}_S`, lastNodeId, splitId);
       const f_s_a = registerFlow(`F_S_A_${taskA.id}`, splitId, taskA.id);
       const f_s_b = registerFlow(`F_S_B_${taskB.id}`, splitId, taskB.id);
       const f_a_j = registerFlow(`F_A_J_${taskA.id}`, taskA.id, joinId);
       const f_b_j = registerFlow(`F_B_J_${taskB.id}`, taskB.id, joinId);
 
-      // DI for Split/Join
       const sP = positions[lastNodeId];
       diElements.push(`
       <bpmndi:BPMNShape id="${splitId}_di" bpmnElement="${splitId}">
@@ -216,7 +209,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       continue;
     }
 
-    // STANDARD GRID LOGIC
     const row = Math.floor(visualNodeCount / MAX_COLS);
     const col = visualNodeCount % MAX_COLS;
     const nodeX = X_START + col * COL_SPACING;
@@ -258,7 +250,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     visualNodeCount++;
   }
 
-  // Final Success Path
   const finalEndId = 'FinalEndEvent';
   const lastPos = positions[lastNodeId];
   if (lastPos && lastNodeId !== 'StartEvent') {
@@ -280,7 +271,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       </bpmndi:BPMNEdge>`);
   }
 
-  // Common Elements Generation
   elements.push(`    <bpmn:startEvent id="StartEvent" name="Start" />`);
   diElements.push(`
       <bpmndi:BPMNShape id="StartEvent_di" bpmnElement="StartEvent">
@@ -305,6 +295,9 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       diElements.push(`
       <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}">
         <dc:Bounds x="${pos.x - 18}" y="${pos.y - 18}" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="${pos.x - 40}" y="${pos.y + 22}" width="80" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>`);
     } else {
       elements.push(`    <bpmn:${node.taskSubtype} id="${node.id}" name="${escapeXml(node.name)}" />`);
