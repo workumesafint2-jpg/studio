@@ -129,7 +129,7 @@ export function BPMNFlowForgeApp() {
                   id="service-title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g., Service 21: e-Government"
+                  placeholder="ለምሳሌ: ፍቃድ መስጠት"
                   className="bg-muted/50 border-muted focus:ring-primary h-11 rounded-xl font-medium"
                 />
               </div>
