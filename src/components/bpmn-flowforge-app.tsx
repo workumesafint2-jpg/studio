@@ -16,7 +16,7 @@ import { BPMNViewer, type BPMNViewerRef } from "@/components/bpmn-viewer";
 
 export function BPMNFlowForgeApp() {
   const [input, setInput] = useState("");
-  const [title, setTitle] = useState("Service 21: e-Government Process");
+  const [title, setTitle] = useState("");
   const [xmlResult, setXmlResult] = useState("");
   const [activeTab, setActiveTab] = useState("diagram");
   const viewerRef = useRef<BPMNViewerRef>(null);
@@ -31,7 +31,7 @@ export function BPMNFlowForgeApp() {
       });
       return;
     }
-    const result = generateBPMN(input, title);
+    const result = generateBPMN(input, title || "Process Diagram");
     if (result) {
       setXmlResult(result);
       setActiveTab("diagram");
@@ -57,11 +57,12 @@ export function BPMNFlowForgeApp() {
   };
 
   const handleDownloadXML = () => {
+    const fileName = (title || "process-diagram").replace(/\s+/g, '-').toLowerCase();
     const blob = new Blob(["\uFEFF", xmlResult], { type: "application/bpmn20-xml;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${title.replace(/\s+/g, '-').toLowerCase()}.bpmn`;
+    link.download = `${fileName}.bpmn`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -227,7 +228,7 @@ export function BPMNFlowForgeApp() {
               <TabsContent value="diagram" className="flex-1 m-0 focus-visible:ring-0 h-full">
                 {xmlResult ? (
                   <div className="h-full w-full">
-                    <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
+                    <BPMNViewer xml={xmlResult} title={title || "Process Diagram"} ref={viewerRef} />
                   </div>
                 ) : (
                   <EmptyState message="Your professional BPMN diagram will be rendered here." />
@@ -237,8 +238,10 @@ export function BPMNFlowForgeApp() {
               <TabsContent value="xml" className="flex-1 m-0 focus-visible:ring-0 h-full">
                 {xmlResult ? (
                   <ScrollArea className="h-full w-full bg-slate-900">
-                    <pre className="p-8 font-code text-xs leading-relaxed text-blue-300 overflow-x-auto selection:bg-blue-500/30">
-                      <code>{xmlResult}</code>
+                    <pre className="p-8 font-code text-xs selection:bg-blue-500/30">
+                      <code className="text-blue-300 leading-relaxed block overflow-x-auto">
+                        {xmlResult}
+                      </code>
                     </pre>
                   </ScrollArea>
                 ) : (
