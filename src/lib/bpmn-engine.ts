@@ -3,7 +3,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
   const rawLines = input.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
   
-  // Amharic & English Keywords for BPMN 2.0 Mapping
+  // Advanced BPMN 2.0 Trigger Mapping (Amharic & English)
   const mappings = {
     start: ['ጀምር', 'መጀመሪያ', 'start', 'begin'],
     end: ['ጨርስ', 'መጨረሻ', 'ተጠናቀቀ', 'end', 'finish'],
@@ -26,13 +26,24 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     dataStore: ['መዝገብ', 'መረጃ ቋት', 'ዳታቤዝ', 'database', 'store', 'record']
   };
 
+  const flowLabelTriggers = ['ከጸደቀ', 'ካልጸደቀ', 'ውድቅ', 'approve', 'reject'];
+
   const nodeDefs: any[] = [];
   rawLines.forEach((line, index) => {
     const lowerLine = line.toLowerCase();
     let type = 'userTask'; // Default
     let category = 'task';
+    let flowLabel = '';
 
-    // Identify Type
+    // Identify Flow Labels (Directional Labeling)
+    for (const trigger of flowLabelTriggers) {
+      if (lowerLine.startsWith(trigger)) {
+        flowLabel = trigger === 'ውድቅ' ? 'Reject' : trigger;
+        break;
+      }
+    }
+
+    // Identify BPMN Element Type
     if (mappings.start.some(k => lowerLine.includes(k))) { type = 'startEvent'; category = 'event'; }
     else if (mappings.end.some(k => lowerLine.includes(k))) { type = 'endEvent'; category = 'event'; }
     else if (mappings.timer.some(k => lowerLine.includes(k))) { type = 'timerEvent'; category = 'event'; }
@@ -49,12 +60,22 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     else if (mappings.dataObject.some(k => lowerLine.includes(k))) { type = 'dataObject'; category = 'data'; }
     else if (mappings.dataStore.some(k => lowerLine.includes(k))) { type = 'dataStore'; category = 'data'; }
 
-    // Pure Name Cleanup (Remove all keywords)
+    // AGGRESSIVE COMMAND CLEANUP: Remove ALL keywords from visual label
     let pureName = line;
+    
+    // Remove directional triggers first
+    flowLabelTriggers.forEach(trigger => {
+      const regex = new RegExp(`^${trigger}\\s*[:\\-–—\\s]*`, 'i');
+      pureName = pureName.replace(regex, '');
+    });
+
+    // Remove all BPMN command keywords
     Object.values(mappings).flat().forEach(k => {
       const regex = new RegExp(`^${k}\\s*[:\\-–—\\s]*`, 'i');
       pureName = pureName.replace(regex, '');
     });
+
+    // Remove junk punctuation
     pureName = pureName.replace(/[?፧？]$/, '').trim();
 
     nodeDefs.push({
@@ -62,7 +83,8 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       name: pureName || line,
       type,
       category,
-      index
+      index,
+      flowLabel
     });
   });
 
@@ -71,8 +93,8 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const diElements: string[] = [];
 
   const MAX_COLS = 5;
-  const COL_SPACING = 220;
-  const ROW_SPACING = 240;
+  const COL_SPACING = 240;
+  const ROW_SPACING = 260;
   const X_START = 150;
   const Y_START = 200;
 
@@ -88,19 +110,20 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     const x = X_START + col * COL_SPACING;
     const y = Y_START + row * ROW_SPACING;
     
-    let w = 120, h = 80; // Default Task size
+    let w = 120, h = 80;
     if (node.category === 'event') { w = 36; h = 36; }
     else if (node.category === 'gateway') { w = 50; h = 50; }
     else if (node.category === 'data') { w = 40; h = 60; }
 
     positions[node.id] = { x, y, w, h, row, col };
 
-    // Generate XML Elements
+    // XML Element Generation
     switch (node.type) {
       case 'startEvent': elements.push(`<bpmn:startEvent id="${node.id}" name="${escapeXml(node.name)}" />`); break;
       case 'endEvent': elements.push(`<bpmn:endEvent id="${node.id}" name="${escapeXml(node.name)}" />`); break;
       case 'timerEvent': elements.push(`<bpmn:intermediateCatchEvent id="${node.id}" name="${escapeXml(node.name)}"><bpmn:timerEventDefinition id="T_${node.id}" /></bpmn:intermediateCatchEvent>`); break;
       case 'messageEvent': elements.push(`<bpmn:intermediateCatchEvent id="${node.id}" name="${escapeXml(node.name)}"><bpmn:messageEventDefinition id="M_${node.id}" /></bpmn:intermediateCatchEvent>`); break;
+      case 'errorEvent': elements.push(`<bpmn:intermediateThrowEvent id="${node.id}" name="${escapeXml(node.name)}"><bpmn:errorEventDefinition id="E_${node.id}" /></bpmn:intermediateThrowEvent>`); break;
       case 'terminateEvent': elements.push(`<bpmn:endEvent id="${node.id}" name="${escapeXml(node.name)}"><bpmn:terminateEventDefinition id="Term_${node.id}" /></bpmn:endEvent>`); break;
       case 'exclusiveGateway': elements.push(`<bpmn:exclusiveGateway id="${node.id}" name="${escapeXml(node.name)}" isMarkerVisible="true" />`); break;
       case 'parallelGateway': elements.push(`<bpmn:parallelGateway id="${node.id}" name="${escapeXml(node.name)}" />`); break;
@@ -118,31 +141,40 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}" ${node.type === 'exclusiveGateway' ? 'isMarkerVisible="true"' : ''}>
         <dc:Bounds x="${x - w/2}" y="${y - h/2}" width="${w}" height="${h}" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="${x - 40}" y="${y + h/2 + 5}" width="80" height="14" />
+          <dc:Bounds x="${x - 60}" y="${y + h/2 + 5}" width="120" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>`);
 
-    // Sequence Flows (Snake Logic)
+    // Sequence Flows (Snake Logic + Conditional Labels)
     if (lastNodeId) {
       const flowId = `Flow_${lastNodeId}_${node.id}`;
-      flows.push(`<bpmn:sequenceFlow id="${flowId}" sourceRef="${lastNodeId}" targetRef="${node.id}" />`);
+      const flowName = node.flowLabel ? escapeXml(node.flowLabel) : '';
+      flows.push(`<bpmn:sequenceFlow id="${flowId}" name="${flowName}" sourceRef="${lastNodeId}" targetRef="${node.id}" />`);
       
       const sPos = positions[lastNodeId];
+      const isEvenRow = sPos.row % 2 === 0;
+
       if (sPos.row === row) {
-        // Horizontal
+        // Horizontal Flow
         diElements.push(`
           <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
             <di:waypoint x="${sPos.x + (sPos.w/2 * (isEvenRow ? 1 : -1))}" y="${sPos.y}" />
             <di:waypoint x="${x - (w/2 * (isEvenRow ? 1 : -1))}" y="${y}" />
+            <bpmndi:BPMNLabel>
+              <dc:Bounds x="${(sPos.x + x) / 2 - 20}" y="${sPos.y - 20}" width="40" height="14" />
+            </bpmndi:BPMNLabel>
           </bpmndi:BPMNEdge>`);
       } else {
-        // Row Wrap (Vertical drop)
+        // Row Wrap (Vertical Snake)
         diElements.push(`
           <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
             <di:waypoint x="${sPos.x}" y="${sPos.y + sPos.h/2}" />
             <di:waypoint x="${sPos.x}" y="${y - h/2 - 40}" />
             <di:waypoint x="${x}" y="${y - h/2 - 40}" />
             <di:waypoint x="${x}" y="${y - h/2}" />
+            <bpmndi:BPMNLabel>
+              <dc:Bounds x="${sPos.x + 5}" y="${sPos.y + sPos.h/2 + 10}" width="40" height="14" />
+            </bpmndi:BPMNLabel>
           </bpmndi:BPMNEdge>`);
       }
     }

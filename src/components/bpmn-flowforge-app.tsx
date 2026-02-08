@@ -6,13 +6,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Copy, FileCode, Trash2, MoreVertical, FolderArchive, Sparkles, Loader2, Eye, Code, Download, FileJson } from "lucide-react";
+import { Copy, FileCode, Trash2, MoreVertical, FolderArchive, Loader2, Eye, Code, Download, FileJson } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BPMNViewer, type BPMNViewerRef } from "@/components/bpmn-viewer";
-import { architectBPMN } from "@/ai/flows/bpmn-architect-flow";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,7 +25,6 @@ export function BPMNFlowForgeApp() {
   const [title, setTitle] = useState("");
   const [xmlResult, setXmlResult] = useState("");
   const [activeTab, setActiveTab] = useState("diagram");
-  const [isArchitecting, setIsArchitecting] = useState(false);
   const viewerRef = useRef<BPMNViewerRef>(null);
   const { toast } = useToast();
 
