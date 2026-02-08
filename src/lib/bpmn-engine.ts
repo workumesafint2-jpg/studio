@@ -3,30 +3,27 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
   const rawLines = input.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
   
-  // Advanced BPMN 2.0 Trigger Mapping (Amharic & English)
+  // Strict BPMN 2.0 Trigger Mapping
   const mappings = {
-    start: ['ጀምር', 'መጀመሪያ', 'start', 'begin'],
-    end: ['ጨርስ', 'መጨረሻ', 'ተጠናቀቀ', 'end', 'finish'],
+    start: ['መጀመሪያ', 'ጀምር', 'start', 'begin'],
+    end: ['መጨረሻ', 'ጨርስ', 'ተጠናቀቀ', 'end', 'finish'],
     timer: ['ቆይታ', 'ሰዓት', 'ቀን', 'timer', 'wait'],
-    message: ['መልዕክት', 'ደብዳቤ', 'message', 'mail'],
-    error: ['ስህተት', 'ተቋረጠ', 'ውድቅ', 'error', 'fault'],
-    signal: ['ምልክት', 'ሲግናል', 'signal', 'alert'],
-    compensate: ['ማካካሻ', 'compensate'],
-    terminate: ['ማቋረጫ', 'terminate', 'kill'],
-    userTask: ['ተግባር', 'ይከናወናል', 'ይደረጋል', 'approve', 'review', 'verify', 'user'],
-    serviceTask: ['በሲስተም', 'አውቶማቲክ', 'ስክሪፕት', 'service', 'script', 'system', 'auto'],
-    manualTask: ['በእጅ', 'ፊዚካል', 'manual', 'physical'],
-    callActivity: ['ጥሪ', 'ሌላ ሂደት', 'call', 'external'],
+    userTask: ['ተግባር', 'ይመረምራል', 'ይፈጸማል', 'ይከናወናል', 'ይደረጋል', 'approve', 'review', 'verify', 'user'],
     exclusiveGateway: ['ውሳኔ', 'ከሆነ', 'ወይስ', 'ቢሆን', 'decision', 'xor', 'if'],
-    parallelGateway: ['በአንድ ጊዜ', 'እና', 'ትይዩ', 'parallel', 'and', 'simultaneous'],
-    inclusiveGateway: ['አንድ ወይም ከዚያ በላይ', 'inclusive', 'or'],
-    complexGateway: ['ውስብስብ ውሳኔ', 'complex'],
-    eventGateway: ['በሁኔታ ላይ የተመሰረተ', 'event-based'],
+    serviceTask: ['በሲስተም', 'አውቶማቲክ', 'service', 'system', 'auto'],
+    manualTask: ['በእጅ', 'ፊዚካል', 'manual'],
+    callActivity: ['ጥሪ', 'ሌላ ሂደት', 'call'],
     dataObject: ['ሰነድ', 'ፎርም', 'ማስረጃ', 'ደረሰኝ', 'document', 'form'],
-    dataStore: ['መዝገብ', 'መረጃ ቋት', 'ዳታቤዝ', 'database', 'store', 'record']
+    dataStore: ['መዝገብ', 'መረጃ ቋት', 'database', 'store'],
+    parallelGateway: ['በአንድ ጊዜ', 'እና', 'ትይዩ', 'parallel', 'and'],
   };
 
-  const flowLabelTriggers = ['ከጸደቀ', 'ካልጸደቀ', 'ውድቅ', 'approve', 'reject'];
+  // Directional Label Triggers
+  const flowLabelTriggers = {
+    forward: ['ከጸደቀ', 'approve', 'yes', 'ok'],
+    loop: ['ካልጸደቀ', 'correction', 'fix', 'edit'],
+    reject: ['ውድቅ', 'reject', 'no', 'cancel']
+  };
 
   const nodeDefs: any[] = [];
   rawLines.forEach((line, index) => {
@@ -35,48 +32,45 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     let category = 'task';
     let flowLabel = '';
 
-    // Identify Flow Labels (Directional Labeling)
-    for (const trigger of flowLabelTriggers) {
-      if (lowerLine.startsWith(trigger)) {
-        flowLabel = trigger === 'ውድቅ' ? 'Reject' : trigger;
-        break;
+    // Identify Directional Labels (but keep for arrows, hide from boxes)
+    for (const [dir, triggers] of Object.entries(flowLabelTriggers)) {
+      for (const trigger of triggers) {
+        if (lowerLine.includes(trigger)) {
+          if (dir === 'forward') flowLabel = 'ከጸደቀ';
+          if (dir === 'loop') flowLabel = 'ካልጸደቀ';
+          if (dir === 'reject') flowLabel = 'Reject';
+          break;
+        }
       }
     }
 
-    // Identify BPMN Element Type
+    // Map Icon Types
     if (mappings.start.some(k => lowerLine.includes(k))) { type = 'startEvent'; category = 'event'; }
     else if (mappings.end.some(k => lowerLine.includes(k))) { type = 'endEvent'; category = 'event'; }
     else if (mappings.timer.some(k => lowerLine.includes(k))) { type = 'timerEvent'; category = 'event'; }
-    else if (mappings.message.some(k => lowerLine.includes(k))) { type = 'messageEvent'; category = 'event'; }
-    else if (mappings.error.some(k => lowerLine.includes(k))) { type = 'errorEvent'; category = 'event'; }
-    else if (mappings.signal.some(k => lowerLine.includes(k))) { type = 'signalEvent'; category = 'event'; }
-    else if (mappings.terminate.some(k => lowerLine.includes(k))) { type = 'terminateEvent'; category = 'event'; }
     else if (mappings.exclusiveGateway.some(k => lowerLine.includes(k))) { type = 'exclusiveGateway'; category = 'gateway'; }
+    else if (mappings.dataObject.some(k => lowerLine.includes(k))) { type = 'dataObject'; category = 'data'; }
     else if (mappings.parallelGateway.some(k => lowerLine.includes(k))) { type = 'parallelGateway'; category = 'gateway'; }
-    else if (mappings.inclusiveGateway.some(k => lowerLine.includes(k))) { type = 'inclusiveGateway'; category = 'gateway'; }
     else if (mappings.serviceTask.some(k => lowerLine.includes(k))) { type = 'serviceTask'; category = 'task'; }
     else if (mappings.manualTask.some(k => lowerLine.includes(k))) { type = 'manualTask'; category = 'task'; }
-    else if (mappings.callActivity.some(k => lowerLine.includes(k))) { type = 'callActivity'; category = 'task'; }
-    else if (mappings.dataObject.some(k => lowerLine.includes(k))) { type = 'dataObject'; category = 'data'; }
-    else if (mappings.dataStore.some(k => lowerLine.includes(k))) { type = 'dataStore'; category = 'data'; }
 
-    // AGGRESSIVE COMMAND CLEANUP: Remove ALL keywords from visual label
+    // AGGRESSIVE CLEANUP: Remove ALL keywords and "Success/Technical" junk
     let pureName = line;
     
-    // Remove directional triggers first
-    flowLabelTriggers.forEach(trigger => {
-      const regex = new RegExp(`^${trigger}\\s*[:\\-–—\\s]*`, 'i');
-      pureName = pureName.replace(regex, '');
-    });
-
-    // Remove all BPMN command keywords
+    // Remove all triggers from the visible label
     Object.values(mappings).flat().forEach(k => {
-      const regex = new RegExp(`^${k}\\s*[:\\-–—\\s]*`, 'i');
+      const regex = new RegExp(`^${k}\\s*[:\\-–—\\s]*|\\s*\\(${k}\\)`, 'gi');
       pureName = pureName.replace(regex, '');
     });
 
-    // Remove junk punctuation
-    pureName = pureName.replace(/[?፧？]$/, '').trim();
+    // Remove directional triggers from box labels
+    Object.values(flowLabelTriggers).flat().forEach(k => {
+      const regex = new RegExp(`^${k}\\s*[:\\-–—\\s]*`, 'gi');
+      pureName = pureName.replace(regex, '');
+    });
+
+    // Remove junk punctuation and status words like "Success"
+    pureName = pureName.replace(/success|failed|done|ተሳክቷል/gi, '').replace(/[?፧？]$/, '').trim();
 
     nodeDefs.push({
       id: `Node_${index}`,
@@ -117,26 +111,20 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
     positions[node.id] = { x, y, w, h, row, col };
 
-    // XML Element Generation
+    // Standard BPMN 2.0 XML Generation
     switch (node.type) {
       case 'startEvent': elements.push(`<bpmn:startEvent id="${node.id}" name="${escapeXml(node.name)}" />`); break;
       case 'endEvent': elements.push(`<bpmn:endEvent id="${node.id}" name="${escapeXml(node.name)}" />`); break;
       case 'timerEvent': elements.push(`<bpmn:intermediateCatchEvent id="${node.id}" name="${escapeXml(node.name)}"><bpmn:timerEventDefinition id="T_${node.id}" /></bpmn:intermediateCatchEvent>`); break;
-      case 'messageEvent': elements.push(`<bpmn:intermediateCatchEvent id="${node.id}" name="${escapeXml(node.name)}"><bpmn:messageEventDefinition id="M_${node.id}" /></bpmn:intermediateCatchEvent>`); break;
-      case 'errorEvent': elements.push(`<bpmn:intermediateThrowEvent id="${node.id}" name="${escapeXml(node.name)}"><bpmn:errorEventDefinition id="E_${node.id}" /></bpmn:intermediateThrowEvent>`); break;
-      case 'terminateEvent': elements.push(`<bpmn:endEvent id="${node.id}" name="${escapeXml(node.name)}"><bpmn:terminateEventDefinition id="Term_${node.id}" /></bpmn:endEvent>`); break;
       case 'exclusiveGateway': elements.push(`<bpmn:exclusiveGateway id="${node.id}" name="${escapeXml(node.name)}" isMarkerVisible="true" />`); break;
       case 'parallelGateway': elements.push(`<bpmn:parallelGateway id="${node.id}" name="${escapeXml(node.name)}" />`); break;
-      case 'inclusiveGateway': elements.push(`<bpmn:inclusiveGateway id="${node.id}" name="${escapeXml(node.name)}" />`); break;
       case 'serviceTask': elements.push(`<bpmn:serviceTask id="${node.id}" name="${escapeXml(node.name)}" />`); break;
       case 'manualTask': elements.push(`<bpmn:manualTask id="${node.id}" name="${escapeXml(node.name)}" />`); break;
-      case 'callActivity': elements.push(`<bpmn:callActivity id="${node.id}" name="${escapeXml(node.name)}" />`); break;
       case 'dataObject': elements.push(`<bpmn:dataObjectReference id="${node.id}" name="${escapeXml(node.name)}" dataObjectRef="DO_${node.id}" /><bpmn:dataObject id="DO_${node.id}" />`); break;
-      case 'dataStore': elements.push(`<bpmn:dataStoreReference id="${node.id}" name="${escapeXml(node.name)}" />`); break;
       default: elements.push(`<bpmn:userTask id="${node.id}" name="${escapeXml(node.name)}" />`);
     }
 
-    // DI Shape
+    // DI Shape Definition
     diElements.push(`
       <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}" ${node.type === 'exclusiveGateway' ? 'isMarkerVisible="true"' : ''}>
         <dc:Bounds x="${x - w/2}" y="${y - h/2}" width="${w}" height="${h}" />
@@ -145,7 +133,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>`);
 
-    // Sequence Flows (Snake Logic + Conditional Labels)
+    // Sequence Flow Generation (Snake Logic + Centralized Labels)
     if (lastNodeId) {
       const flowId = `Flow_${lastNodeId}_${node.id}`;
       const flowName = node.flowLabel ? escapeXml(node.flowLabel) : '';
@@ -155,17 +143,17 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       const isEvenRow = sPos.row % 2 === 0;
 
       if (sPos.row === row) {
-        // Horizontal Flow
+        // Horizontal Flow (Forward)
         diElements.push(`
           <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
             <di:waypoint x="${sPos.x + (sPos.w/2 * (isEvenRow ? 1 : -1))}" y="${sPos.y}" />
             <di:waypoint x="${x - (w/2 * (isEvenRow ? 1 : -1))}" y="${y}" />
             <bpmndi:BPMNLabel>
-              <dc:Bounds x="${(sPos.x + x) / 2 - 20}" y="${sPos.y - 20}" width="40" height="14" />
+              <dc:Bounds x="${(sPos.x + x) / 2 - 20}" y="${sPos.y - 20}" width="50" height="14" />
             </bpmndi:BPMNLabel>
           </bpmndi:BPMNEdge>`);
       } else {
-        // Row Wrap (Vertical Snake)
+        // Wrap Around (Snake Vertical Flow)
         diElements.push(`
           <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
             <di:waypoint x="${sPos.x}" y="${sPos.y + sPos.h/2}" />
@@ -173,7 +161,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
             <di:waypoint x="${x}" y="${y - h/2 - 40}" />
             <di:waypoint x="${x}" y="${y - h/2}" />
             <bpmndi:BPMNLabel>
-              <dc:Bounds x="${sPos.x + 5}" y="${sPos.y + sPos.h/2 + 10}" width="40" height="14" />
+              <dc:Bounds x="${(sPos.x + x) / 2 - 25}" y="${y - h/2 - 55}" width="50" height="14" />
             </bpmndi:BPMNLabel>
           </bpmndi:BPMNEdge>`);
       }
