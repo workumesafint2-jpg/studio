@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef } from 'react';
@@ -7,13 +6,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Copy, FileCode, Play, Trash2, CheckCircle2, Info, Eye, Code, Download, FileJson, Share2, MoreVertical, FolderArchive } from "lucide-react";
+import { Copy, FileCode, Play, Trash2, CheckCircle2, Share2, MoreVertical, FolderArchive, Sparkles, Loader2, Eye, Code, Download, FileJson } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BPMNViewer, type BPMNViewerRef } from "@/components/bpmn-viewer";
+import { architectBPMN } from "@/ai/flows/bpmn-architect-flow";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +27,7 @@ export function BPMNFlowForgeApp() {
   const [title, setTitle] = useState("");
   const [xmlResult, setXmlResult] = useState("");
   const [activeTab, setActiveTab] = useState("diagram");
+  const [isArchitecting, setIsArchitecting] = useState(false);
   const viewerRef = useRef<BPMNViewerRef>(null);
   const { toast } = useToast();
 
@@ -45,7 +46,7 @@ export function BPMNFlowForgeApp() {
       setActiveTab("diagram");
       toast({
         title: "Architecture Generated",
-        description: "Your BPMN 2.0 diagram is ready.",
+        description: "Your professional BPMN 2.0 diagram is ready.",
       });
     } else {
       toast({
@@ -53,6 +54,42 @@ export function BPMNFlowForgeApp() {
         description: "Could not parse process logic. Please check your steps.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleAIArchitect = async () => {
+    if (!input.trim()) {
+      toast({
+        title: "No description",
+        description: "Tell the AI what process you want to architect.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsArchitecting(true);
+    try {
+      const result = await architectBPMN({ description: input, title });
+      if (result) {
+        setInput(result.structuredSteps);
+        setTitle(result.refinedTitle);
+        // Automatically trigger a preview generate
+        const diagramXml = generateBPMN(result.structuredSteps, result.refinedTitle);
+        setXmlResult(diagramXml);
+        setActiveTab("diagram");
+        toast({
+          title: "AI Analysis Complete",
+          description: "Process logic structured and diagram updated.",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "AI Failed",
+        description: "Could not reach the BPMN brain. Try manual generation.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsArchitecting(false);
     }
   };
 
@@ -75,27 +112,19 @@ export function BPMNFlowForgeApp() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    toast({
-      title: "Downloading BPMN...",
-      description: "Compatible with Camunda Modeler and Desktop modeling tools.",
-    });
   };
 
   const handleDownloadPNG = async () => {
     if (viewerRef.current) {
       await viewerRef.current.exportPNG();
-      toast({
-        title: "Exporting PNG...",
-        description: "High-contrast professional output generated.",
-      });
     }
   };
 
   const handleDownloadProject = async () => {
     if (!xmlResult) {
       toast({
-        title: "No diagram found",
-        description: "Please generate a diagram before downloading the project.",
+        title: "No diagram",
+        description: "Generate a diagram before downloading the project.",
         variant: "destructive",
       });
       return;
@@ -104,11 +133,9 @@ export function BPMNFlowForgeApp() {
     const zip = new JSZip();
     const fileName = (title || "process-diagram").replace(/\s+/g, '-').toLowerCase();
     
-    // Add the BPMN XML
     zip.file(`${fileName}.bpmn`, xmlResult);
     
-    // Add a deployment README for the user's laptop context
-    const readmeContent = `# ${title || 'BPMN Project'}\n\nGenerated with (ወርቁ) Pro.\n\nThis package contains your professional BPMN architecture.\n\n### Deployment Instructions:\n1. Open ${fileName}.bpmn in Camunda Modeler.\n2. Use the provided XML to configure your process engine.\n3. Follow the root README instructions to build the Electron app for your laptop.`;
+    const readmeContent = `# ${title || 'BPMN Project'}\n\nGenerated with (ወርቁ) Pro.\n\n### Deployment:\n1. Open ${fileName}.bpmn in Camunda Modeler.\n2. Deploy to your process engine.`;
     zip.file("DEPLOYMENT_GUIDE.md", readmeContent);
 
     try {
@@ -123,13 +150,13 @@ export function BPMNFlowForgeApp() {
       URL.revokeObjectURL(url);
 
       toast({
-        title: "Project Bundle Created",
-        description: "Project ZIP downloaded successfully.",
+        title: "Project Bundle Ready",
+        description: "Source files exported successfully.",
       });
     } catch (err) {
       toast({
         title: "Export Failed",
-        description: "Could not bundle the project files.",
+        description: "Could not bundle project.",
         variant: "destructive",
       });
     }
@@ -142,7 +169,6 @@ export function BPMNFlowForgeApp() {
 
   return (
     <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-background">
-      {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 bg-primary text-primary-foreground shadow-xl shrink-0 border-b border-primary/20">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-white rounded-xl shadow-inner">
@@ -150,11 +176,11 @@ export function BPMNFlowForgeApp() {
           </div>
           <div>
             <h1 className="text-xl font-black tracking-tighter uppercase">(ወርቁ) Pro</h1>
-            <p className="text-[10px] opacity-70 font-medium tracking-widest uppercase">BPMN Architect</p>
+            <p className="text-[10px] opacity-70 font-medium tracking-widest uppercase">AI BPMN Architect</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Badge variant="secondary" className="hidden sm:inline-flex px-3 py-1 bg-accent text-primary border-none font-bold animate-pulse">
+          <Badge variant="secondary" className="hidden sm:inline-flex px-3 py-1 bg-accent text-primary border-none font-bold">
             Camunda 2.0 Ready
           </Badge>
           
@@ -174,7 +200,7 @@ export function BPMNFlowForgeApp() {
                 </div>
                 <div className="flex flex-col gap-0.5">
                   <span className="font-bold text-sm">Download Project</span>
-                  <span className="text-[10px] text-muted-foreground leading-none">Source code bundle for Electron</span>
+                  <span className="text-[10px] text-muted-foreground leading-none">Export for Camunda Modeler</span>
                 </div>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -182,9 +208,7 @@ export function BPMNFlowForgeApp() {
         </div>
       </header>
 
-      {/* Main Content Area */}
       <main className="flex flex-col lg:flex-row flex-1 overflow-hidden p-6 gap-6">
-        {/* Left Side: Input */}
         <div className="w-full lg:w-[420px] flex flex-col gap-4 shrink-0 overflow-y-auto lg:overflow-visible">
           <Card className="flex flex-col shadow-2xl border-none bg-card h-full lg:h-auto lg:flex-1 rounded-2xl overflow-hidden">
             <CardHeader className="shrink-0 bg-muted/30 pb-4">
@@ -192,7 +216,7 @@ export function BPMNFlowForgeApp() {
                 Process Definition
               </CardTitle>
               <CardDescription className="text-xs">
-                Describe your digitalization service steps below.
+                Describe your workflow in natural language or steps.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col gap-4 p-5">
@@ -211,28 +235,42 @@ export function BPMNFlowForgeApp() {
 
               <div className="relative flex-1 min-h-[250px] lg:min-h-0">
                 <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2 block">
-                  Workflow Logic (Tasks & Flow)
+                  Process Narrative / Logic
                 </Label>
                 <Textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder={"Describe the flow...\nExample:\nReceive digital request (service)\nParallel\nVerify documents (user)\nNotify user (service)\nProcess application (service)\nIs data valid? (gateway)\nUpdate records (service)\nFix application (edit)"}
+                  placeholder={"Type a process description and click AI Architect..."}
                   className="w-full h-[calc(100%-24px)] resize-none font-body text-sm border-muted focus:ring-primary focus:border-primary p-4 rounded-xl shadow-inner bg-slate-50"
                 />
               </div>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+              <div className="flex flex-col gap-3 pt-2">
+                <div className="flex items-center gap-3">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleClear}
+                    className="flex-1 items-center gap-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 border-muted rounded-xl h-12"
+                  >
+                    <Trash2 className="w-4 h-4" /> Reset
+                  </Button>
+                  <Button 
+                    onClick={handleGenerate}
+                    className="flex-1 bg-secondary hover:bg-secondary/80 text-secondary-foreground h-12 rounded-xl text-sm font-bold shadow flex items-center justify-center gap-2 transition-all"
+                  >
+                    <Play className="w-4 h-4" /> Preview
+                  </Button>
+                </div>
                 <Button 
-                  variant="outline" 
-                  onClick={handleClear}
-                  className="flex items-center gap-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 border-muted rounded-xl h-12"
+                  onClick={handleAIArchitect}
+                  disabled={isArchitecting}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground h-14 rounded-xl text-base font-bold shadow-lg flex items-center justify-center gap-2 transition-all hover:scale-[1.02]"
                 >
-                  <Trash2 className="w-4 h-4" /> Reset
-                </Button>
-                <Button 
-                  onClick={handleGenerate}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 h-12 rounded-xl text-base font-bold shadow-lg flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
-                >
-                  <Play className="w-4 h-4 fill-current" /> Generate Architect
+                  {isArchitecting ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-5 h-5" />
+                  )}
+                  AI Architect
                 </Button>
               </div>
             </CardContent>
@@ -243,27 +281,26 @@ export function BPMNFlowForgeApp() {
               <Share2 className="w-5 h-5 text-primary shrink-0" />
             </div>
             <div className="text-[11px] text-primary/80 leading-relaxed">
-              <p className="font-bold mb-1 uppercase tracking-wider text-primary">Architecture Rules:</p>
+              <p className="font-bold mb-1 uppercase tracking-wider text-primary">Architect Tips:</p>
               <ul className="space-y-1 opacity-90">
-                <li>• <strong>Service Task:</strong> Use "send", "notify", "update".</li>
-                <li>• <strong>User Task:</strong> Use "review", "approve", "verify".</li>
-                <li>• <strong>Parallelism:</strong> Use "parallel" or "simultaneously".</li>
-                <li>• <strong>Loop:</strong> Use "edit" or "fix" for return arrows.</li>
+                <li>• Use AI Architect for messy text.</li>
+                <li>• (serviceTask) for auto steps.</li>
+                <li>• Use "Parallel" for branching.</li>
+                <li>• Use "Timer:" for delays.</li>
               </ul>
             </div>
           </div>
         </div>
 
-        {/* Right Side: Output */}
         <div className="flex-1 flex flex-col gap-4 min-h-0">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
             <div className="flex items-center justify-between mb-2">
               <TabsList className="bg-muted/50 p-1 rounded-xl">
                 <TabsTrigger value="diagram" className="flex items-center gap-2 rounded-lg px-4 font-bold">
-                  <Eye className="w-4 h-4" /> <span className="hidden xs:inline">Live Canvas</span>
+                  <Eye className="w-4 h-4" /> Live Canvas
                 </TabsTrigger>
                 <TabsTrigger value="xml" className="flex items-center gap-2 rounded-lg px-4 font-bold">
-                  <Code className="w-4 h-4" /> <span className="hidden xs:inline">BPMN 2.0 Source</span>
+                  <Code className="w-4 h-4" /> Source
                 </TabsTrigger>
               </TabsList>
               
@@ -275,7 +312,7 @@ export function BPMNFlowForgeApp() {
                     onClick={handleDownloadXML}
                     className="flex items-center gap-2 font-bold shadow-sm rounded-lg"
                   >
-                    <FileJson className="w-4 h-4" /> <span className="hidden sm:inline">XML Export</span>
+                    <FileJson className="w-4 h-4" /> XML
                   </Button>
                   <Button 
                     variant="outline" 
@@ -283,15 +320,9 @@ export function BPMNFlowForgeApp() {
                     onClick={handleDownloadPNG}
                     className="flex items-center gap-2 font-bold rounded-lg"
                   >
-                    <Download className="w-4 h-4" /> <span className="hidden sm:inline">PNG</span>
+                    <Download className="w-4 h-4" /> PNG
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={handleCopy}
-                    className="h-9 w-9 p-0"
-                    title="Copy XML"
-                  >
+                  <Button variant="ghost" size="sm" onClick={handleCopy} className="h-9 w-9 p-0">
                     <Copy className="w-4 h-4" />
                   </Button>
                 </div>
@@ -305,46 +336,33 @@ export function BPMNFlowForgeApp() {
                     <BPMNViewer xml={xmlResult} title={title || "Process Diagram"} ref={viewerRef} />
                   </div>
                 ) : (
-                  <EmptyState message="Your professional BPMN diagram will be rendered here." />
+                  <EmptyState message="Architect your process to see the diagram." />
                 )}
               </TabsContent>
               
               <TabsContent value="xml" className="flex-1 m-0 focus-visible:ring-0 h-full">
                 {xmlResult ? (
                   <ScrollArea className="h-full w-full bg-slate-900">
-                    <pre className="p-8 font-code text-xs selection:bg-blue-500/30">
-                      <code className="text-blue-300 leading-relaxed block overflow-x-auto">
+                    <pre className="p-8 font-code text-xs">
+                      <code className="text-blue-300 block overflow-x-auto">
                         {xmlResult}
                       </code>
                     </pre>
                   </ScrollArea>
                 ) : (
-                  <EmptyState message="XML source code for Camunda Modeler will appear here." />
+                  <EmptyState message="XML source code will appear here." />
                 )}
               </TabsContent>
             </Card>
           </Tabs>
-          
-          {xmlResult && (
-            <div className="bg-emerald-500/5 p-4 rounded-2xl border border-emerald-500/10 flex items-center justify-between animate-in fade-in slide-in-from-bottom-2">
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                <p className="text-xs text-emerald-800 font-bold tracking-tight">
-                  Diagram validated for Service 21 Implementation.
-                </p>
-              </div>
-              <Badge variant="outline" className="text-[9px] border-emerald-500/30 text-emerald-600 font-black">STABLE v5.0</Badge>
-            </div>
-          )}
         </div>
       </main>
       
-      {/* Footer */}
       <footer className="px-8 py-3 bg-white border-t border-muted hidden sm:flex items-center justify-between text-[10px] text-muted-foreground shrink-0 uppercase tracking-widest font-bold">
-        <p>© {new Date().getFullYear()} (ወርቁ) - Senior BPMN Architect Edition</p>
+        <p>© {new Date().getFullYear()} (ወርቁ) Pro Architect</p>
         <p className="flex items-center gap-6">
-          <span className="text-primary">APK Optimized</span>
-          <span>Lenovo Laptop Ready</span>
+          <span className="text-primary">Enterprise Ready</span>
+          <span>Snake Layout Engine</span>
           <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-500">Service 21 Context</span>
         </p>
       </footer>
