@@ -7,18 +7,20 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     start: ['መጀመሪያ', 'ጀምር', 'start', 'begin'],
     end: ['መጨረሻ', 'ጨርስ', 'ተጠናቀቀ', 'end', 'finish'],
     timer: ['ቆይታ', 'ሰዓት', 'ቀን', 'timer', 'wait'],
-    userTask: ['ተግባር', 'ይመረምራል', 'ይፈጸማል', 'ይከናወናል', 'ይደረጋል', 'ባለሙያ', 'human', 'user'],
-    serviceTask: ['ሲስተም', 'አውቶማቲክ', 'service', 'system', 'auto', 'script'],
-    manualTask: ['በእጅ', 'ፊዚካል', 'manual'],
+    userTask: ['ተግባር', 'ይመረምራል', 'ይፈጸማል', 'ይከናወናል', 'ይደረጋል', 'ባለሙያ', 'human', 'user task', 'userAction'],
+    serviceTask: ['ሲስተም', 'አውቶማቲክ', 'service task', 'service', 'system', 'auto', 'script'],
+    manualTask: ['በእጅ', 'ፊዚካል', 'manual task', 'manual'],
     exclusiveGateway: ['ውሳኔ', 'ከሆነ', 'ወይስ', 'ቢሆን', 'decision', 'xor', 'if'],
     parallelGateway: ['በአንድ ጊዜ', 'እና', 'ትይዩ', 'parallel', 'and', '+'],
-    dataObject: ['ሰነድ', 'ፎርም', 'ማስረጃ', 'ደረሰኝ', 'document', 'form'],
+    dataObject: ['ሰነድ', 'ፎርም', 'ማስረጃ', 'ደረሰኝ', 'document', 'form', 'data object'],
+    error: ['error', 'ስህተት', 'ተቋረጠ'],
+    reject: ['ውድቅ', 'reject', 'cancel', 'አልተቀበለም']
   };
 
   const flowDirectionTriggers = {
-    forward: ['ከጸደቀ', 'approve', 'yes', 'ok'],
-    loop: ['ካልጸደቀ', 'ካልሆነ', 'correction', 'fix', 'edit', 'back', 'return', 'ተመለስ', 'አስተካክል'],
-    reject: ['ውድቅ', 'reject', 'no', 'cancel', 'አልተቀበለም']
+    forward: ['ከጸደቀ', 'approve', 'yes', 'ok', 'if yes'],
+    loop: ['ካልጸደቀ', 'ካልሆነ', 'correction', 'fix', 'edit', 'back', 'return', 'ተመለስ', 'አስተካክል', 'if no back'],
+    reject: ['ውድቅ', 'reject', 'no', 'cancel', 'አልተቀበለም', 'if no exit']
   };
 
   const nodeDefs: any[] = [];
@@ -32,38 +34,38 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     const isStrictLoop = flowDirectionTriggers.loop.some(t => lowerLine.includes(t));
     const isStrictReject = flowDirectionTriggers.reject.some(t => lowerLine.includes(t));
 
-    if ((isStrictLoop || isStrictReject) && nodeDefs.length > 0) {
+    if (isStrictLoop && nodeDefs.length > 0) {
       const sourceId = nodeDefs[nodeDefs.length - 1].id;
-      if (isStrictLoop) {
-        // Connect back to the previous User Task (or the immediate previous node)
-        const targetId = lastUserTaskId || (nodeDefs.length > 1 ? nodeDefs[nodeDefs.length - 2].id : nodeDefs[0].id);
-        backFlows.push({
-          id: `Flow_Back_${index}`,
-          sourceRef: sourceId,
-          targetRef: targetId,
-          name: 'ካልጸደቀ',
-          direction: 'loop'
-        });
-        return;
-      } else if (isStrictReject) {
-        // Rejections lead to a special end event
-        const rejectEndId = `Reject_End_${index}`;
-        nodeDefs.push({
-          id: rejectEndId,
-          name: 'Reject',
-          type: 'endEvent',
-          category: 'event',
-          isReject: true
-        });
-        backFlows.push({
-          id: `Flow_Reject_${index}`,
-          sourceRef: sourceId,
-          targetRef: rejectEndId,
-          name: 'Reject',
-          direction: 'reject'
-        });
-        return;
-      }
+      // Connect back to the previous User Task (or the immediate previous node)
+      const targetId = lastUserTaskId || (nodeDefs.length > 1 ? nodeDefs[nodeDefs.length - 2].id : nodeDefs[0].id);
+      backFlows.push({
+        id: `Flow_Back_${index}`,
+        sourceRef: sourceId,
+        targetRef: targetId,
+        name: 'ካልጸደቀ',
+        direction: 'loop'
+      });
+      return;
+    }
+
+    if (isStrictReject && nodeDefs.length > 0) {
+      const sourceId = nodeDefs[nodeDefs.length - 1].id;
+      const rejectEndId = `Reject_End_${index}`;
+      nodeDefs.push({
+        id: rejectEndId,
+        name: '', // Icons only for end events
+        type: 'endEvent',
+        category: 'event',
+        isReject: true
+      });
+      backFlows.push({
+        id: `Flow_Reject_${index}`,
+        sourceRef: sourceId,
+        targetRef: rejectEndId,
+        name: 'Reject',
+        direction: 'reject'
+      });
+      return;
     }
 
     let type = 'userTask';
@@ -76,6 +78,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     else if (mappings.parallelGateway.some(k => lowerLine.includes(k))) { type = 'parallelGateway'; category = 'gateway'; }
     else if (mappings.serviceTask.some(k => lowerLine.includes(k))) { type = 'serviceTask'; category = 'task'; }
     else if (mappings.dataObject.some(k => lowerLine.includes(k))) { type = 'dataObject'; category = 'data'; }
+    else if (mappings.error.some(k => lowerLine.includes(k))) { type = 'errorEvent'; category = 'event'; }
 
     // TEXT SANITIZATION: Aggressive removal of trigger keywords and junk
     let pureName = line;
@@ -86,15 +89,25 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     ];
 
     allTriggers.forEach(k => {
+      // Use regex to remove keywords, especially at the start or end of the line
       const regex = new RegExp(`^${k}\\s*[:\\-–—\\s]*|\\s*\\(${k}\\)|\\b${k}\\b`, 'gi');
       pureName = pureName.replace(regex, '');
     });
     pureName = pureName.replace(/[?፧？]$/, '').trim();
 
+    // If it's a gateway or event, we often don't want text inside the shape if it's just the trigger word
+    if (category === 'event' || category === 'gateway') {
+      if (mappings.start.some(k => k === pureName.toLowerCase()) || 
+          mappings.end.some(k => k === pureName.toLowerCase()) ||
+          mappings.exclusiveGateway.some(k => k === pureName.toLowerCase())) {
+        pureName = "";
+      }
+    }
+
     const nodeId = `Node_${index}`;
     nodeDefs.push({
       id: nodeId,
-      name: pureName || line,
+      name: pureName,
       type,
       category,
       index
@@ -136,14 +149,39 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     const escapedName = escapeXml(node.name);
 
     switch (node.type) {
-      case 'startEvent': elements.push(`<bpmn:startEvent id="${node.id}" name="${escapedName}" />`); break;
-      case 'endEvent': elements.push(`<bpmn:endEvent id="${node.id}" name="${escapedName}" />`); break;
-      case 'timerEvent': elements.push(`<bpmn:intermediateCatchEvent id="${node.id}" name="${escapedName}"><bpmn:timerEventDefinition id="T_${node.id}" /></bpmn:intermediateCatchEvent>`); break;
-      case 'exclusiveGateway': elements.push(`<bpmn:exclusiveGateway id="${node.id}" name="${escapedName}" isMarkerVisible="true" />`); break;
-      case 'parallelGateway': elements.push(`<bpmn:parallelGateway id="${node.id}" name="${escapedName}" />`); break;
-      case 'serviceTask': elements.push(`<bpmn:serviceTask id="${node.id}" name="${escapedName}" />`); break;
-      case 'dataObject': elements.push(`<bpmn:dataObjectReference id="${node.id}" name="${escapedName}" dataObjectRef="DO_${node.id}" /><bpmn:dataObject id="DO_${node.id}" />`); break;
-      default: elements.push(`<bpmn:userTask id="${node.id}" name="${escapedName}" />`);
+      case 'startEvent': 
+        elements.push(`<bpmn:startEvent id="${node.id}" name="${escapedName}" />`); 
+        break;
+      case 'endEvent': 
+        if (node.isReject) {
+          elements.push(`<bpmn:endEvent id="${node.id}" name="Rejection"><bpmn:cancelEventDefinition id="Cancel_${node.id}" /></bpmn:endEvent>`);
+        } else {
+          elements.push(`<bpmn:endEvent id="${node.id}" name="${escapedName}" />`); 
+        }
+        break;
+      case 'errorEvent':
+        elements.push(`<bpmn:intermediateCatchEvent id="${node.id}" name="${escapedName}"><bpmn:errorEventDefinition id="Error_${node.id}" /></bpmn:intermediateCatchEvent>`);
+        break;
+      case 'timerEvent': 
+        elements.push(`<bpmn:intermediateCatchEvent id="${node.id}" name="${escapedName}"><bpmn:timerEventDefinition id="T_${node.id}" /></bpmn:intermediateCatchEvent>`); 
+        break;
+      case 'exclusiveGateway': 
+        elements.push(`<bpmn:exclusiveGateway id="${node.id}" name="${escapedName}" isMarkerVisible="true" />`); 
+        break;
+      case 'parallelGateway': 
+        elements.push(`<bpmn:parallelGateway id="${node.id}" name="${escapedName}" />`); 
+        break;
+      case 'serviceTask': 
+        elements.push(`<bpmn:serviceTask id="${node.id}" name="${escapedName}" />`); 
+        break;
+      case 'manualTask':
+        elements.push(`<bpmn:manualTask id="${node.id}" name="${escapedName}" />`);
+        break;
+      case 'dataObject': 
+        elements.push(`<bpmn:dataObjectReference id="${node.id}" name="${escapedName}" dataObjectRef="DO_${node.id}" /><bpmn:dataObject id="DO_${node.id}" />`); 
+        break;
+      default: 
+        elements.push(`<bpmn:userTask id="${node.id}" name="${escapedName}" />`);
     }
 
     diElements.push(`
@@ -197,7 +235,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
     if (sPos && tPos) {
       if (f.direction === 'loop') {
-        // Upward Loop
+        // Upward Loop back to previous task input
         diElements.push(`
           <bpmndi:BPMNEdge id="${f.id}_di" bpmnElement="${f.id}">
             <di:waypoint x="${sPos.x}" y="${sPos.y - sPos.h / 2}" />
@@ -209,7 +247,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
             </bpmndi:BPMNLabel>
           </bpmndi:BPMNEdge>`);
       } else {
-        // Downward Reject
+        // Downward Reject to terminal event
         diElements.push(`
           <bpmndi:BPMNEdge id="${f.id}_di" bpmnElement="${f.id}">
             <di:waypoint x="${sPos.x}" y="${sPos.y + sPos.h / 2}" />
