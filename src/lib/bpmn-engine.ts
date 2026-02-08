@@ -3,7 +3,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
   const rawLines = input.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
   
-  // BPMN 2.0 Trigger Mapping (Amharic & English)
   const mappings = {
     start: ['መጀመሪያ', 'ጀምር', 'start', 'begin'],
     end: ['መጨረሻ', 'ጨርስ', 'ተጠናቀቀ', 'end', 'finish'],
@@ -18,36 +17,35 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
   const flowDirectionTriggers = {
     forward: ['ከጸደቀ', 'approve', 'yes', 'ok'],
-    loop: ['ካልጸደቀ', 'ካልሆነ', 'correction', 'fix', 'edit'],
-    reject: ['ውድቅ', 'reject', 'no', 'cancel']
+    loop: ['ካልጸደቀ', 'ካልሆነ', 'correction', 'fix', 'edit', 'back', 'return', 'ተመለስ', 'አስተካክል'],
+    reject: ['ውድቅ', 'reject', 'no', 'cancel', 'አልተቀበለም']
   };
 
   const nodeDefs: any[] = [];
   const backFlows: any[] = [];
   let lastUserTaskId: string | null = null;
-  let secondToLastUserTaskId: string | null = null;
 
-  // PASS 1: Generate Node Definitions
+  // PASS 1: Identify Nodes vs. Backflows
   rawLines.forEach((line, index) => {
     const lowerLine = line.toLowerCase();
     
-    // Rule 1: Fix 'Back-loop' Logic
-    // If input is strictly a loop command, don't create a node. Record a backflow instead.
+    // Check if this line is purely a loop command (e.g., "ካልጸደቀ" or "Back")
     const isStrictLoop = flowDirectionTriggers.loop.some(t => lowerLine === t || lowerLine.startsWith(t + ' '));
     const isStrictReject = flowDirectionTriggers.reject.some(t => lowerLine === t || lowerLine.startsWith(t + ' '));
 
     if ((isStrictLoop || isStrictReject) && nodeDefs.length > 0) {
       const sourceId = nodeDefs[nodeDefs.length - 1].id;
-      const targetId = lastUserTaskId || sourceId; // Default to self-loop if no prior task found
+      // Connect back to the previous task or the one before that
+      const targetId = lastUserTaskId || sourceId;
       
       backFlows.push({
         id: `Flow_Back_${index}`,
         sourceRef: sourceId,
         targetRef: targetId,
-        name: isStrictLoop ? 'ካልጸደቀ' : 'Reject',
+        name: isStrictLoop ? (lowerLine.includes('ካልጸደቀ') ? 'ካልጸደቀ' : 'ካልሆነ') : 'Reject',
         direction: isStrictLoop ? 'loop' : 'reject'
       });
-      return; // Skip node creation for this command line
+      return; // DO NOT create a box for these commands
     }
 
     let type = 'userTask';
@@ -62,8 +60,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     else if (mappings.serviceTask.some(k => lowerLine.includes(k))) { type = 'serviceTask'; category = 'task'; }
     else if (mappings.manualTask.some(k => lowerLine.includes(k))) { type = 'manualTask'; category = 'task'; }
 
-    // Rule 3: CLEAN Visual Labels
-    // Strip trigger words and technical junk from visible names
+    // TEXT SANITIZATION: Remove trigger keywords and junk status words from the label
     let pureName = line;
     const allTriggers = [
       ...Object.values(mappings).flat(),
@@ -87,20 +84,9 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     });
 
     if (type === 'userTask') {
-      secondToLastUserTaskId = lastUserTaskId;
       lastUserTaskId = nodeId;
     }
   });
-
-  // Rule 2: FIX 'Data Object' Sequence
-  // Ensure DataObjectReference is never the first element after a StartEvent.
-  if (nodeDefs.length > 2 && nodeDefs[0].type === 'startEvent' && nodeDefs[1].type === 'dataObject') {
-    const firstTaskIdx = nodeDefs.findIndex(n => n.category === 'task');
-    if (firstTaskIdx !== -1) {
-      const dataObjNode = nodeDefs.splice(1, 1)[0];
-      nodeDefs.splice(firstTaskIdx, 0, dataObjNode); // Move Data Object after the first task
-    }
-  }
 
   const elements: string[] = [];
   const flows: string[] = [];
@@ -113,7 +99,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const X_START = 150;
   const Y_START = 200;
 
-  // PASS 2: Generate XML and DI
+  // PASS 2: Layout XML and DI
   nodeDefs.forEach((node, i) => {
     const row = Math.floor(i / MAX_COLS);
     const rawCol = i % MAX_COLS;
@@ -130,7 +116,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
     positions[node.id] = { x, y, w, h, row, col };
 
-    // BPMN 2.0 XML Definitions
     switch (node.type) {
       case 'startEvent': elements.push(`<bpmn:startEvent id="${node.id}" name="${escapeXml(node.name)}" />`); break;
       case 'endEvent': elements.push(`<bpmn:endEvent id="${node.id}" name="${escapeXml(node.name)}" />`); break;
@@ -151,11 +136,12 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>`);
 
-    // Main Sequence Flows
     if (i > 0) {
       const prev = nodeDefs[i - 1];
       const flowId = `Flow_${prev.id}_${node.id}`;
-      flows.push(`<bpmn:sequenceFlow id="${flowId}" sourceRef="${prev.id}" targetRef="${node.id}" />`);
+      // Clean arrow labeling: If the previous node was a gateway, we check for 'if yes' context
+      const label = (prev.type === 'exclusiveGateway') ? 'ከጸደቀ' : '';
+      flows.push(`<bpmn:sequenceFlow id="${flowId}" name="${label}" sourceRef="${prev.id}" targetRef="${node.id}" />`);
       
       const sPos = positions[prev.id];
       const isForward = sPos.row === row;
@@ -166,9 +152,11 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
           <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
             <di:waypoint x="${sPos.x + (sPos.w / 2 * (isRight ? 1 : -1))}" y="${sPos.y}" />
             <di:waypoint x="${x - (w / 2 * (isRight ? 1 : -1))}" y="${y}" />
+            <bpmndi:BPMNLabel>
+              <dc:Bounds x="${(sPos.x + x) / 2 - 25}" y="${y - 20}" width="50" height="14" />
+            </bpmndi:BPMNLabel>
           </bpmndi:BPMNEdge>`);
       } else {
-        // Vertical Wrap (Snake)
         diElements.push(`
           <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
             <di:waypoint x="${sPos.x}" y="${sPos.y + sPos.h / 2}" />
@@ -180,14 +168,14 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     }
   });
 
-  // PASS 3: Render Back-flows (Loops)
+  // PASS 3: Render Back-flows (Loop-back connections)
   backFlows.forEach(f => {
     flows.push(`<bpmn:sequenceFlow id="${f.id}" name="${escapeXml(f.name)}" sourceRef="${f.sourceRef}" targetRef="${f.targetRef}" />`);
     const sPos = positions[f.sourceRef];
     const tPos = positions[f.targetRef];
 
     if (sPos && tPos) {
-      const offset = f.direction === 'loop' ? -80 : 80;
+      const offset = f.direction === 'loop' ? -100 : 100;
       diElements.push(`
         <bpmndi:BPMNEdge id="${f.id}_di" bpmnElement="${f.id}">
           <di:waypoint x="${sPos.x}" y="${sPos.y + (sPos.h / 2 * (offset > 0 ? 1 : -1))}" />
@@ -208,7 +196,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
                   xmlns:di="http://www.omg.org/spec/DD/20100524/DI" 
                   targetNamespace="http://bpmn.io/schema/bpmn"
                   exporter="Worku (ወርቁ) Pro Architect" 
-                  exporterVersion="8.5">
+                  exporterVersion="9.0">
   <bpmn:process id="Process_Worku_Pro" name="${escapeXml(title)}" isExecutable="true">
 ${elements.join('\n')}
 ${flows.join('\n')}
