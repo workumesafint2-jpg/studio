@@ -94,7 +94,9 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     ];
 
     allTriggers.forEach(k => {
-      const regex = new RegExp(`^${k}\\s*[:\\-–—\\s]*|\\s*\\(${k}\\)|\\b${k}\\b`, 'gi');
+      // Escape special regex characters in the keyword k
+      const escapedK = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`^${escapedK}\\s*[:\\-–—\\s]*|\\s*\\(${escapedK}\\)|\\b${escapedK}\\b`, 'gi');
       pureName = pureName.replace(regex, '');
     });
     pureName = pureName.replace(/[?፧？]$/, '').trim();
