@@ -73,7 +73,6 @@ export function BPMNFlowForgeApp() {
       if (result) {
         setInput(result.structuredSteps);
         setTitle(result.refinedTitle);
-        // Automatically trigger a preview generate
         const diagramXml = generateBPMN(result.structuredSteps, result.refinedTitle);
         setXmlResult(diagramXml);
         setActiveTab("diagram");
@@ -121,19 +120,11 @@ export function BPMNFlowForgeApp() {
   };
 
   const handleDownloadProject = async () => {
-    if (!xmlResult) {
-      toast({
-        title: "No diagram",
-        description: "Generate a diagram before downloading the project.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     const zip = new JSZip();
     const fileName = (title || "process-diagram").replace(/\s+/g, '-').toLowerCase();
     
-    zip.file(`${fileName}.bpmn`, xmlResult);
+    // Allow download even if xmlResult is empty
+    zip.file(`${fileName}.bpmn`, xmlResult || "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" targetNamespace=\"http://bpmn.io/schema/bpmn\"></bpmn:definitions>");
     
     const readmeContent = `# ${title || 'BPMN Project'}\n\nGenerated with (ወርቁ) Pro.\n\n### Deployment:\n1. Open ${fileName}.bpmn in Camunda Modeler.\n2. Deploy to your process engine.`;
     zip.file("DEPLOYMENT_GUIDE.md", readmeContent);
