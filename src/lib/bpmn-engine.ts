@@ -3,21 +3,21 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
   const rawLines = input.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
   
-  // Advanced BPMN 2.0 Trigger Mapping
+  // BPMN 2.0 Trigger Mapping (Amharic & English)
   const mappings = {
     start: ['መጀመሪያ', 'ጀምር', 'start', 'begin'],
     end: ['መጨረሻ', 'ጨርስ', 'ተጠናቀቀ', 'end', 'finish'],
     timer: ['ቆይታ', 'ሰዓት', 'ቀን', 'timer', 'wait'],
     userTask: ['ተግባር', 'ይመረምራል', 'ይፈጸማል', 'ይከናወናል', 'ይደረጋል', 'approve', 'review', 'verify', 'user'],
     exclusiveGateway: ['ውሳኔ', 'ከሆነ', 'ወይስ', 'ቢሆን', 'decision', 'xor', 'if'],
-    serviceTask: ['በሲስተም', 'አውቶማቲክ', 'service', 'system', 'auto'],
+    serviceTask: ['በሲስተም', 'አውቶማቲክ', 'service', 'system', 'auto', 'script'],
     manualTask: ['በእጅ', 'ፊዚካል', 'manual'],
     dataObject: ['ሰነድ', 'ፎርም', 'ማስረጃ', 'ደረሰኝ', 'document', 'form'],
     parallelGateway: ['በአንድ ጊዜ', 'እና', 'ትይዩ', 'parallel', 'and'],
   };
 
-  // Directional Label Triggers for Sequence Flows
-  const flowLabelTriggers = {
+  // Directional Flow Triggers
+  const flowDirectionTriggers = {
     forward: ['ከጸደቀ', 'approve', 'yes', 'ok'],
     loop: ['ካልጸደቀ', 'correction', 'fix', 'edit'],
     reject: ['ውድቅ', 'reject', 'no', 'cancel']
@@ -26,14 +26,16 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const nodeDefs: any[] = [];
   rawLines.forEach((line, index) => {
     const lowerLine = line.toLowerCase();
-    let type = 'userTask'; // Default
+    let type = 'userTask'; // Default type
     let category = 'task';
     let flowLabel = '';
+    let direction: 'forward' | 'loop' | 'reject' = 'forward';
 
-    // Identify Directional Labels (attached to the incoming flow)
-    for (const [dir, triggers] of Object.entries(flowLabelTriggers)) {
+    // Identify Flow Labels and Direction
+    for (const [dir, triggers] of Object.entries(flowDirectionTriggers)) {
       for (const trigger of triggers) {
         if (lowerLine.includes(trigger)) {
+          direction = dir as any;
           if (dir === 'forward') flowLabel = 'ከጸደቀ';
           if (dir === 'loop') flowLabel = 'ካልጸደቀ';
           if (dir === 'reject') flowLabel = 'Reject';
@@ -52,22 +54,22 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     else if (mappings.serviceTask.some(k => lowerLine.includes(k))) { type = 'serviceTask'; category = 'task'; }
     else if (mappings.manualTask.some(k => lowerLine.includes(k))) { type = 'manualTask'; category = 'task'; }
 
-    // AGGRESSIVE CLEANUP: Remove ALL keywords, triggers, and junk from visible labels
+    // CLEANUP: Hide trigger keywords from the visible label
     let pureName = line;
     
-    // Remove all element triggers
+    // Remove element type keywords
     Object.values(mappings).flat().forEach(k => {
       const regex = new RegExp(`^${k}\\s*[:\\-–—\\s]*|\\s*\\(${k}\\)`, 'gi');
       pureName = pureName.replace(regex, '');
     });
 
-    // Remove directional triggers from shape labels
-    Object.values(flowLabelTriggers).flat().forEach(k => {
+    // Remove direction triggers
+    Object.values(flowDirectionTriggers).flat().forEach(k => {
       const regex = new RegExp(`^${k}\\s*[:\\-–—\\s]*`, 'gi');
       pureName = pureName.replace(regex, '');
     });
 
-    // Remove technical junk like "Success" or status words
+    // Remove junk/status text
     pureName = pureName.replace(/success|failed|done|ተሳክቷል/gi, '').replace(/[?፧？]$/, '').trim();
 
     nodeDefs.push({
@@ -76,7 +78,8 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       type,
       category,
       index,
-      flowLabel
+      flowLabel,
+      direction
     });
   });
 
@@ -109,7 +112,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
     positions[node.id] = { x, y, w, h, row, col };
 
-    // BPMN 2.0 Element Definitions
+    // BPMN 2.0 XML Definitions
     switch (node.type) {
       case 'startEvent': elements.push(`<bpmn:startEvent id="${node.id}" name="${escapeXml(node.name)}" />`); break;
       case 'endEvent': elements.push(`<bpmn:endEvent id="${node.id}" name="${escapeXml(node.name)}" />`); break;
@@ -122,7 +125,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       default: elements.push(`<bpmn:userTask id="${node.id}" name="${escapeXml(node.name)}" />`);
     }
 
-    // DI Shape Definition
+    // DI Shape
     diElements.push(`
       <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}" ${node.type === 'exclusiveGateway' ? 'isMarkerVisible="true"' : ''}>
         <dc:Bounds x="${x - w/2}" y="${y - h/2}" width="${w}" height="${h}" />
@@ -131,32 +134,52 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>`);
 
-    // Sequence Flow Generation (Snake Logic with Directional Routing)
+    // Sequence Flow and Directional DI (Forward/Loop/Reject)
     if (lastNodeId) {
       const flowId = `Flow_${lastNodeId}_${node.id}`;
       const flowName = node.flowLabel ? escapeXml(node.flowLabel) : '';
       flows.push(`<bpmn:sequenceFlow id="${flowId}" name="${flowName}" sourceRef="${lastNodeId}" targetRef="${node.id}" />`);
       
       const sPos = positions[lastNodeId];
-      const isEvenRow = sPos.row % 2 === 0;
+      const sEven = sPos.row % 2 === 0;
 
       if (sPos.row === row) {
-        // Horizontal Flow (Forward)
+        // Horizontal logic
+        let waypoints = '';
+        if (node.direction === 'loop') {
+          // Upward loop visual
+          waypoints = `
+            <di:waypoint x="${sPos.x + (sPos.w/2 * (sEven ? 1 : -1))}" y="${sPos.y}" />
+            <di:waypoint x="${sPos.x + (sPos.w/2 * (sEven ? 1 : -1))}" y="${sPos.y - 60}" />
+            <di:waypoint x="${x - (w/2 * (sEven ? 1 : -1))}" y="${y - 60}" />
+            <di:waypoint x="${x - (w/2 * (sEven ? 1 : -1))}" y="${y}" />`;
+        } else if (node.direction === 'reject') {
+          // Downward visual
+          waypoints = `
+            <di:waypoint x="${sPos.x + (sPos.w/2 * (sEven ? 1 : -1))}" y="${sPos.y}" />
+            <di:waypoint x="${sPos.x + (sPos.w/2 * (sEven ? 1 : -1))}" y="${sPos.y + 60}" />
+            <di:waypoint x="${x - (w/2 * (sEven ? 1 : -1))}" y="${y + 60}" />
+            <di:waypoint x="${x - (w/2 * (sEven ? 1 : -1))}" y="${y}" />`;
+        } else {
+          // Straight Forward
+          waypoints = `
+            <di:waypoint x="${sPos.x + (sPos.w/2 * (sEven ? 1 : -1))}" y="${sPos.y}" />
+            <di:waypoint x="${x - (w/2 * (sEven ? 1 : -1))}" y="${y}" />`;
+        }
+
         diElements.push(`
           <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
-            <di:waypoint x="${sPos.x + (sPos.w/2 * (isEvenRow ? 1 : -1))}" y="${sPos.y}" />
-            <di:waypoint x="${x - (w/2 * (isEvenRow ? 1 : -1))}" y="${y}" />
+            ${waypoints}
             <bpmndi:BPMNLabel>
-              <dc:Bounds x="${(sPos.x + x) / 2 - 20}" y="${sPos.y - 20}" width="50" height="14" />
+              <dc:Bounds x="${(sPos.x + x) / 2 - 25}" y="${node.direction === 'loop' ? y - 75 : (node.direction === 'reject' ? y + 65 : y - 20)}" width="50" height="14" />
             </bpmndi:BPMNLabel>
           </bpmndi:BPMNEdge>`);
       } else {
-        // Wrap Around (Vertical Snake Flow)
-        // Adjust points to avoid overlapping and respect "upward/downward" cues visually
-        const verticalOffset = node.flowLabel === 'ካልጸደቀ' ? -40 : 40;
+        // Snake Wrap logic
+        const verticalOffset = node.direction === 'loop' ? -40 : (node.direction === 'reject' ? 40 : 0);
         diElements.push(`
           <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
-            <di:waypoint x="${sPos.x}" y="${sPos.y + (sPos.h/2 * (verticalOffset > 0 ? 1 : -1))}" />
+            <di:waypoint x="${sPos.x}" y="${sPos.y + (sPos.h/2 * (verticalOffset >= 0 ? 1 : -1))}" />
             <di:waypoint x="${sPos.x}" y="${y - (h/2 + verticalOffset)}" />
             <di:waypoint x="${x}" y="${y - (h/2 + verticalOffset)}" />
             <di:waypoint x="${x}" y="${y - h/2}" />
@@ -177,7 +200,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
                   id="Definitions_Worku"
                   targetNamespace="http://bpmn.io/schema/bpmn"
                   exporter="Worku (ወርቁ) Pro Architect" 
-                  exporterVersion="8.0">
+                  exporterVersion="8.5">
   <bpmn:process id="Process_Worku_Pro" name="${escapeXml(title)}" isExecutable="true">
 ${elements.join('\n')}
 ${flows.join('\n')}
