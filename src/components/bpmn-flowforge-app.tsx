@@ -5,12 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Copy, FileCode, Play, Trash2, Share2, MoreVertical, FolderArchive, Sparkles, Loader2, Eye, Code, Download, FileJson } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Copy, FileCode, Trash2, MoreVertical, FolderArchive, Sparkles, Loader2, Eye, Code, Download, FileJson } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BPMNViewer, type BPMNViewerRef } from "@/components/bpmn-viewer";
 import { architectBPMN } from "@/ai/flows/bpmn-architect-flow";
@@ -123,7 +122,6 @@ export function BPMNFlowForgeApp() {
     const zip = new JSZip();
     const fileName = (title || "process-diagram").replace(/\s+/g, '-').toLowerCase();
     
-    // Allow download even if xmlResult is empty
     zip.file(`${fileName}.bpmn`, xmlResult || "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" targetNamespace=\"http://bpmn.io/schema/bpmn\"></bpmn:definitions>");
     
     const readmeContent = `# ${title || 'BPMN Project'}\n\nGenerated with (ወርቁ) Pro.\n\n### Deployment:\n1. Open ${fileName}.bpmn in Camunda Modeler.\n2. Deploy to your process engine.`;
@@ -160,29 +158,28 @@ export function BPMNFlowForgeApp() {
 
   return (
     <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-background">
-      <header className="flex items-center justify-between px-6 py-4 bg-primary text-primary-foreground shadow-xl shrink-0 border-b border-primary/20">
+      <header className="flex items-center justify-between px-6 py-3 bg-primary text-primary-foreground shadow-lg shrink-0 border-b border-primary/20">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-white rounded-xl shadow-inner">
-            <FileCode className="w-6 h-6 text-primary" />
+          <div className="p-1.5 bg-white rounded-lg shadow-inner">
+            <FileCode className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-xl font-black tracking-tighter uppercase">(ወርቁ) Pro</h1>
-            <p className="text-[10px] opacity-70 font-medium tracking-widest uppercase">AI BPMN Architect</p>
+            <h1 className="text-lg font-black tracking-tighter uppercase">(ወርቁ) Pro</h1>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <Button 
             variant="secondary" 
             onClick={handleDownloadProject}
-            className="hidden sm:flex items-center gap-2 bg-white text-primary hover:bg-white/90 font-bold rounded-xl"
+            className="hidden sm:flex items-center gap-2 bg-white text-primary hover:bg-white/90 font-bold rounded-lg h-9"
           >
             <FolderArchive className="w-4 h-4" /> Download Project
           </Button>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-white/10 rounded-full h-9 w-9">
-                <MoreVertical className="w-5 h-5" />
+              <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-white/10 rounded-full h-8 w-8">
+                <MoreVertical className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64 rounded-xl shadow-2xl border-none p-2">
@@ -203,19 +200,11 @@ export function BPMNFlowForgeApp() {
         </div>
       </header>
 
-      <main className="flex flex-col lg:flex-row flex-1 overflow-hidden p-6 gap-6">
-        <div className="w-full lg:w-[420px] flex flex-col gap-4 shrink-0 overflow-y-auto lg:overflow-visible">
-          <Card className="flex flex-col shadow-2xl border-none bg-card h-full lg:h-auto lg:flex-1 rounded-2xl overflow-hidden">
-            <CardHeader className="shrink-0 bg-muted/30 pb-4">
-              <CardTitle className="text-lg font-bold flex items-center gap-2">
-                Process Definition
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Describe your workflow in natural language or steps.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col gap-4 p-5">
-              <div className="space-y-2">
+      <main className="flex flex-col lg:flex-row flex-1 overflow-hidden p-4 gap-4">
+        <div className="w-full lg:w-[380px] flex flex-col gap-3 shrink-0 overflow-y-auto lg:overflow-visible">
+          <Card className="flex flex-col shadow-xl border-none bg-card h-full lg:h-auto lg:flex-1 rounded-xl overflow-hidden ring-1 ring-slate-100">
+            <CardContent className="flex-1 flex flex-col gap-3 p-4">
+              <div className="space-y-1.5">
                 <Label htmlFor="service-title" className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                   የአገልግሎት ስም ያስገቡ
                 </Label>
@@ -224,107 +213,107 @@ export function BPMNFlowForgeApp() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="ለምሳሌ: ፍቃድ መስጠት"
-                  className="bg-muted/50 border-muted focus:ring-primary h-11 rounded-xl font-medium"
+                  className="bg-muted/30 border-muted focus:ring-primary h-9 rounded-lg font-medium text-sm"
                 />
               </div>
 
-              <div className="relative flex-1 min-h-[250px] lg:min-h-0">
-                <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2 block">
+              <div className="relative flex-1 min-h-[180px] lg:min-h-0">
+                <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1.5 block">
                   Process Narrative / Logic
                 </Label>
                 <Textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder={"Type a process description and click AI Architect..."}
-                  className="w-full h-[calc(100%-24px)] resize-none font-body text-sm border-muted focus:ring-primary focus:border-primary p-4 rounded-xl shadow-inner bg-slate-50"
+                  placeholder={"Type a process description and click Generate..."}
+                  className="w-full h-[calc(100%-24px)] resize-none font-body text-xs border-muted focus:ring-primary focus:border-primary p-3 rounded-lg shadow-inner bg-slate-50/50"
                 />
               </div>
-              <div className="flex flex-col gap-3 pt-2">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col gap-2 pt-1">
+                <div className="flex items-center gap-2">
                   <Button 
                     variant="outline" 
+                    size="sm"
                     onClick={handleClear}
-                    className="flex-1 items-center gap-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 border-muted rounded-xl h-12"
+                    className="flex-1 items-center gap-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 border-muted rounded-lg h-10"
                   >
-                    <Trash2 className="w-4 h-4" /> Reset
+                    <Trash2 className="w-3.5 h-3.5" /> Reset
                   </Button>
                   <Button 
+                    size="sm"
                     onClick={handleGenerate}
-                    className="flex-1 bg-secondary hover:bg-secondary/80 text-secondary-foreground h-12 rounded-xl text-sm font-bold shadow flex items-center justify-center gap-2 transition-all"
+                    className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground h-10 rounded-lg text-sm font-bold shadow-lg flex items-center justify-center gap-2 transition-all"
                   >
-                    <Play className="w-4 h-4" /> Preview
+                    Generate
                   </Button>
                 </div>
                 <Button 
                   onClick={handleAIArchitect}
                   disabled={isArchitecting}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground h-14 rounded-xl text-base font-bold shadow-lg flex items-center justify-center gap-2 transition-all hover:scale-[1.02]"
+                  variant="secondary"
+                  className="w-full bg-secondary hover:bg-secondary/80 text-secondary-foreground h-10 rounded-lg text-sm font-bold shadow flex items-center justify-center gap-2 transition-all"
                 >
                   {isArchitecting ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <Sparkles className="w-5 h-5" />
+                    <Sparkles className="w-4 h-4" />
                   )}
-                  Generate
+                  AI Architect
                 </Button>
               </div>
             </CardContent>
           </Card>
           
-          <div className="bg-primary/5 p-5 rounded-2xl border border-primary/10 hidden sm:flex items-start gap-4">
-            <div className="bg-primary/10 p-2 rounded-lg">
-              <Share2 className="w-5 h-5 text-primary shrink-0" />
-            </div>
-            <div className="text-[11px] text-primary/80 leading-relaxed">
-              <p className="font-bold mb-1 uppercase tracking-wider text-primary">Architect Tips:</p>
-              <ul className="space-y-1 opacity-90">
-                <li>• Use AI Architect for messy text.</li>
-                <li>• (serviceTask) for auto steps.</li>
-                <li>• Use "Parallel" for branching.</li>
-                <li>• Use "Timer:" for delays.</li>
+          <div className="bg-primary/5 p-3 rounded-xl border border-primary/10 hidden lg:flex items-start gap-3">
+            <div className="text-[10px] text-primary/80 leading-relaxed">
+              <p className="font-bold mb-1 uppercase tracking-wider text-primary">Tips:</p>
+              <ul className="grid grid-cols-2 gap-x-2 gap-y-0.5 opacity-90">
+                <li>• (serviceTask) for auto.</li>
+                <li>• (userTask) for human.</li>
+                <li>• "Parallel" for branching.</li>
+                <li>• "Timer:" for delays.</li>
               </ul>
             </div>
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col gap-4 min-h-0">
+        <div className="flex-1 flex flex-col gap-3 min-h-0">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-            <div className="flex items-center justify-between mb-2">
-              <TabsList className="bg-muted/50 p-1 rounded-xl">
-                <TabsTrigger value="diagram" className="flex items-center gap-2 rounded-lg px-4 font-bold">
-                  <Eye className="w-4 h-4" /> Live Canvas
+            <div className="flex items-center justify-between mb-1.5">
+              <TabsList className="bg-muted/50 p-1 h-9 rounded-lg">
+                <TabsTrigger value="diagram" className="flex items-center gap-1.5 rounded-md px-3 font-bold h-7 text-xs">
+                  <Eye className="w-3.5 h-3.5" /> Live Canvas
                 </TabsTrigger>
-                <TabsTrigger value="xml" className="flex items-center gap-2 rounded-lg px-4 font-bold">
-                  <Code className="w-4 h-4" /> Source
+                <TabsTrigger value="xml" className="flex items-center gap-1.5 rounded-md px-3 font-bold h-7 text-xs">
+                  <Code className="w-3.5 h-3.5" /> Source
                 </TabsTrigger>
               </TabsList>
               
               {xmlResult && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <Button 
                     variant="secondary" 
                     size="sm"
                     onClick={handleDownloadXML}
-                    className="flex items-center gap-2 font-bold shadow-sm rounded-lg"
+                    className="flex items-center gap-1.5 font-bold shadow-sm rounded-md h-7 px-2 text-xs"
                   >
-                    <FileJson className="w-4 h-4" /> XML
+                    <FileJson className="w-3 h-3" /> XML
                   </Button>
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={handleDownloadPNG}
-                    className="flex items-center gap-2 font-bold rounded-lg"
+                    className="flex items-center gap-1.5 font-bold rounded-md h-7 px-2 text-xs"
                   >
-                    <Download className="w-4 h-4" /> PNG
+                    <Download className="w-3 h-3" /> PNG
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={handleCopy} className="h-9 w-9 p-0">
-                    <Copy className="w-4 h-4" />
+                  <Button variant="ghost" size="sm" onClick={handleCopy} className="h-7 w-7 p-0">
+                    <Copy className="w-3 h-3" />
                   </Button>
                 </div>
               )}
             </div>
 
-            <Card className="flex-1 flex flex-col shadow-2xl border-none bg-white rounded-3xl overflow-hidden min-h-0 ring-1 ring-slate-200">
+            <Card className="flex-1 flex flex-col shadow-2xl border-none bg-white rounded-2xl overflow-hidden min-h-0 ring-1 ring-slate-200">
               <TabsContent value="diagram" className="flex-1 m-0 focus-visible:ring-0 h-full">
                 {xmlResult ? (
                   <div className="h-full w-full">
@@ -338,7 +327,7 @@ export function BPMNFlowForgeApp() {
               <TabsContent value="xml" className="flex-1 m-0 focus-visible:ring-0 h-full">
                 {xmlResult ? (
                   <ScrollArea className="h-full w-full bg-slate-900">
-                    <pre className="p-8 font-code text-xs">
+                    <pre className="p-6 font-code text-xs">
                       <code className="text-blue-300 block overflow-x-auto">
                         {xmlResult}
                       </code>
@@ -353,12 +342,11 @@ export function BPMNFlowForgeApp() {
         </div>
       </main>
       
-      <footer className="px-8 py-3 bg-white border-t border-muted hidden sm:flex items-center justify-between text-[10px] text-muted-foreground shrink-0 uppercase tracking-widest font-bold">
+      <footer className="px-6 py-2 bg-white border-t border-muted hidden sm:flex items-center justify-between text-[9px] text-muted-foreground shrink-0 uppercase tracking-widest font-bold">
         <p>© {new Date().getFullYear()} (ወርቁ) Pro Architect</p>
-        <p className="flex items-center gap-6">
+        <p className="flex items-center gap-4">
           <span className="text-primary">Enterprise Ready</span>
-          <span>Snake Layout Engine</span>
-          <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-500">Service 21 Context</span>
+          <span>Snake Engine</span>
         </p>
       </footer>
     </div>
@@ -367,11 +355,11 @@ export function BPMNFlowForgeApp() {
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="h-full w-full flex flex-col items-center justify-center p-12 text-center text-muted-foreground/50">
-      <div className="w-20 h-20 bg-muted/30 rounded-full flex items-center justify-center mb-6 shadow-inner">
-        <FileCode className="w-10 h-10 opacity-10" />
+    <div className="h-full w-full flex flex-col items-center justify-center p-8 text-center text-muted-foreground/50">
+      <div className="w-16 h-16 bg-muted/20 rounded-full flex items-center justify-center mb-4">
+        <FileCode className="w-8 h-8 opacity-10" />
       </div>
-      <p className="text-sm font-bold max-w-[280px] leading-relaxed italic uppercase tracking-wider">
+      <p className="text-xs font-bold max-w-[240px] leading-relaxed italic uppercase tracking-wider">
         {message}
       </p>
     </div>
