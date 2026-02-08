@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useRef } from 'react';
@@ -6,13 +7,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Copy, FileCode, Play, Trash2, CheckCircle2, Info, Eye, Code, Download, FileJson, Share2 } from "lucide-react";
+import { Copy, FileCode, Play, Trash2, CheckCircle2, Info, Eye, Code, Download, FileJson, Share2, MoreVertical, FolderArchive } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BPMNViewer, type BPMNViewerRef } from "@/components/bpmn-viewer";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import JSZip from 'jszip';
 
 export function BPMNFlowForgeApp() {
   const [input, setInput] = useState("");
@@ -83,6 +91,50 @@ export function BPMNFlowForgeApp() {
     }
   };
 
+  const handleDownloadProject = async () => {
+    if (!xmlResult) {
+      toast({
+        title: "No diagram found",
+        description: "Please generate a diagram before downloading the project.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const zip = new JSZip();
+    const fileName = (title || "process-diagram").replace(/\s+/g, '-').toLowerCase();
+    
+    // Add the BPMN XML
+    zip.file(`${fileName}.bpmn`, xmlResult);
+    
+    // Add a deployment README for the user's laptop context
+    const readmeContent = `# ${title || 'BPMN Project'}\n\nGenerated with (ወርቁ) Pro.\n\nThis package contains your professional BPMN architecture.\n\n### Deployment Instructions:\n1. Open ${fileName}.bpmn in Camunda Modeler.\n2. Use the provided XML to configure your process engine.\n3. Follow the root README instructions to build the Electron app for your laptop.`;
+    zip.file("DEPLOYMENT_GUIDE.md", readmeContent);
+
+    try {
+      const content = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(content);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${fileName}-project.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Project Bundle Created",
+        description: "Project ZIP downloaded successfully.",
+      });
+    } catch (err) {
+      toast({
+        title: "Export Failed",
+        description: "Could not bundle the project files.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleClear = () => {
     setInput("");
     setXmlResult("");
@@ -101,10 +153,32 @@ export function BPMNFlowForgeApp() {
             <p className="text-[10px] opacity-70 font-medium tracking-widest uppercase">BPMN Architect</p>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <Badge variant="secondary" className="px-3 py-1 bg-accent text-primary border-none font-bold animate-pulse">
+        <div className="flex items-center gap-3">
+          <Badge variant="secondary" className="hidden sm:inline-flex px-3 py-1 bg-accent text-primary border-none font-bold animate-pulse">
             Camunda 2.0 Ready
           </Badge>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-white/10 rounded-full h-9 w-9">
+                <MoreVertical className="w-5 h-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64 rounded-xl shadow-2xl border-none p-2">
+              <DropdownMenuItem 
+                className="flex items-center gap-3 py-3 px-4 cursor-pointer rounded-lg hover:bg-primary/5 focus:bg-primary/5" 
+                onClick={handleDownloadProject}
+              >
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <FolderArchive className="w-5 h-5 text-primary" />
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-bold text-sm">Download Project</span>
+                  <span className="text-[10px] text-muted-foreground leading-none">Source code bundle for Electron</span>
+                </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 

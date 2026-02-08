@@ -1,5 +1,5 @@
 
-# (ወርቁ) - Smart BPMN Generator
+# ወርቁ - Smart BPMN Generator
 
 A professional BPMN diagram generator with AI-ready logic, optimized for desktop and mobile.
 
