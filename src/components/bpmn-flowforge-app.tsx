@@ -274,7 +274,7 @@ export function BPMNFlowForgeApp() {
                   ) : (
                     <Sparkles className="w-5 h-5" />
                   )}
-                  AI Architect
+                  Generate
                 </Button>
               </div>
             </CardContent>
