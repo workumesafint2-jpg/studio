@@ -246,19 +246,6 @@ export function BPMNFlowForgeApp() {
                     Generate
                   </Button>
                 </div>
-                <Button 
-                  onClick={handleAIArchitect}
-                  disabled={isArchitecting}
-                  variant="secondary"
-                  className="w-full bg-secondary hover:bg-secondary/80 text-secondary-foreground h-10 rounded-lg text-sm font-bold shadow flex items-center justify-center gap-2 transition-all"
-                >
-                  {isArchitecting ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="w-4 h-4" />
-                  )}
-                  AI Architect
-                </Button>
               </div>
             </CardContent>
           </Card>
