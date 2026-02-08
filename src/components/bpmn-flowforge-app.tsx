@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Copy, FileCode, Play, Trash2, CheckCircle2, Share2, MoreVertical, FolderArchive, Sparkles, Loader2, Eye, Code, Download, FileJson } from "lucide-react";
+import { Copy, FileCode, Play, Trash2, Share2, MoreVertical, FolderArchive, Sparkles, Loader2, Eye, Code, Download, FileJson } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -85,7 +85,7 @@ export function BPMNFlowForgeApp() {
     } catch (error) {
       toast({
         title: "AI Failed",
-        description: "Could not reach the BPMN brain. Try manual generation.",
+        description: "Could not reach the BPMN brain. Ensure your API key is valid.",
         variant: "destructive",
       });
     } finally {
@@ -180,9 +180,13 @@ export function BPMNFlowForgeApp() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Badge variant="secondary" className="hidden sm:inline-flex px-3 py-1 bg-accent text-primary border-none font-bold">
-            Camunda 2.0 Ready
-          </Badge>
+          <Button 
+            variant="secondary" 
+            onClick={handleDownloadProject}
+            className="hidden sm:flex items-center gap-2 bg-white text-primary hover:bg-white/90 font-bold rounded-xl"
+          >
+            <FolderArchive className="w-4 h-4" /> Download Project
+          </Button>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
