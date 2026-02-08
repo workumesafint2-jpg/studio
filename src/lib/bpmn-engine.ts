@@ -3,48 +3,65 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
   const rawLines = input.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
   
-  const userKeywords = ['approve', 'review', 'check', 'fill', 'input', 'verify', 'inspect', 'decide', 'manually', 'user', 'manager', 'client', 'customer', 'ውሳኔ', 'ከሆነ', 'መመደብ'];
-  const serviceKeywords = ['send', 'notify', 'email', 'calculate', 'update', 'save', 'fetch', 'api', 'system', 'automatically', 'generate', 'process', 'trigger', 'compute', 'digitalize', 'integrate'];
+  // Amharic & English Keywords for BPMN 2.0 Mapping
+  const mappings = {
+    start: ['ጀምር', 'መጀመሪያ', 'start', 'begin'],
+    end: ['ጨርስ', 'መጨረሻ', 'ተጠናቀቀ', 'end', 'finish'],
+    timer: ['ቆይታ', 'ሰዓት', 'ቀን', 'timer', 'wait'],
+    message: ['መልዕክት', 'ደብዳቤ', 'message', 'mail'],
+    error: ['ስህተት', 'ተቋረጠ', 'ውድቅ', 'error', 'fault'],
+    signal: ['ምልክት', 'ሲግናል', 'signal', 'alert'],
+    compensate: ['ማካካሻ', 'compensate'],
+    terminate: ['ማቋረጫ', 'terminate', 'kill'],
+    userTask: ['ተግባር', 'ይከናወናል', 'ይደረጋል', 'approve', 'review', 'verify', 'user'],
+    serviceTask: ['በሲስተም', 'አውቶማቲክ', 'ስክሪፕት', 'service', 'script', 'system', 'auto'],
+    manualTask: ['በእጅ', 'ፊዚካል', 'manual', 'physical'],
+    callActivity: ['ጥሪ', 'ሌላ ሂደት', 'call', 'external'],
+    exclusiveGateway: ['ውሳኔ', 'ከሆነ', 'ወይስ', 'ቢሆን', 'decision', 'xor', 'if'],
+    parallelGateway: ['በአንድ ጊዜ', 'እና', 'ትይዩ', 'parallel', 'and', 'simultaneous'],
+    inclusiveGateway: ['አንድ ወይም ከዚያ በላይ', 'inclusive', 'or'],
+    complexGateway: ['ውስብስብ ውሳኔ', 'complex'],
+    eventGateway: ['በሁኔታ ላይ የተመሰረተ', 'event-based'],
+    dataObject: ['ሰነድ', 'ፎርም', 'ማስረጃ', 'ደረሰኝ', 'document', 'form'],
+    dataStore: ['መዝገብ', 'መረጃ ቋት', 'ዳታቤዝ', 'database', 'store', 'record']
+  };
 
   const nodeDefs: any[] = [];
   rawLines.forEach((line, index) => {
     const lowerLine = line.toLowerCase();
-    const isTimer = lowerLine.startsWith('timer:');
-    const isGateway = line.includes('?') || ['ውሳኔ', 'ከሆነ', 'መመደብ', '፧', '？'].some(k => line.includes(k));
-    const isParallel = lowerLine.includes('simultaneously') || lowerLine.includes('parallel') || lowerLine.includes('tandem');
-    const isLoopTrigger = lowerLine.includes('edit') || lowerLine.includes('fix') || lowerLine.includes('correct') || lowerLine.includes('back') || lowerLine.includes('incomplete') || lowerLine.includes('no');
-    const isCancelPath = lowerLine.includes('cancel') || lowerLine.includes('reject') || lowerLine.includes('fail');
+    let type = 'userTask'; // Default
+    let category = 'task';
 
-    let nodeType = 'task';
-    let taskSubtype = 'userTask'; 
+    // Identify Type
+    if (mappings.start.some(k => lowerLine.includes(k))) { type = 'startEvent'; category = 'event'; }
+    else if (mappings.end.some(k => lowerLine.includes(k))) { type = 'endEvent'; category = 'event'; }
+    else if (mappings.timer.some(k => lowerLine.includes(k))) { type = 'timerEvent'; category = 'event'; }
+    else if (mappings.message.some(k => lowerLine.includes(k))) { type = 'messageEvent'; category = 'event'; }
+    else if (mappings.error.some(k => lowerLine.includes(k))) { type = 'errorEvent'; category = 'event'; }
+    else if (mappings.signal.some(k => lowerLine.includes(k))) { type = 'signalEvent'; category = 'event'; }
+    else if (mappings.terminate.some(k => lowerLine.includes(k))) { type = 'terminateEvent'; category = 'event'; }
+    else if (mappings.exclusiveGateway.some(k => lowerLine.includes(k))) { type = 'exclusiveGateway'; category = 'gateway'; }
+    else if (mappings.parallelGateway.some(k => lowerLine.includes(k))) { type = 'parallelGateway'; category = 'gateway'; }
+    else if (mappings.inclusiveGateway.some(k => lowerLine.includes(k))) { type = 'inclusiveGateway'; category = 'gateway'; }
+    else if (mappings.serviceTask.some(k => lowerLine.includes(k))) { type = 'serviceTask'; category = 'task'; }
+    else if (mappings.manualTask.some(k => lowerLine.includes(k))) { type = 'manualTask'; category = 'task'; }
+    else if (mappings.callActivity.some(k => lowerLine.includes(k))) { type = 'callActivity'; category = 'task'; }
+    else if (mappings.dataObject.some(k => lowerLine.includes(k))) { type = 'dataObject'; category = 'data'; }
+    else if (mappings.dataStore.some(k => lowerLine.includes(k))) { type = 'dataStore'; category = 'data'; }
 
-    if (isTimer) {
-      nodeType = 'timer-event';
-    } else if (isParallel) {
-      nodeType = 'parallel-gateway';
-    } else if (isGateway) {
-      nodeType = 'gateway';
-    } else if (isLoopTrigger) {
-      nodeType = 'loop-back';
-    } else if (isCancelPath) {
-      nodeType = 'cancel-path';
-    } else {
-      const isService = serviceKeywords.some(k => lowerLine.includes(k));
-      taskSubtype = isService ? 'serviceTask' : 'userTask';
-    }
-
-    let pureName = line
-      .replace(/^(timer|cancel|reject|edit|fix|yes|no|wait|back|go back to|return to|parallel|simultaneously|if|when|then|ወደ|እንደገና|አይ|አዎ|ከሆነ)\s*[:\->\s]*/i, '')
-      .replace(/\?$/, '')
-      .replace(/[፧？]$/, '')
-      .trim();
+    // Pure Name Cleanup (Remove all keywords)
+    let pureName = line;
+    Object.values(mappings).flat().forEach(k => {
+      const regex = new RegExp(`^${k}\\s*[:\\-–—\\s]*`, 'i');
+      pureName = pureName.replace(regex, '');
+    });
+    pureName = pureName.replace(/[?፧？]$/, '').trim();
 
     nodeDefs.push({
       id: `Node_${index}`,
-      name: pureName,
-      type: nodeType,
-      taskSubtype,
-      originalText: line,
+      name: pureName || line,
+      type,
+      category,
       index
     });
   });
@@ -52,296 +69,101 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const elements: string[] = [];
   const flows: string[] = [];
   const diElements: string[] = [];
-  const incomingFlows: Record<string, string[]> = {};
-  const outgoingFlows: Record<string, string[]> = {};
-
-  const registerFlow = (id: string, source: string, target: string, name: string = '') => {
-    flows.push(`    <bpmn:sequenceFlow id="${id}" name="${escapeXml(name)}" sourceRef="${source}" targetRef="${target}" />`);
-    if (!outgoingFlows[source]) outgoingFlows[source] = [];
-    if (!incomingFlows[target]) incomingFlows[target] = [];
-    outgoingFlows[source].push(id);
-    incomingFlows[target].push(id);
-    return id;
-  };
 
   const MAX_COLS = 5;
-  const COL_SPACING = 250;
-  const ROW_SPACING = 280; 
-  const X_START = 200;
-  const Y_START = 250;
-  const TASK_W = 120, TASK_H = 80;
-  const GATEWAY_SIZE = 50;
+  const COL_SPACING = 220;
+  const ROW_SPACING = 240;
+  const X_START = 150;
+  const Y_START = 200;
 
-  const positions: Record<string, { x: number, y: number, w: number, h: number, row: number, col: number }> = {
-    "StartEvent": { x: 80, y: Y_START, w: 36, h: 36, row: 0, col: -1 }
-  };
+  const positions: Record<string, { x: number, y: number, w: number, h: number, row: number, col: number }> = {};
+  let lastNodeId: string | null = null;
 
-  let lastNodeId = "StartEvent";
-  let lastTaskId = "StartEvent"; 
-  let currentGatewayId: string | null = null;
-  let visualNodeCount = 0;
-
-  for (let i = 0; i < nodeDefs.length; i++) {
-    const node = nodeDefs[i];
-
-    if (node.type === 'loop-back') {
-      const sourceId = currentGatewayId || lastNodeId;
-      const targetId = lastTaskId; 
-      const flowId = `Flow_Loop_${node.id}`;
-      registerFlow(flowId, sourceId, targetId, "Fix/Edit");
-      
-      const sPos = positions[sourceId];
-      const tPos = positions[targetId];
-      if (sPos && tPos) {
-        const loopY = Math.min(sPos.y, tPos.y) - 150;
-        diElements.push(`
-        <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
-          <di:waypoint x="${sPos.x}" y="${sPos.y - (sPos.h / 2)}" />
-          <di:waypoint x="${sPos.x}" y="${loopY}" />
-          <di:waypoint x="${tPos.x}" y="${loopY}" />
-          <di:waypoint x="${tPos.x}" y="${tPos.y - (tPos.h / 2)}" />
-          <bpmndi:BPMNLabel>
-            <dc:Bounds x="${(sPos.x + tPos.x) / 2 - 40}" y="${loopY - 20}" width="80" height="14" />
-          </bpmndi:BPMNLabel>
-        </bpmndi:BPMNEdge>`);
-      }
-      continue;
-    }
-
-    if (node.type === 'cancel-path') {
-      const sourceId = currentGatewayId || lastNodeId;
-      const cancelEndId = `${node.id}_Terminate`;
-      const sPos = positions[sourceId];
-      const cancelY = sPos.y + 180; 
-      
-      positions[cancelEndId] = { x: sPos.x, y: cancelY, w: 36, h: 36, row: sPos.row, col: sPos.col };
-      const flowToCancel = registerFlow(`Flow_Cancel_${node.id}`, sourceId, cancelEndId, "Reject");
-
-      diElements.push(`
-      <bpmndi:BPMNShape id="${cancelEndId}_di" bpmnElement="${cancelEndId}">
-        <dc:Bounds x="${sPos.x - 18}" y="${cancelY - 18}" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="${flowToCancel}_di" bpmnElement="${flowToCancel}">
-        <di:waypoint x="${sPos.x}" y="${sPos.y + (sPos.h / 2)}" />
-        <di:waypoint x="${sPos.x}" y="${cancelY - 18}" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="${sPos.x + 10}" y="${sPos.y + 60}" width="60" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>`);
-
-      elements.push(`    <bpmn:endEvent id="${cancelEndId}" name="Rejected">
-      <bpmn:incoming>${flowToCancel}</bpmn:incoming>
-      <bpmn:terminateEventDefinition id="TerminateEventDefinition_${node.id}" />
-    </bpmn:endEvent>`);
-      continue;
-    }
-
-    // Snake logic: wrap to new line and reverse direction
-    const row = Math.floor(visualNodeCount / MAX_COLS);
-    const rawCol = visualNodeCount % MAX_COLS;
+  nodeDefs.forEach((node, i) => {
+    const row = Math.floor(i / MAX_COLS);
+    const rawCol = i % MAX_COLS;
     const isEvenRow = row % 2 === 0;
     const col = isEvenRow ? rawCol : (MAX_COLS - 1 - rawCol);
+
+    const x = X_START + col * COL_SPACING;
+    const y = Y_START + row * ROW_SPACING;
     
-    const nodeX = X_START + col * COL_SPACING;
-    const nodeY = Y_START + row * ROW_SPACING;
+    let w = 120, h = 80; // Default Task size
+    if (node.category === 'event') { w = 36; h = 36; }
+    else if (node.category === 'gateway') { w = 50; h = 50; }
+    else if (node.category === 'data') { w = 40; h = 60; }
 
-    if (node.type === 'parallel-gateway' && i + 2 < nodeDefs.length) {
-      const splitId = node.id;
-      const taskA = nodeDefs[++i];
-      const taskB = nodeDefs[++i];
-      const joinId = `${splitId}_Join`;
+    positions[node.id] = { x, y, w, h, row, col };
 
-      // For parallel, we take up two "slots" horizontally in the snake if possible, 
-      // but to keep it simple and valid, we render them as a block at the current snake nodeX/nodeY
-      positions[splitId] = { x: nodeX, y: nodeY, w: 50, h: 50, row, col };
-      
-      const offsetDirection = isEvenRow ? 1 : -1;
-      const branchX = nodeX + (180 * offsetDirection);
-      const endX = nodeX + (360 * offsetDirection);
-
-      positions[taskA.id] = { x: branchX, y: nodeY - 120, w: 120, h: 80, row, col };
-      positions[taskB.id] = { x: branchX, y: nodeY + 120, w: 120, h: 80, row, col };
-      positions[joinId] = { x: endX, y: nodeY, w: 50, h: 50, row, col };
-
-      const f_to_split = registerFlow(`F_${lastNodeId}_S`, lastNodeId, splitId);
-      const f_s_a = registerFlow(`F_S_A_${taskA.id}`, splitId, taskA.id);
-      const f_s_b = registerFlow(`F_S_B_${taskB.id}`, splitId, taskB.id);
-      const f_a_j = registerFlow(`F_A_J_${taskA.id}`, taskA.id, joinId);
-      const f_b_j = registerFlow(`F_B_J_${taskB.id}`, taskB.id, joinId);
-
-      const sP = positions[lastNodeId];
-      diElements.push(`
-      <bpmndi:BPMNShape id="${splitId}_di" bpmnElement="${splitId}">
-        <dc:Bounds x="${nodeX - 25}" y="${nodeY - 25}" width="50" height="50" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="${taskA.id}_di" bpmnElement="${taskA.id}">
-        <dc:Bounds x="${branchX - 60}" y="${nodeY - 120 - 40}" width="120" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="${taskB.id}_di" bpmnElement="${taskB.id}">
-        <dc:Bounds x="${branchX - 60}" y="${nodeY + 120 - 40}" width="120" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="${joinId}_di" bpmnElement="${joinId}">
-        <dc:Bounds x="${endX - 25}" y="${nodeY - 25}" width="50" height="50" />
-      </bpmndi:BPMNShape>
-      
-      <bpmndi:BPMNEdge id="${f_to_split}_di" bpmnElement="${f_to_split}">
-        <di:waypoint x="${sP.x}" y="${sP.y}" />
-        <di:waypoint x="${nodeX}" y="${nodeY}" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="${f_s_a}_di" bpmnElement="${f_s_a}">
-        <di:waypoint x="${nodeX}" y="${nodeY - 25}" />
-        <di:waypoint x="${nodeX}" y="${nodeY - 120}" />
-        <di:waypoint x="${branchX - 60}" y="${nodeY - 120}" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="${f_s_b}_di" bpmnElement="${f_s_b}">
-        <di:waypoint x="${nodeX}" y="${nodeY + 25}" />
-        <di:waypoint x="${nodeX}" y="${nodeY + 120}" />
-        <di:waypoint x="${branchX - 60}" y="${nodeY + 120}" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="${f_a_j}_di" bpmnElement="${f_a_j}">
-        <di:waypoint x="${branchX + 60}" y="${nodeY - 120}" />
-        <di:waypoint x="${endX}" y="${nodeY - 120}" />
-        <di:waypoint x="${endX}" y="${nodeY - 25}" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="${f_b_j}_di" bpmnElement="${f_b_j}">
-        <di:waypoint x="${branchX + 60}" y="${nodeY + 120}" />
-        <di:waypoint x="${endX}" y="${nodeY + 120}" />
-        <di:waypoint x="${endX}" y="${nodeY + 25}" />
-      </bpmndi:BPMNEdge>`);
-
-      elements.push(`    <bpmn:parallelGateway id="${splitId}" name="Split" />`);
-      elements.push(`    <bpmn:${taskA.taskSubtype} id="${taskA.id}" name="${escapeXml(taskA.name)}" />`);
-      elements.push(`    <bpmn:${taskB.taskSubtype} id="${taskB.id}" name="${escapeXml(taskB.name)}" />`);
-      elements.push(`    <bpmn:parallelGateway id="${joinId}" name="Join" />`);
-
-      lastNodeId = joinId;
-      lastTaskId = taskB.id;
-      visualNodeCount += 2; // parallel structure consumes roughly 2 logical horizontal steps
-      continue;
+    // Generate XML Elements
+    switch (node.type) {
+      case 'startEvent': elements.push(`<bpmn:startEvent id="${node.id}" name="${escapeXml(node.name)}" />`); break;
+      case 'endEvent': elements.push(`<bpmn:endEvent id="${node.id}" name="${escapeXml(node.name)}" />`); break;
+      case 'timerEvent': elements.push(`<bpmn:intermediateCatchEvent id="${node.id}" name="${escapeXml(node.name)}"><bpmn:timerEventDefinition id="T_${node.id}" /></bpmn:intermediateCatchEvent>`); break;
+      case 'messageEvent': elements.push(`<bpmn:intermediateCatchEvent id="${node.id}" name="${escapeXml(node.name)}"><bpmn:messageEventDefinition id="M_${node.id}" /></bpmn:intermediateCatchEvent>`); break;
+      case 'terminateEvent': elements.push(`<bpmn:endEvent id="${node.id}" name="${escapeXml(node.name)}"><bpmn:terminateEventDefinition id="Term_${node.id}" /></bpmn:endEvent>`); break;
+      case 'exclusiveGateway': elements.push(`<bpmn:exclusiveGateway id="${node.id}" name="${escapeXml(node.name)}" isMarkerVisible="true" />`); break;
+      case 'parallelGateway': elements.push(`<bpmn:parallelGateway id="${node.id}" name="${escapeXml(node.name)}" />`); break;
+      case 'inclusiveGateway': elements.push(`<bpmn:inclusiveGateway id="${node.id}" name="${escapeXml(node.name)}" />`); break;
+      case 'serviceTask': elements.push(`<bpmn:serviceTask id="${node.id}" name="${escapeXml(node.name)}" />`); break;
+      case 'manualTask': elements.push(`<bpmn:manualTask id="${node.id}" name="${escapeXml(node.name)}" />`); break;
+      case 'callActivity': elements.push(`<bpmn:callActivity id="${node.id}" name="${escapeXml(node.name)}" />`); break;
+      case 'dataObject': elements.push(`<bpmn:dataObjectReference id="${node.id}" name="${escapeXml(node.name)}" dataObjectRef="DO_${node.id}" /><bpmn:dataObject id="DO_${node.id}" />`); break;
+      case 'dataStore': elements.push(`<bpmn:dataStoreReference id="${node.id}" name="${escapeXml(node.name)}" />`); break;
+      default: elements.push(`<bpmn:userTask id="${node.id}" name="${escapeXml(node.name)}" />`);
     }
 
-    const width = node.type.includes('task') ? TASK_W : (node.type.includes('gateway') ? GATEWAY_SIZE : 36);
-    const height = node.type.includes('task') ? TASK_H : (node.type.includes('gateway') ? GATEWAY_SIZE : 36);
-    
-    positions[node.id] = { x: nodeX, y: nodeY, w: width, h: height, row, col };
-
-    const flowId = `Flow_${lastNodeId}_to_${node.id}`;
-    const flowLabel = (currentGatewayId === lastNodeId) ? "Yes" : "";
-    registerFlow(flowId, lastNodeId, node.id, flowLabel);
-
-    const sPos = positions[lastNodeId];
-    // Snake Waypoint Logic
-    if (sPos.row === row) {
-      // Horizontal flow (could be LTR or RTL)
-      const exitX = sPos.x + (sPos.w / 2 * (isEvenRow ? 1 : -1));
-      const entryX = nodeX - (width / 2 * (isEvenRow ? 1 : -1));
-      diElements.push(`
-      <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
-        <di:waypoint x="${exitX}" y="${sPos.y}" />
-        <di:waypoint x="${entryX}" y="${nodeY}" />
-        ${flowLabel ? `
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="${(exitX + entryX) / 2 - 10}" y="${sPos.y - 20}" width="20" height="14" />
-        </bpmndi:BPMNLabel>` : ''}
-      </bpmndi:BPMNEdge>`);
-    } else {
-      // Row transition (Vertical drop)
-      diElements.push(`
-      <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
-        <di:waypoint x="${sPos.x}" y="${sPos.y + sPos.h / 2}" />
-        <di:waypoint x="${sPos.x}" y="${nodeY - (height / 2) - 40}" />
-        <di:waypoint x="${nodeX}" y="${nodeY - (height / 2) - 40}" />
-        <di:waypoint x="${nodeX}" y="${nodeY - height / 2}" />
-      </bpmndi:BPMNEdge>`);
-    }
-
-    if (node.type === 'task') lastTaskId = node.id;
-    currentGatewayId = node.type.includes('gateway') ? node.id : null;
-    lastNodeId = node.id;
-    visualNodeCount++;
-  }
-
-  const finalEndId = 'FinalEndEvent';
-  const lastPos = positions[lastNodeId];
-  if (lastPos && lastNodeId !== 'StartEvent') {
-    const finalFlowId = 'Flow_Final_Complete';
-    registerFlow(finalFlowId, lastNodeId, finalEndId, "Success");
-    
-    // Position final event relative to last node in snake flow
-    const isEven = lastPos.row % 2 === 0;
-    const endX = lastPos.x + (150 * (isEven ? 1 : -1));
-    positions[finalEndId] = { x: endX, y: lastPos.y, w: 36, h: 36, row: lastPos.row, col: -1 };
-
+    // DI Shape
     diElements.push(`
-      <bpmndi:BPMNShape id="${finalEndId}_di" bpmnElement="${finalEndId}">
-        <dc:Bounds x="${endX - 18}" y="${lastPos.y - 18}" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="${finalFlowId}_di" bpmnElement="${finalFlowId}">
-        <di:waypoint x="${lastPos.x + (lastPos.w / 2 * (isEven ? 1 : -1))}" y="${lastPos.y}" />
-        <di:waypoint x="${endX - (18 * (isEven ? 1 : -1))}" y="${lastPos.y}" />
+      <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}" ${node.type === 'exclusiveGateway' ? 'isMarkerVisible="true"' : ''}>
+        <dc:Bounds x="${x - w/2}" y="${y - h/2}" width="${w}" height="${h}" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="${(lastPos.x + endX) / 2 - 20}" y="${lastPos.y - 20}" width="40" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>`);
-  }
-
-  elements.push(`    <bpmn:startEvent id="StartEvent" name="Start" />`);
-  diElements.push(`
-      <bpmndi:BPMNShape id="StartEvent_di" bpmnElement="StartEvent">
-        <dc:Bounds x="${positions["StartEvent"].x - 18}" y="${Y_START - 18}" width="36" height="36" />
-      </bpmndi:BPMNShape>`);
-
-  nodeDefs.forEach(node => {
-    if (['loop-back', 'cancel-path', 'parallel-gateway'].includes(node.type)) return;
-    const pos = positions[node.id];
-    if (!pos) return;
-
-    if (node.type === 'gateway') {
-      elements.push(`    <bpmn:exclusiveGateway id="${node.id}" name="Decision" isMarkerVisible="true" />`);
-      diElements.push(`
-      <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}" isMarkerVisible="true">
-        <dc:Bounds x="${pos.x - 25}" y="${pos.y - 25}" width="50" height="50" />
-      </bpmndi:BPMNShape>`);
-    } else if (node.type === 'timer-event') {
-      elements.push(`    <bpmn:intermediateCatchEvent id="${node.id}" name="${escapeXml(node.name)}">
-      <bpmn:timerEventDefinition id="TimerEventDefinition_${node.id}" />
-    </bpmn:intermediateCatchEvent>`);
-      diElements.push(`
-      <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}">
-        <dc:Bounds x="${pos.x - 18}" y="${pos.y - 18}" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="${pos.x - 40}" y="${pos.y + 22}" width="80" height="14" />
+          <dc:Bounds x="${x - 40}" y="${y + h/2 + 5}" width="80" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>`);
-    } else {
-      elements.push(`    <bpmn:${node.taskSubtype} id="${node.id}" name="${escapeXml(node.name)}" />`);
-      diElements.push(`
-      <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}">
-        <dc:Bounds x="${pos.x - 60}" y="${pos.y - 40}" width="120" height="80" />
-      </bpmndi:BPMNShape>`);
+
+    // Sequence Flows (Snake Logic)
+    if (lastNodeId) {
+      const flowId = `Flow_${lastNodeId}_${node.id}`;
+      flows.push(`<bpmn:sequenceFlow id="${flowId}" sourceRef="${lastNodeId}" targetRef="${node.id}" />`);
+      
+      const sPos = positions[lastNodeId];
+      if (sPos.row === row) {
+        // Horizontal
+        diElements.push(`
+          <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
+            <di:waypoint x="${sPos.x + (sPos.w/2 * (isEvenRow ? 1 : -1))}" y="${sPos.y}" />
+            <di:waypoint x="${x - (w/2 * (isEvenRow ? 1 : -1))}" y="${y}" />
+          </bpmndi:BPMNEdge>`);
+      } else {
+        // Row Wrap (Vertical drop)
+        diElements.push(`
+          <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
+            <di:waypoint x="${sPos.x}" y="${sPos.y + sPos.h/2}" />
+            <di:waypoint x="${sPos.x}" y="${y - h/2 - 40}" />
+            <di:waypoint x="${x}" y="${y - h/2 - 40}" />
+            <di:waypoint x="${x}" y="${y - h/2}" />
+          </bpmndi:BPMNEdge>`);
+      }
     }
+    lastNodeId = node.id;
   });
-
-  if (positions[finalEndId]) {
-    elements.push(`    <bpmn:endEvent id="${finalEndId}" name="Success" />`);
-  }
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" 
                   xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" 
                   xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" 
                   xmlns:di="http://www.omg.org/spec/DD/20100524/DI" 
-                  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
                   id="Definitions_Worku"
                   targetNamespace="http://bpmn.io/schema/bpmn"
                   exporter="Worku (ወርቁ) Pro Architect" 
                   exporterVersion="8.0">
-  <bpmn:process id="Process_Worku_Auto" name="${escapeXml(title)}" isExecutable="true">
+  <bpmn:process id="Process_Worku_Pro" name="${escapeXml(title)}" isExecutable="true">
 ${elements.join('\n')}
 ${flows.join('\n')}
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_Worku_Auto">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_Worku_Pro">
 ${diElements.join('\n')}
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
