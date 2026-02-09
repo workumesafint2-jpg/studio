@@ -86,22 +86,29 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     else if (mappings.scriptTask.some(k => lowerLine.includes(k))) { type = 'scriptTask'; category = 'task'; }
     else if (mappings.reject.some(k => lowerLine.includes(k))) { type = 'rejectEnd'; category = 'event'; }
 
-    // CLEANUP NAME
+    // CLEANUP NAME - Fixed RegExp to avoid "Nothing to repeat" error
     let pureName = line;
     const allTriggers = [
       ...Object.values(mappings).flat(),
       ...Object.values(flowDirectionTriggers).flat(),
       ...Object.values(flowLabels).flat(),
-      'success', 'failed', 'done', 'task', 'error', 'decision', '->', '=>', '>', ':-', ':', 'simultaneous'
+      'success', 'failed', 'done', 'task', 'error', 'decision', 'simultaneous'
     ];
 
     allTriggers.sort((a, b) => b.length - a.length).forEach(k => {
       const escapedK = escapeRegExp(k);
-      const regex = new RegExp(`^${escapedK}\\s*[:\\-–—=>\\s]*|\\s*\\(${escapedK}\\)|\\b${escapedK}\\b|\\s*[:\\-–—=>]+\\s*`, 'gi');
+      // Removed punctuation that causes issues in word boundaries for some JS engines
+      const regex = new RegExp(`^${escapedK}|\\(${escapedK}\\)|\\b${escapedK}\\b`, 'gi');
       pureName = pureName.replace(regex, '');
     });
     
-    pureName = pureName.replace(/[?፧？]$/, '').replace(/^[\s>->=>:]+/, '').replace(/\([^)]*\)/g, '').trim();
+    // Final polish of labels
+    pureName = pureName
+      .replace(/[?፧？]$/, '')
+      .replace(/^[\s>->=>:–—-]+/, '')
+      .replace(/\s*[:\-–—=>]+\s*/g, ' ')
+      .replace(/\([^)]*\)/g, '')
+      .trim();
 
     const nodeId = `Node_${index}`;
     nodeDefs.push({
@@ -126,7 +133,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const diElements: string[] = [];
   const positions: Record<string, { x: number, y: number, w: number, h: number, row: number, col: number }> = {};
 
-  // Layout Constants
+  // Layout Constants - Set to 350 for safe Manhattan clearance
   const MAX_COLS = 3; 
   const BOX_WIDTH = 120;
   const BOX_HEIGHT = 80;
@@ -179,13 +186,13 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
     const currentPos = positions[node.id];
     
-    // DATA OBJECT Logic
+    // DATA OBJECT Logic - Position directly ABOVE task
     if (node.hasDataAssociation) {
       const dataId = `DataObj_${node.id}`;
       const assocId = `Assoc_${node.id}`;
-      // Position Data Object above task but offset slightly
-      const dataX = currentPos.x - 40;
-      const dataY = currentPos.y - 100;
+      // Data object shifted 100 units up
+      const dataX = currentPos.x;
+      const dataY = currentPos.y - 120;
 
       elements.push(`<bpmn:dataObjectReference id="${dataId}" name="${escapeXml(node.dataLabel)}" dataObjectRef="DO_Ref_${node.id}" />`);
       elements.push(`<bpmn:dataObject id="DO_Ref_${node.id}" />`);
@@ -209,7 +216,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>`);
 
-    // FORWARD FLOW Logic
+    // FORWARD FLOW Logic - 90 Degree Orthogonal
     if (i > 0 && !node.isBoundaryError) {
       const prev = nodeDefs[i - 1];
       if (!prev.isBoundaryError) {
@@ -226,12 +233,12 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
           let waypoints: {x: number, y: number}[] = [];
 
           if (sRow === tRow) {
-            // Sequential horizontal flow
+            // Horizontal sequential flow
             const exitX = isEvenRow ? s.x + s.w/2 : s.x - s.w/2;
             const entryX = isEvenRow ? t.x - t.w/2 : t.x + t.w/2;
             waypoints = [{ x: exitX, y: s.y }, { x: entryX, y: t.y }];
           } else {
-            // Row transition (Manhattan)
+            // Manhattan row transition
             const midY = (s.y + t.y) / 2;
             waypoints = [
               { x: s.x, y: s.y + s.h/2 },
@@ -253,14 +260,13 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     }
   });
 
-  // BACK/LOOP FLOW Logic
+  // BACK/LOOP FLOW Logic - High Clearance (y-offset -100)
   backFlows.forEach(f => {
     flows.push(`<bpmn:sequenceFlow id="${f.id}" name="${escapeXml(f.name)}" sourceRef="${f.sourceRef}" targetRef="${f.targetRef}" />`);
     const s = positions[f.sourceRef];
     const t = positions[f.targetRef];
     if (s && t) {
-      // High-clearance Loop
-      const clearY = Math.min(s.y, t.y) - 220; 
+      const clearY = Math.min(s.y, t.y) - 220; // 220px clearance to ensure it's above data objects
       diElements.push(`
         <bpmndi:BPMNEdge id="${f.id}_di" bpmnElement="${f.id}">
           <di:waypoint x="${s.x}" y="${s.y - s.h/2}" />
