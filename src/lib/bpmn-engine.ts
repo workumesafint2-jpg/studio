@@ -41,6 +41,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
     if (isStrictLoop && nodeDefs.length > 0) {
       const sourceId = nodeDefs[nodeDefs.length - 1].id;
+      // Point back to the last known user task for professional correction loops
       const targetId = lastUserTaskId || (nodeDefs.length > 1 ? nodeDefs[nodeDefs.length - 2].id : nodeDefs[0].id);
       backFlows.push({
         id: `Flow_Back_${index}`,
@@ -128,11 +129,11 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const diElements: string[] = [];
   const positions: Record<string, { x: number, y: number, w: number, h: number, row: number }> = {};
 
-  // Layout Constants (Increased for zero overlap)
+  // Layout Constants (STRICT: 300px Horizontal, 200px Vertical)
   const MAX_COLS = 4;
   const BOX_WIDTH = 120;
   const COL_SPACING = 300; 
-  const ROW_SPACING = 250;
+  const ROW_SPACING = 200;
   const X_START = 200;
   const Y_START = 200;
 
@@ -173,7 +174,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       const dataId = `DataObj_${node.id}`;
       const assocId = `Assoc_${node.id}`;
       const dataX = x;
-      const dataY = y - 100; // Position ABOVE the task
+      const dataY = y - 100; // Position directly ABOVE the task
       const dataW = 36, dataH = 50;
 
       elements.push(`<bpmn:dataObjectReference id="${dataId}" name="${escapeXml(node.dataLabel)}" dataObjectRef="DO_Ref_${node.id}" />`);
@@ -198,7 +199,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>`);
 
-    // PASS 2: Orthogonal Sequence Flow Calculation
+    // PASS 2: Orthogonal Sequence Flow Calculation (90-degree bends)
     if (i > 0 && !node.isReject) {
       const prev = nodeDefs[i - 1];
       if (!prev.isReject) {
@@ -222,7 +223,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
               { x: entryX, y: t.y }
             ];
           } else {
-            // Snake Logic (Orthogonal bends)
+            // Snake Logic (Orthogonal bends for row transitions)
             const midY = (s.y + t.y) / 2;
             waypoints = [
               { x: s.x, y: s.y + s.h / 2 },
@@ -251,7 +252,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     const t = positions[f.targetRef];
     if (s && t) {
       if (f.direction === 'loop') {
-        const clearY = s.y - s.h/2 - 100; // 100px Loop height clearance
+        const clearY = s.y - s.h/2 - 100; // 100px High-clearance Loop
         diElements.push(`
           <bpmndi:BPMNEdge id="${f.id}_di" bpmnElement="${f.id}">
             <di:waypoint x="${s.x}" y="${s.y - s.h/2}" />
@@ -263,6 +264,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
             </bpmndi:BPMNLabel>
           </bpmndi:BPMNEdge>`);
       } else if (f.direction === 'reject') {
+        // Downward routing for rejections
         diElements.push(`
           <bpmndi:BPMNEdge id="${f.id}_di" bpmnElement="${f.id}">
             <di:waypoint x="${s.x}" y="${s.y + s.h/2}" />

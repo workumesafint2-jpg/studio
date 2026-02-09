@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Copy, FileCode, Trash2, MoreVertical, FolderArchive, Loader2, Eye, Code, Download, FileJson } from "lucide-react";
+import { Copy, FileCode, Trash2, MoreVertical, FolderArchive, Eye, Code, Download, FileJson } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -21,12 +21,26 @@ import {
 import JSZip from 'jszip';
 
 export function BPMNFlowForgeApp() {
+  const [mounted, setMounted] = useState(false);
   const [input, setInput] = useState("");
   const [title, setTitle] = useState("");
   const [xmlResult, setXmlResult] = useState("");
   const [activeTab, setActiveTab] = useState("diagram");
   const viewerRef = useRef<BPMNViewerRef>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <div className="flex h-screen w-screen bg-background items-center justify-center">
+      <div className="animate-pulse flex flex-col items-center gap-4">
+        <FileCode className="w-12 h-12 text-primary/20" />
+        <div className="h-4 w-32 bg-muted rounded"></div>
+      </div>
+    </div>;
+  }
 
   const handleGenerate = () => {
     if (!input.trim()) {
@@ -281,7 +295,7 @@ export function BPMNFlowForgeApp() {
       </main>
       
       <footer className="px-6 py-2 bg-white border-t border-muted hidden sm:flex items-center justify-between text-[9px] text-muted-foreground shrink-0 uppercase tracking-widest font-bold">
-        <p>© {new Date().getFullYear()} (ወርቁ) PRO ARCHITECT</p>
+        <p>© {mounted ? new Date().getFullYear() : "...."} (ወርቁ) PRO ARCHITECT</p>
         <p className="flex items-center gap-4">
           <span className="text-primary">ENTERPRISE READY</span>
           <span>SNAKE ENGINE</span>
