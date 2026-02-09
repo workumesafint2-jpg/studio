@@ -31,11 +31,11 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const backFlows: any[] = [];
   let lastUserTaskId: string | null = null;
 
-  // PASS 1: Identify Nodes and Data Associations
+  // PASS 1: Identify Nodes and specialized associations
   rawLines.forEach((line, index) => {
     const lowerLine = line.toLowerCase();
     
-    // Check for Loop/Back commands
+    // Check for Loop/Back commands - these do not create boxes
     const isStrictLoop = flowDirectionTriggers.loop.some(t => lowerLine.includes(t));
     const isStrictReject = flowDirectionTriggers.reject.some(t => lowerLine.includes(t)) && !lowerLine.includes('ውሳኔ');
 
@@ -91,7 +91,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     else if (mappings.serviceTask.some(k => lowerLine.includes(k))) { type = 'serviceTask'; category = 'task'; }
     else if (mappings.manualTask.some(k => lowerLine.includes(k))) { type = 'manualTask'; category = 'task'; }
 
-    // CLEANUP NAME: Remove all trigger keywords, arrows, and technical markers
+    // CLEANUP NAME: Remove trigger words from labels
     let pureName = line;
     const allTriggers = [
       ...Object.values(mappings).flat(),
@@ -128,11 +128,11 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const diElements: string[] = [];
   const positions: Record<string, { x: number, y: number, w: number, h: number, row: number }> = {};
 
-  // Layout Constants
+  // Layout Constants (Increased for zero overlap)
   const MAX_COLS = 4;
   const BOX_WIDTH = 120;
-  const COL_SPACING = BOX_WIDTH + 250; // Ensure 250px gap between boxes
-  const ROW_SPACING = 300;
+  const COL_SPACING = 300; 
+  const ROW_SPACING = 250;
   const X_START = 200;
   const Y_START = 200;
 
@@ -156,7 +156,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       case 'startEvent': elements.push(`<bpmn:startEvent id="${node.id}" name="${escapedName}" />`); break;
       case 'endEvent': 
         if (node.isReject) {
-          elements.push(`<bpmn:endEvent id="${node.id}" name="Rejection"><bpmn:cancelEventDefinition id="Cancel_${node.id}" /></bpmn:endEvent>`);
+          elements.push(`<bpmn:endEvent id="${node.id}" name="Reject"><bpmn:cancelEventDefinition id="Cancel_${node.id}" /></bpmn:endEvent>`);
         } else {
           elements.push(`<bpmn:endEvent id="${node.id}" name="${escapedName}" />`); 
         }
@@ -173,7 +173,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       const dataId = `DataObj_${node.id}`;
       const assocId = `Assoc_${node.id}`;
       const dataX = x;
-      const dataY = y - 110; 
+      const dataY = y - 100; // Position ABOVE the task
       const dataW = 36, dataH = 50;
 
       elements.push(`<bpmn:dataObjectReference id="${dataId}" name="${escapeXml(node.dataLabel)}" dataObjectRef="DO_Ref_${node.id}" />`);
@@ -198,7 +198,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>`);
 
-    // PASS 2: Sequence Flow Calculation
+    // PASS 2: Orthogonal Sequence Flow Calculation
     if (i > 0 && !node.isReject) {
       const prev = nodeDefs[i - 1];
       if (!prev.isReject) {
@@ -222,7 +222,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
               { x: entryX, y: t.y }
             ];
           } else {
-            // Orthogonal routing for row changes (Snake Layout)
+            // Snake Logic (Orthogonal bends)
             const midY = (s.y + t.y) / 2;
             waypoints = [
               { x: s.x, y: s.y + s.h / 2 },
@@ -244,14 +244,14 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     }
   });
 
-  // Loop-Back Routing
+  // Specialized Arrow Routing (Loops and Rejections)
   backFlows.forEach(f => {
     flows.push(`<bpmn:sequenceFlow id="${f.id}" name="${escapeXml(f.name)}" sourceRef="${f.sourceRef}" targetRef="${f.targetRef}" />`);
     const s = positions[f.sourceRef];
     const t = positions[f.targetRef];
     if (s && t) {
       if (f.direction === 'loop') {
-        const clearY = s.y - s.h/2 - 80; 
+        const clearY = s.y - s.h/2 - 100; // 100px Loop height clearance
         diElements.push(`
           <bpmndi:BPMNEdge id="${f.id}_di" bpmnElement="${f.id}">
             <di:waypoint x="${s.x}" y="${s.y - s.h/2}" />
