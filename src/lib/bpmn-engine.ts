@@ -7,7 +7,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     start: ['መጀመሪያ', 'ጀምር', 'start', 'begin'],
     end: ['መጨረሻ', 'ጨርስ', 'ተጠናቀቀ', 'end', 'finish'],
     timer: ['ቆይታ', 'ሰዓት', 'timer', 'wait'],
-    userTask: ['ተግባር', 'ባለሙያ', 'human', 'user task', 'action'],
+    userTask: ['ባለሙያ', 'human', 'user task', 'ተግባር', 'action'],
     serviceTask: ['ሲስተም', 'አውቶማቲክ', 'service task', 'system', 'auto', 'gear'],
     manualTask: ['በእጅ', 'ፊዚካል', 'manual task', 'physical'],
     scriptTask: ['ስክሪፕት', 'ኮድ', 'script task', 'code'],

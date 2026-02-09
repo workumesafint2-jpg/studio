@@ -74,11 +74,14 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
   useEffect(() => {
     if (!containerRef.current) return;
 
-    if (!viewerRef.current) {
-      viewerRef.current = new BpmnViewer({
-        container: containerRef.current
-      });
-    }
+    // Ensure we start with a clean container
+    containerRef.current.innerHTML = '';
+
+    const viewer = new BpmnViewer({
+      container: containerRef.current
+    });
+
+    viewerRef.current = viewer;
 
     return () => {
       if (viewerRef.current) {
@@ -93,6 +96,10 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
       if (viewerRef.current && xml && !isImporting.current) {
         try {
           isImporting.current = true;
+          
+          // Small delay to ensure the DOM is ready for the engine
+          await new Promise(resolve => setTimeout(resolve, 50));
+          
           await viewerRef.current.importXML(xml);
           
           const canvas = viewerRef.current?.get('canvas');
