@@ -94,7 +94,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     ];
 
     allTriggers.forEach(k => {
-      // Escape special regex characters in the keyword k
       const escapedK = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(`^${escapedK}\\s*[:\\-–—\\s]*|\\s*\\(${escapedK}\\)|\\b${escapedK}\\b`, 'gi');
       pureName = pureName.replace(regex, '');
@@ -130,10 +129,11 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const diElements: string[] = [];
   const positions: Record<string, { x: number, y: number, w: number, h: number }> = {};
 
-  const MAX_COLS = 5;
-  const COL_SPACING = 240;
-  const ROW_SPACING = 260;
-  const X_START = 150;
+  // Layout Constants - Ensuring 200+ unit distance between boxes
+  const MAX_COLS = 4;      // Reduced for horizontal space
+  const COL_SPACING = 320; // 120 (width) + 200 (distance) = 320
+  const ROW_SPACING = 300; // Vertical breathing room
+  const X_START = 200;
   const Y_START = 200;
 
   nodeDefs.forEach((node, i) => {
@@ -173,7 +173,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       const dataId = `DataObj_${node.id}`;
       const assocId = `Assoc_${node.id}`;
       const dataX = x;
-      const dataY = y - 100; 
+      const dataY = y - 110; // Shifted up for clarity
       const dataW = 36, dataH = 50;
 
       elements.push(`<bpmn:dataObjectReference id="${dataId}" name="${escapeXml(node.dataLabel)}" dataObjectRef="DO_Ref_${node.id}" />`);
@@ -214,8 +214,8 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
           if (isForward) {
             diElements.push(`
               <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
-                <di:waypoint x="${sPos.x + sPos.w / 2}" y="${sPos.y}" />
-                <di:waypoint x="${x - w / 2}" y="${y}" />
+                <di:waypoint x="${isEvenRow ? sPos.x + sPos.w / 2 : sPos.x - sPos.w / 2}" y="${sPos.y}" />
+                <di:waypoint x="${isEvenRow ? x - w / 2 : x + w / 2}" y="${y}" />
                 <bpmndi:BPMNLabel>
                   <dc:Bounds x="${(sPos.x + x) / 2 - 25}" y="${y - 20}" width="50" height="14" />
                 </bpmndi:BPMNLabel>
@@ -224,8 +224,8 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
             diElements.push(`
               <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
                 <di:waypoint x="${sPos.x}" y="${sPos.y + sPos.h / 2}" />
-                <di:waypoint x="${sPos.x}" y="${y - h / 2 - 40}" />
-                <di:waypoint x="${x}" y="${y - h / 2 - 40}" />
+                <di:waypoint x="${sPos.x}" y="${y - h / 2 - 50}" />
+                <di:waypoint x="${x}" y="${y - h / 2 - 50}" />
                 <di:waypoint x="${x}" y="${y - h / 2}" />
               </bpmndi:BPMNEdge>`);
           }
@@ -243,11 +243,11 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         diElements.push(`
           <bpmndi:BPMNEdge id="${f.id}_di" bpmnElement="${f.id}">
             <di:waypoint x="${sPos.x}" y="${sPos.y - sPos.h / 2}" />
-            <di:waypoint x="${sPos.x}" y="${sPos.y - 120}" />
-            <di:waypoint x="${tPos.x}" y="${sPos.y - 120}" />
+            <di:waypoint x="${sPos.x}" y="${sPos.y - 130}" />
+            <di:waypoint x="${tPos.x}" y="${sPos.y - 130}" />
             <di:waypoint x="${tPos.x}" y="${tPos.y - tPos.h / 2}" />
             <bpmndi:BPMNLabel>
-              <dc:Bounds x="${(sPos.x + tPos.x) / 2 - 25}" y="${sPos.y - 140}" width="50" height="14" />
+              <dc:Bounds x="${(sPos.x + tPos.x) / 2 - 25}" y="${sPos.y - 150}" width="50" height="14" />
             </bpmndi:BPMNLabel>
           </bpmndi:BPMNEdge>`);
       } else {
@@ -270,7 +270,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
                   xmlns:di="http://www.omg.org/spec/DD/20100524/DI" 
                   targetNamespace="http://bpmn.io/schema/bpmn"
                   exporter="Worku (ወርቁ) Pro Architect" 
-                  exporterVersion="10.0">
+                  exporterVersion="11.0">
   <bpmn:process id="Process_Worku_Pro" name="${escapeXml(title)}" isExecutable="true">
 ${elements.join('\n')}
 ${flows.join('\n')}
