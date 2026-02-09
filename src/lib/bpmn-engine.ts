@@ -27,14 +27,15 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   let lastUserTaskId: string | null = null;
   let startTextToMove = "";
 
-  // PASS 1: Identify Nodes
+  // PASS 1: Identify Nodes and Categorize
   rawLines.forEach((line, index) => {
     const lowerLine = line.toLowerCase();
     
-    // Detect Back/Loop triggers
+    // Detect Back/Loop triggers - these become arrows, not nodes
     const isLoop = ['ተመለስ', 'back', 'correction', 'fix', 'edit', 'ካልጸደቀ'].some(t => lowerLine.includes(t));
     if (isLoop && nodeDefs.length > 0) {
       const sourceId = nodeDefs[nodeDefs.length - 1].id;
+      // Find the most appropriate target (the last User Task or the Start node)
       const targetId = lastUserTaskId || (nodeDefs.length > 1 ? nodeDefs[nodeDefs.length - 2].id : nodeDefs[0].id);
       backFlows.push({
         id: `Flow_Back_${index}`,
@@ -69,7 +70,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     else if (mappings.scriptTask.some(k => lowerLine.includes(k))) { type = 'scriptTask'; category = 'task'; }
     else if (mappings.reject.some(k => lowerLine.includes(k))) { type = 'rejectEnd'; category = 'event'; }
 
-    // Label Cleaning
+    // Label Cleaning - remove trigger keywords from visual label
     let pureName = line;
     const allTriggers = [...Object.values(mappings).flat(), 'task', 'error', 'if', 'yes', 'no', '->', '=>', ':-'];
     allTriggers.sort((a, b) => b.length - a.length).forEach(k => {
@@ -83,9 +84,9 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     pureName = pureName.replace(/[?፧？]$/, '').replace(/^[\s>->:–—-]+/, '').trim();
 
     // RULE: Start Box Purity - Move text to following task
-    if (type === 'startEvent' && pureName) {
-      startTextToMove = pureName;
-      pureName = ""; 
+    if (type === 'startEvent') {
+      if (pureName) startTextToMove = pureName;
+      pureName = ""; // Start circle is 100% empty
     } else if (category === 'task' && startTextToMove) {
       pureName = startTextToMove + (pureName ? " - " + pureName : "");
       startTextToMove = "";
@@ -111,19 +112,18 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const diElements: string[] = [];
   const positions: Record<string, { x: number, y: number, w: number, h: number, row: number, col: number }> = {};
 
-  const MAX_COLS = 3; 
+  // UI RULE: Wide Workspace Utilization (stay on one line up to 2000px)
+  const COL_SPACING = 350; // Minimum 300px between objects
+  const MAX_COLS = Math.floor(2000 / COL_SPACING); 
   const BOX_WIDTH = 140;
   const BOX_HEIGHT = 80;
-  const COL_SPACING = 350; 
   const ROW_SPACING = 350; 
-  const X_START = 200;
+  const X_START = 150;
   const Y_START = 250;
 
   nodeDefs.forEach((node, i) => {
     const row = Math.floor(i / MAX_COLS);
-    const rawCol = i % MAX_COLS;
-    const isEvenRow = row % 2 === 0;
-    const col = isEvenRow ? rawCol : (MAX_COLS - 1 - rawCol);
+    const col = i % MAX_COLS;
 
     const x = X_START + col * COL_SPACING;
     const y = Y_START + row * ROW_SPACING;
@@ -159,13 +159,13 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>`);
 
-    // RULE: Shift Data Object to side - Connect with dotted line
+    // UI RULE: Data Object Shift to the side (No overlap)
     if (node.hasDataAssociation) {
       const dataId = `DataObj_${node.id}`;
       const assocId = `Assoc_${node.id}`;
-      // Shifted to the side (independent)
-      const dataX = x - 120;
-      const dataY = y - 90;
+      const dataX = x;
+      const dataY = y - 130; // 130px above
+      
       elements.push(`<bpmn:dataObjectReference id="${dataId}" name="${escapeXml(node.dataLabel)}" dataObjectRef="DO_Ref_${node.id}" />`);
       elements.push(`<bpmn:dataObject id="DO_Ref_${node.id}" />`);
       elements.push(`<bpmn:association id="${assocId}" sourceRef="${dataId}" targetRef="${node.id}" />`);
@@ -175,76 +175,66 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
           <dc:Bounds x="${dataX - 18}" y="${dataY - 25}" width="36" height="50" />
         </bpmndi:BPMNShape>
         <bpmndi:BPMNEdge id="${assocId}_di" bpmnElement="${assocId}">
-          <di:waypoint x="${dataX + 18}" y="${dataY}" />
-          <di:waypoint x="${x - w/2}" y="${y}" />
+          <di:waypoint x="${dataX}" y="${dataY + 25}" />
+          <di:waypoint x="${x}" y="${y - h/2}" />
         </bpmndi:BPMNEdge>`);
     }
 
-    // Boundary Error Event Icon
-    if (node.isBoundaryError && node.attachedTo) {
-      const boundaryId = `Boundary_${node.id}`;
-      elements.push(`<bpmn:boundaryEvent id="${boundaryId}" name="ስህተት" attachedToRef="${node.attachedTo}"><bpmn:errorEventDefinition id="Error_${node.id}" /></bpmn:boundaryEvent>`);
-      const parentPos = positions[node.attachedTo];
-      if (parentPos) {
-        diElements.push(`
-          <bpmndi:BPMNShape id="${boundaryId}_di" bpmnElement="${boundaryId}">
-            <dc:Bounds x="${parentPos.x + parentPos.w/2 - 18}" y="${parentPos.y + parentPos.h/2 - 18}" width="36" height="36" />
-          </bpmndi:BPMNShape>`);
-      }
-    }
-
-    // RULE: Orthogonal 90-degree Sequence Flows
+    // Sequence flows (between nodes)
     if (i > 0) {
       const prev = nodeDefs[i-1];
       const s = positions[prev.id];
       const t = positions[node.id];
       const flowId = `Flow_${prev.id}_${node.id}`;
-      const isApproved = nodeDefs[i-1].category === 'gateway';
-      const label = isApproved ? 'ከጸደቀ' : '';
+      
+      // UI RULE: Decision labels ON the arrow midpoint
+      const isGateway = prev.category === 'gateway';
+      const label = isGateway ? 'ከጸደቀ' : '';
       
       flows.push(`<bpmn:sequenceFlow id="${flowId}" ${label ? `name="${label}"` : ''} sourceRef="${prev.id}" targetRef="${node.id}" />`);
 
+      // Orthogonal Manhattan Routing
       let waypoints = [];
       if (s.row === t.row) {
-        // Horizontal straight
-        const direction = t.col > s.col ? 1 : -1;
+        // Simple straight horizontal
         waypoints = [
-          { x: s.x + (direction * s.w/2), y: s.y },
-          { x: t.x - (direction * t.w/2), y: t.y }
+          { x: s.x + s.w/2, y: s.y },
+          { x: t.x - t.w/2, y: t.y }
         ];
       } else {
-        // Manhattan Jog Transition
-        const exitY = s.y + s.h/2;
-        const enterY = t.y - t.h/2;
+        // Multi-line transition
         const midY = (s.y + t.y) / 2;
         waypoints = [
-          { x: s.x, y: exitY },
-          { x: s.x, y: midY },
-          { x: t.x, y: midY },
-          { x: t.x, y: enterY }
+          { x: s.x + s.w/2, y: s.y },
+          { x: s.x + s.w/2 + 50, y: s.y },
+          { x: s.x + s.w/2 + 50, y: midY },
+          { x: t.x - t.w/2 - 50, y: midY },
+          { x: t.x - t.w/2 - 50, y: t.y },
+          { x: t.x - t.w/2, y: t.y }
         ];
       }
+
+      const labelX = (waypoints[0].x + waypoints[waypoints.length-1].x) / 2 - 25;
+      const labelY = (waypoints[0].y + waypoints[waypoints.length-1].y) / 2 - 20;
 
       diElements.push(`
         <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
           ${waypoints.map(p => `<di:waypoint x="${p.x}" y="${p.y}" />`).join('\n')}
           ${label ? `
           <bpmndi:BPMNLabel>
-            <dc:Bounds x="${(waypoints[0].x + waypoints[1].x) / 2 - 25}" y="${waypoints[0].y - 20}" width="50" height="14" />
+            <dc:Bounds x="${labelX}" y="${labelY}" width="50" height="14" />
           </bpmndi:BPMNLabel>` : ''}
         </bpmndi:BPMNEdge>`);
     }
   });
 
-  // RULE: UPWARD Routing for 'ካልጸደቀ' (Loop/Rejection)
+  // UI RULE: Loop-back Routing UPWARDS (Skyway)
   backFlows.forEach(f => {
     flows.push(`<bpmn:sequenceFlow id="${f.id}" name="${f.name}" sourceRef="${f.sourceRef}" targetRef="${f.targetRef}" />`);
     const s = positions[f.sourceRef];
     const t = positions[f.targetRef];
     if (s && t) {
-      // Loop routes UP and back (Skyway)
-      const skyY = s.y - 180; 
-      
+      const skyY = s.y - 220; 
       diElements.push(`
         <bpmndi:BPMNEdge id="${f.id}_di" bpmnElement="${f.id}">
           <di:waypoint x="${s.x}" y="${s.y - s.h/2}" />
