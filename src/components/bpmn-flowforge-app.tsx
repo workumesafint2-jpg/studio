@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Copy, FileCode, Trash2, MoreVertical, FolderArchive, Eye, Code, Download, FileJson } from "lucide-react";
+import { Copy, FileCode, Trash2, MoreVertical, FolderArchive, Eye, Code, Download, FileJson, Sparkles } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -20,10 +20,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import JSZip from 'jszip';
 
+const DEFAULT_PROCESS = `Start -> የአገልግሎት ጥያቄ መቀበል
+User Task -> የደንበኛ ፍላጎት መለየት
+User Task -> ሰነድ ማዘጋጀት
+Decision (አዋጭ ነው?) -> if yes (ቀጥል), if no back (ወደ መጀመሪያ ተመለስ), Reject (ሰርዝ).
+End -> ተጠናቋል`;
+
 export function BPMNFlowForgeApp() {
   const [mounted, setMounted] = useState(false);
-  const [input, setInput] = useState("");
-  const [title, setTitle] = useState("");
+  const [input, setInput] = useState(DEFAULT_PROCESS);
+  const [title, setTitle] = useState("የአገልግሎት ሂደት");
   const [xmlResult, setXmlResult] = useState("");
   const [activeTab, setActiveTab] = useState("diagram");
   const viewerRef = useRef<BPMNViewerRef>(null);
@@ -31,6 +37,9 @@ export function BPMNFlowForgeApp() {
 
   useEffect(() => {
     setMounted(true);
+    // Initial generate
+    const result = generateBPMN(DEFAULT_PROCESS, "የአገልግሎት ሂደት");
+    setXmlResult(result);
   }, []);
 
   if (!mounted) {
@@ -220,7 +229,7 @@ export function BPMNFlowForgeApp() {
                     onClick={handleGenerate}
                     className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground h-10 rounded-lg text-sm font-bold shadow-lg flex items-center justify-center gap-2 transition-all"
                   >
-                    አመንጭ (Generate)
+                    <Sparkles className="w-4 h-4" /> አመንጭ (Generate)
                   </Button>
                 </div>
               </div>

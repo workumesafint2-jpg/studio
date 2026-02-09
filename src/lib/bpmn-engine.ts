@@ -15,17 +15,17 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     parallelGateway: ['በአንድ ጊዜ', 'እና', 'ትይዩ', 'parallel', 'and', '+', 'simultaneous'],
     dataKeywords: ['ሰነድ', 'ፎርም', 'ማስረጃ', 'ደረሰኝ', 'document', 'form', 'file'],
     error: ['error', 'ስህተት', 'lightning'],
-    reject: ['ውድቅ', 'reject', 'cancel', 'አልተቀበለም', 'no', 'ካልጸደቀ']
+    reject: ['ውድቅ', 'reject', 'cancel', 'አልተቀበለም', 'no', 'ካልጸደቀ', 'ሰርዝ']
   };
 
   const flowLabels = {
-    approve: ['ከጸደቀ', 'ከሆነ', 'አዎ', 'yes', 'approve', 'ok'],
+    approve: ['ከጸደቀ', 'ከሆነ', 'አዎ', 'yes', 'approve', 'ok', 'ቀጥል'],
     reject: ['ካልጸደቀ', 'ካልሆነ', 'አይደለም', 'no', 'reject', 'fail']
   };
 
   const flowDirectionTriggers = {
-    loop: ['correction', 'fix', 'edit', 'back', 'return', 'ተመለስ', 'አስተካክል', 'ተመለሰ'],
-    reject: ['ውድቅ', 'reject', 'cancel', 'አልተቀበለም']
+    loop: ['correction', 'fix', 'edit', 'back', 'return', 'ተመለስ', 'አስተካክል', 'ተመለሰ', 'ወደ መጀመሪያ'],
+    reject: ['ውድቅ', 'reject', 'cancel', 'አልተቀበለም', 'ሰርዝ']
   };
 
   function escapeRegExp(string: string) {
@@ -47,6 +47,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       const sourceId = nodeDefs[nodeDefs.length - 1].id;
       let targetId = lastUserTaskId || (nodeDefs.length > 1 ? nodeDefs[nodeDefs.length - 2].id : nodeDefs[0].id);
       
+      // Look for a specific target in text if possible, otherwise default to previous/start
       let flowLabel = 'ተመለስ';
       if (lowerLine.includes('ካልጸደቀ')) flowLabel = 'ካልጸደቀ';
 
@@ -88,18 +89,24 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
     // CLEANUP NAME - Fixed RegExp to avoid "Nothing to repeat" error
     let pureName = line;
-    const allTriggers = [
+    const allTriggers = Array.from(new Set([
       ...Object.values(mappings).flat(),
       ...Object.values(flowDirectionTriggers).flat(),
       ...Object.values(flowLabels).flat(),
-      'success', 'failed', 'done', 'task', 'error', 'decision', 'simultaneous'
-    ];
+      'success', 'failed', 'done', 'task', 'error', 'decision', 'simultaneous', 'if', 'yes', 'no'
+    ])).filter(Boolean);
 
     allTriggers.sort((a, b) => b.length - a.length).forEach(k => {
       const escapedK = escapeRegExp(k);
-      // Removed punctuation that causes issues in word boundaries for some JS engines
-      const regex = new RegExp(`^${escapedK}|\\(${escapedK}\\)|\\b${escapedK}\\b`, 'gi');
-      pureName = pureName.replace(regex, '');
+      try {
+        // Use a safer regex that avoids 'nothing to repeat' by checking if escapedK is empty or problematic
+        if (!escapedK) return;
+        const regex = new RegExp(`^${escapedK}|\\(${escapedK}\\)|\\b${escapedK}\\b`, 'gi');
+        pureName = pureName.replace(regex, '');
+      } catch (e) {
+        // Fallback for tricky strings
+        pureName = pureName.split(k).join('');
+      }
     });
     
     // Final polish of labels
@@ -133,12 +140,12 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const diElements: string[] = [];
   const positions: Record<string, { x: number, y: number, w: number, h: number, row: number, col: number }> = {};
 
-  // Layout Constants - Set to 350 for safe Manhattan clearance
+  // Layout Constants - Optimized for Manhattan routing
   const MAX_COLS = 3; 
   const BOX_WIDTH = 120;
   const BOX_HEIGHT = 80;
-  const COL_SPACING = 350; 
-  const ROW_SPACING = 350; 
+  const COL_SPACING = 350; // Increased to 350px for zero overlap
+  const ROW_SPACING = 300; // Vertical spacing
   const X_START = 200;
   const Y_START = 200;
 
@@ -190,9 +197,8 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     if (node.hasDataAssociation) {
       const dataId = `DataObj_${node.id}`;
       const assocId = `Assoc_${node.id}`;
-      // Data object shifted 100 units up
       const dataX = currentPos.x;
-      const dataY = currentPos.y - 120;
+      const dataY = currentPos.y - 120; // Positioned above
 
       elements.push(`<bpmn:dataObjectReference id="${dataId}" name="${escapeXml(node.dataLabel)}" dataObjectRef="DO_Ref_${node.id}" />`);
       elements.push(`<bpmn:dataObject id="DO_Ref_${node.id}" />`);
@@ -216,12 +222,16 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>`);
 
-    // FORWARD FLOW Logic - 90 Degree Orthogonal
+    // FORWARD FLOW Logic - 90 Degree Orthogonal (Manhattan)
     if (i > 0 && !node.isBoundaryError) {
       const prev = nodeDefs[i - 1];
       if (!prev.isBoundaryError) {
         const flowId = `Flow_${prev.id}_${node.id}`;
-        const label = (prev.type === 'exclusiveGateway') ? 'ከጸደቀ' : '';
+        let label = '';
+        if (prev.type === 'exclusiveGateway') {
+           label = 'ቀጥል'; // Default for gateway forward
+        }
+        
         flows.push(`<bpmn:sequenceFlow id="${flowId}" name="${label}" sourceRef="${prev.id}" targetRef="${node.id}" />`);
         
         const s = positions[prev.id];
@@ -233,12 +243,12 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
           let waypoints: {x: number, y: number}[] = [];
 
           if (sRow === tRow) {
-            // Horizontal sequential flow
+            // Horizontal sequential flow - Exit center-side, Enter center-side
             const exitX = isEvenRow ? s.x + s.w/2 : s.x - s.w/2;
             const entryX = isEvenRow ? t.x - t.w/2 : t.x + t.w/2;
             waypoints = [{ x: exitX, y: s.y }, { x: entryX, y: t.y }];
           } else {
-            // Manhattan row transition
+            // Manhattan row transition - Exit bottom, Enter top
             const midY = (s.y + t.y) / 2;
             waypoints = [
               { x: s.x, y: s.y + s.h/2 },
@@ -260,13 +270,14 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     }
   });
 
-  // BACK/LOOP FLOW Logic - High Clearance (y-offset -100)
+  // BACK/LOOP FLOW Logic - High Clearance (y-offset -100 or more)
   backFlows.forEach(f => {
     flows.push(`<bpmn:sequenceFlow id="${f.id}" name="${escapeXml(f.name)}" sourceRef="${f.sourceRef}" targetRef="${f.targetRef}" />`);
     const s = positions[f.sourceRef];
     const t = positions[f.targetRef];
     if (s && t) {
-      const clearY = Math.min(s.y, t.y) - 220; // 220px clearance to ensure it's above data objects
+      // Set arrow height to at least 100-200 units above to avoid cluttering main flow
+      const clearY = Math.min(s.y, t.y) - 220; 
       diElements.push(`
         <bpmndi:BPMNEdge id="${f.id}_di" bpmnElement="${f.id}">
           <di:waypoint x="${s.x}" y="${s.y - s.h/2}" />
