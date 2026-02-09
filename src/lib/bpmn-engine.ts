@@ -4,23 +4,23 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const rawLines = input.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
   
   const mappings = {
-    start: ['መጀመሪያ', 'ጀምር', 'start', 'begin', 'starting'],
-    end: ['መጨረሻ', 'ጨርስ', 'ተጠናቀቀ', 'end', 'finish', 'ending'],
-    timer: ['ቆይታ', 'ሰዓት', 'ቀን', 'timer', 'wait', 'duration'],
-    userTask: ['ተግባር', 'ይመረምራል', 'ይፈጸማል', 'ይከናወናል', 'ይደረጋል', 'ባለሙያ', 'human', 'user task', 'userAction', 'action'],
-    serviceTask: ['ሲስተም', 'አውቶማቲክ', 'service task', 'service', 'system', 'auto', 'script'],
-    manualTask: ['በእጅ', 'ፊዚካል', 'manual task', 'manual'],
+    start: ['መጀመሪያ', 'ጀምር', 'start', 'begin'],
+    end: ['መጨረሻ', 'ጨርስ', 'ተጠናቀቀ', 'end', 'finish'],
+    timer: ['ቆይታ', 'ሰዓት', 'timer', 'wait'],
+    userTask: ['ተግባር', 'ባለሙያ', 'human', 'user task', 'action'],
+    serviceTask: ['ሲስተም', 'አውቶማቲክ', 'service task', 'system', 'auto', 'gear'],
+    manualTask: ['በእጅ', 'ፊዚካል', 'manual task', 'physical'],
+    scriptTask: ['ስክሪፕት', 'ኮድ', 'script task', 'code'],
     exclusiveGateway: ['ውሳኔ', 'ከሆነ', 'ወይስ', 'ቢሆን', 'decision', 'xor', 'if', 'gateway'],
-    parallelGateway: ['በአንድ ጊዜ', 'እና', 'ትይዩ', 'parallel', 'and', '+', 'multiple'],
-    dataKeywords: ['ሰነድ', 'ፎርም', 'ማስረጃ', 'ደረሰኝ', 'document', 'form', 'data object', 'file'],
-    error: ['error', 'ስህተት', 'ተቋረጠ', 'failure'],
+    parallelGateway: ['በአንድ ጊዜ', 'እና', 'ትይዩ', 'parallel', 'and', '+'],
+    dataKeywords: ['ሰነድ', 'ፎርም', 'ማስረጃ', 'ደረሰኝ', 'document', 'form', 'file'],
+    error: ['error', 'ስህተት', 'lightning'],
     reject: ['ውድቅ', 'reject', 'cancel', 'አልተቀበለም', 'no']
   };
 
   const flowDirectionTriggers = {
-    forward: ['ከጸደቀ', 'approve', 'yes', 'ok', 'if yes', 'success'],
-    loop: ['ካልጸደቀ', 'ካልሆነ', 'correction', 'fix', 'edit', 'back', 'return', 'ተመለስ', 'አስተካክል', 'if no back'],
-    reject: ['ውድቅ', 'reject', 'no', 'cancel', 'አልተቀበለም', 'if no exit']
+    loop: ['ካልጸደቀ', 'ካልሆነ', 'correction', 'fix', 'edit', 'back', 'return', 'ተመለስ', 'አስተካክል'],
+    reject: ['ውድቅ', 'reject', 'cancel', 'አልተቀበለም']
   };
 
   function escapeRegExp(string: string) {
@@ -37,11 +37,9 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     
     // Check for Loop/Back commands - these do not create boxes
     const isStrictLoop = flowDirectionTriggers.loop.some(t => lowerLine.includes(t));
-    const isStrictReject = flowDirectionTriggers.reject.some(t => lowerLine.includes(t)) && !lowerLine.includes('ውሳኔ');
-
+    
     if (isStrictLoop && nodeDefs.length > 0) {
       const sourceId = nodeDefs[nodeDefs.length - 1].id;
-      // Point back to the last known user task for professional correction loops
       const targetId = lastUserTaskId || (nodeDefs.length > 1 ? nodeDefs[nodeDefs.length - 2].id : nodeDefs[0].id);
       backFlows.push({
         id: `Flow_Back_${index}`,
@@ -53,35 +51,20 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       return;
     }
 
-    if (isStrictReject && nodeDefs.length > 0) {
-      const sourceId = nodeDefs[nodeDefs.length - 1].id;
-      const rejectEndId = `Reject_End_${index}`;
-      nodeDefs.push({
-        id: rejectEndId,
-        name: '', 
-        type: 'endEvent',
-        category: 'event',
-        isReject: true
-      });
-      backFlows.push({
-        id: `Flow_Reject_${index}`,
-        sourceRef: sourceId,
-        targetRef: rejectEndId,
-        name: 'Reject',
-        direction: 'reject'
-      });
-      return;
-    }
-
     let type = 'userTask';
     let category = 'task';
     let hasDataAssociation = false;
     let dataLabel = "ሰነድ";
+    let isBoundaryError = false;
 
     if (mappings.dataKeywords.some(k => lowerLine.includes(k))) {
       hasDataAssociation = true;
       const foundKeyword = mappings.dataKeywords.find(k => lowerLine.includes(k));
       if (foundKeyword) dataLabel = foundKeyword;
+    }
+
+    if (mappings.error.some(k => lowerLine.includes(k)) && nodeDefs.length > 0) {
+      isBoundaryError = true;
     }
     
     if (mappings.start.some(k => lowerLine.includes(k))) { type = 'startEvent'; category = 'event'; }
@@ -91,6 +74,8 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     else if (mappings.parallelGateway.some(k => lowerLine.includes(k))) { type = 'parallelGateway'; category = 'gateway'; }
     else if (mappings.serviceTask.some(k => lowerLine.includes(k))) { type = 'serviceTask'; category = 'task'; }
     else if (mappings.manualTask.some(k => lowerLine.includes(k))) { type = 'manualTask'; category = 'task'; }
+    else if (mappings.scriptTask.some(k => lowerLine.includes(k))) { type = 'scriptTask'; category = 'task'; }
+    else if (mappings.reject.some(k => lowerLine.includes(k))) { type = 'rejectEnd'; category = 'event'; }
 
     // CLEANUP NAME: Remove trigger words from labels
     let pureName = line;
@@ -116,7 +101,9 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       category,
       index,
       hasDataAssociation,
-      dataLabel
+      dataLabel,
+      isBoundaryError,
+      attachedTo: isBoundaryError ? nodeDefs[nodeDefs.length-1].id : null
     });
 
     if (type === 'userTask') {
@@ -129,7 +116,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const diElements: string[] = [];
   const positions: Record<string, { x: number, y: number, w: number, h: number, row: number }> = {};
 
-  // Layout Constants (STRICT: 300px Horizontal, 200px Vertical)
+  // Layout Constants
   const MAX_COLS = 4;
   const BOX_WIDTH = 120;
   const COL_SPACING = 300; 
@@ -150,23 +137,32 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     if (node.category === 'event') { w = 36; h = 36; }
     else if (node.category === 'gateway') { w = 50; h = 50; }
 
-    positions[node.id] = { x, y, w, h, row };
+    if (node.isBoundaryError && node.attachedTo) {
+      const parentPos = positions[node.attachedTo];
+      positions[node.id] = { x: parentPos.x + 40, y: parentPos.y + 40, w: 36, h: 36, row: parentPos.row };
+    } else {
+      positions[node.id] = { x, y, w, h, row };
+    }
+
     const escapedName = escapeXml(node.name);
 
     switch (node.type) {
       case 'startEvent': elements.push(`<bpmn:startEvent id="${node.id}" name="${escapedName}" />`); break;
-      case 'endEvent': 
-        if (node.isReject) {
-          elements.push(`<bpmn:endEvent id="${node.id}" name="Reject"><bpmn:cancelEventDefinition id="Cancel_${node.id}" /></bpmn:endEvent>`);
-        } else {
-          elements.push(`<bpmn:endEvent id="${node.id}" name="${escapedName}" />`); 
-        }
-        break;
+      case 'endEvent': elements.push(`<bpmn:endEvent id="${node.id}" name="${escapedName}" />`); break;
+      case 'rejectEnd': elements.push(`<bpmn:endEvent id="${node.id}" name="Reject"><bpmn:cancelEventDefinition id="Cancel_${node.id}" /></bpmn:endEvent>`); break;
       case 'timerEvent': elements.push(`<bpmn:intermediateCatchEvent id="${node.id}" name="${escapedName}"><bpmn:timerEventDefinition id="T_${node.id}" /></bpmn:intermediateCatchEvent>`); break;
       case 'exclusiveGateway': elements.push(`<bpmn:exclusiveGateway id="${node.id}" name="${escapedName}" isMarkerVisible="true" />`); break;
       case 'parallelGateway': elements.push(`<bpmn:parallelGateway id="${node.id}" name="${escapedName}" />`); break;
       case 'serviceTask': elements.push(`<bpmn:serviceTask id="${node.id}" name="${escapedName}" />`); break;
       case 'manualTask': elements.push(`<bpmn:manualTask id="${node.id}" name="${escapedName}" />`); break;
+      case 'scriptTask': elements.push(`<bpmn:scriptTask id="${node.id}" name="${escapedName}" />`); break;
+      case 'userTask': 
+        if (node.isBoundaryError && node.attachedTo) {
+          elements.push(`<bpmn:boundaryEvent id="${node.id}" name="Error" attachedToRef="${node.attachedTo}"><bpmn:errorEventDefinition id="ErrDef_${node.id}" /></bpmn:boundaryEvent>`);
+        } else {
+          elements.push(`<bpmn:userTask id="${node.id}" name="${escapedName}" />`);
+        }
+        break;
       default: elements.push(`<bpmn:userTask id="${node.id}" name="${escapedName}" />`);
     }
 
@@ -174,7 +170,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       const dataId = `DataObj_${node.id}`;
       const assocId = `Assoc_${node.id}`;
       const dataX = x;
-      const dataY = y - 100; // Position directly ABOVE the task
+      const dataY = y - 100; 
       const dataW = 36, dataH = 50;
 
       elements.push(`<bpmn:dataObjectReference id="${dataId}" name="${escapeXml(node.dataLabel)}" dataObjectRef="DO_Ref_${node.id}" />`);
@@ -191,18 +187,18 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         </bpmndi:BPMNEdge>`);
     }
 
+    const currentPos = positions[node.id];
     diElements.push(`
       <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}" ${node.type === 'exclusiveGateway' ? 'isMarkerVisible="true"' : ''}>
-        <dc:Bounds x="${x - w/2}" y="${y - h/2}" width="${w}" height="${h}" />
+        <dc:Bounds x="${currentPos.x - currentPos.w/2}" y="${currentPos.y - currentPos.h/2}" width="${currentPos.w}" height="${currentPos.h}" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="${x - 60}" y="${y + h/2 + 5}" width="120" height="14" />
+          <dc:Bounds x="${currentPos.x - 60}" y="${currentPos.y + currentPos.h/2 + 5}" width="120" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>`);
 
-    // PASS 2: Orthogonal Sequence Flow Calculation (90-degree bends)
-    if (i > 0 && !node.isReject) {
+    if (i > 0 && !node.isBoundaryError) {
       const prev = nodeDefs[i - 1];
-      if (!prev.isReject) {
+      if (!prev.isBoundaryError) {
         const flowId = `Flow_${prev.id}_${node.id}`;
         const label = (prev.type === 'exclusiveGateway') ? 'ከጸደቀ' : '';
         flows.push(`<bpmn:sequenceFlow id="${flowId}" name="${label}" sourceRef="${prev.id}" targetRef="${node.id}" />`);
@@ -212,18 +208,13 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         if (s && t) {
           const isForwardInRow = s.row === t.row;
           const isEvenRow = s.row % 2 === 0;
-
           let waypoints: {x: number, y: number}[] = [];
 
           if (isForwardInRow) {
             const exitX = isEvenRow ? s.x + s.w/2 : s.x - s.w/2;
             const entryX = isEvenRow ? t.x - t.w/2 : t.x + t.w/2;
-            waypoints = [
-              { x: exitX, y: s.y },
-              { x: entryX, y: t.y }
-            ];
+            waypoints = [{ x: exitX, y: s.y }, { x: entryX, y: t.y }];
           } else {
-            // Snake Logic (Orthogonal bends for row transitions)
             const midY = (s.y + t.y) / 2;
             waypoints = [
               { x: s.x, y: s.y + s.h / 2 },
@@ -245,35 +236,22 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     }
   });
 
-  // Specialized Arrow Routing (Loops and Rejections)
   backFlows.forEach(f => {
     flows.push(`<bpmn:sequenceFlow id="${f.id}" name="${escapeXml(f.name)}" sourceRef="${f.sourceRef}" targetRef="${f.targetRef}" />`);
     const s = positions[f.sourceRef];
     const t = positions[f.targetRef];
     if (s && t) {
-      if (f.direction === 'loop') {
-        const clearY = s.y - s.h/2 - 100; // 100px High-clearance Loop
-        diElements.push(`
-          <bpmndi:BPMNEdge id="${f.id}_di" bpmnElement="${f.id}">
-            <di:waypoint x="${s.x}" y="${s.y - s.h/2}" />
-            <di:waypoint x="${s.x}" y="${clearY}" />
-            <di:waypoint x="${t.x}" y="${clearY}" />
-            <di:waypoint x="${t.x}" y="${t.y - t.h/2}" />
-            <bpmndi:BPMNLabel>
-              <dc:Bounds x="${(s.x + t.x) / 2 - 25}" y="${clearY - 20}" width="50" height="14" />
-            </bpmndi:BPMNLabel>
-          </bpmndi:BPMNEdge>`);
-      } else if (f.direction === 'reject') {
-        // Downward routing for rejections
-        diElements.push(`
-          <bpmndi:BPMNEdge id="${f.id}_di" bpmnElement="${f.id}">
-            <di:waypoint x="${s.x}" y="${s.y + s.h/2}" />
-            <di:waypoint x="${s.x}" y="${t.y - t.h/2}" />
-            <bpmndi:BPMNLabel>
-              <dc:Bounds x="${s.x + 10}" y="${(s.y + t.y) / 2}" width="50" height="14" />
-            </bpmndi:BPMNLabel>
-          </bpmndi:BPMNEdge>`);
-      }
+      const clearY = s.y - s.h/2 - 100; 
+      diElements.push(`
+        <bpmndi:BPMNEdge id="${f.id}_di" bpmnElement="${f.id}">
+          <di:waypoint x="${s.x}" y="${s.y - s.h/2}" />
+          <di:waypoint x="${s.x}" y="${clearY}" />
+          <di:waypoint x="${t.x}" y="${clearY}" />
+          <di:waypoint x="${t.x}" y="${t.y - t.h/2}" />
+          <bpmndi:BPMNLabel>
+            <dc:Bounds x="${(s.x + t.x) / 2 - 25}" y="${clearY - 20}" width="50" height="14" />
+          </bpmndi:BPMNLabel>
+        </bpmndi:BPMNEdge>`);
     }
   });
 

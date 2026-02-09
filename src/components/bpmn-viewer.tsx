@@ -15,6 +15,7 @@ export interface BPMNViewerRef {
 export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, title = "Process Diagram" }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<any>(null);
+  const isImporting = useRef<boolean>(false);
 
   useImperativeHandle(ref, () => ({
     exportPNG: async () => {
@@ -39,7 +40,6 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
           
           const ctx = canvas.getContext('2d');
           if (ctx) {
-            // Rule 4: High resolution Laptop rendering
             ctx.fillStyle = '#FFFFFF';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
@@ -74,29 +74,35 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
   useEffect(() => {
     if (!containerRef.current) return;
 
-    viewerRef.current = new BpmnViewer({
-      container: containerRef.current
-    });
+    if (!viewerRef.current) {
+      viewerRef.current = new BpmnViewer({
+        container: containerRef.current
+      });
+    }
 
     return () => {
       if (viewerRef.current) {
         viewerRef.current.destroy();
+        viewerRef.current = null;
       }
     };
   }, []);
 
   useEffect(() => {
     const importDiagram = async () => {
-      if (viewerRef.current && xml) {
+      if (viewerRef.current && xml && !isImporting.current) {
         try {
+          isImporting.current = true;
           await viewerRef.current.importXML(xml);
           
-          const canvas = viewerRef.current.get('canvas');
+          const canvas = viewerRef.current?.get('canvas');
           if (canvas) {
             canvas.zoom('fit-viewport');
           }
         } catch (err) {
           console.error('Error rendering BPMN diagram:', err);
+        } finally {
+          isImporting.current = false;
         }
       }
     };
