@@ -40,12 +40,11 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   rawLines.forEach((line, index) => {
     const lowerLine = line.toLowerCase();
     
-    // Check for Loop/Back commands - these create arrows to previous tasks
+    // Check for Loop/Back commands
     const isStrictLoop = flowDirectionTriggers.loop.some(t => lowerLine.includes(t));
     
     if (isStrictLoop && nodeDefs.length > 0) {
       const sourceId = nodeDefs[nodeDefs.length - 1].id;
-      // Find the most recent task that isn't a gateway to return to
       let targetId = lastUserTaskId || (nodeDefs.length > 1 ? nodeDefs[nodeDefs.length - 2].id : nodeDefs[0].id);
       
       let flowLabel = 'ተመለስ';
@@ -87,7 +86,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     else if (mappings.scriptTask.some(k => lowerLine.includes(k))) { type = 'scriptTask'; category = 'task'; }
     else if (mappings.reject.some(k => lowerLine.includes(k))) { type = 'rejectEnd'; category = 'event'; }
 
-    // CLEANUP NAME: Remove trigger words from labels for visual clarity
+    // CLEANUP NAME
     let pureName = line;
     const allTriggers = [
       ...Object.values(mappings).flat(),
@@ -117,7 +116,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       attachedTo: isBoundaryError ? nodeDefs[nodeDefs.length-1].id : null
     });
 
-    if (type === 'userTask' || type === 'serviceTask' || type === 'manualTask' || type === 'scriptTask') {
+    if (category === 'task') {
       lastUserTaskId = nodeId;
     }
   });
@@ -127,9 +126,10 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const diElements: string[] = [];
   const positions: Record<string, { x: number, y: number, w: number, h: number, row: number, col: number }> = {};
 
-  // Layout Constants - Increased spacing to prevent arrow/box overlap
+  // Layout Constants
   const MAX_COLS = 3; 
   const BOX_WIDTH = 120;
+  const BOX_HEIGHT = 80;
   const COL_SPACING = 350; 
   const ROW_SPACING = 350; 
   const X_START = 200;
@@ -144,7 +144,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     const x = X_START + col * COL_SPACING;
     const y = Y_START + row * ROW_SPACING;
     
-    let w = BOX_WIDTH, h = 80;
+    let w = BOX_WIDTH, h = BOX_HEIGHT;
     if (node.category === 'event') { w = 36; h = 36; }
     else if (node.category === 'gateway') { w = 50; h = 50; }
 
@@ -177,11 +177,15 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       default: elements.push(`<bpmn:userTask id="${node.id}" name="${escapedName}" />`);
     }
 
+    const currentPos = positions[node.id];
+    
+    // DATA OBJECT Logic
     if (node.hasDataAssociation) {
       const dataId = `DataObj_${node.id}`;
       const assocId = `Assoc_${node.id}`;
-      const dataX = positions[node.id].x;
-      const dataY = positions[node.id].y - 120; 
+      // Position Data Object above task but offset slightly
+      const dataX = currentPos.x - 40;
+      const dataY = currentPos.y - 100;
 
       elements.push(`<bpmn:dataObjectReference id="${dataId}" name="${escapeXml(node.dataLabel)}" dataObjectRef="DO_Ref_${node.id}" />`);
       elements.push(`<bpmn:dataObject id="DO_Ref_${node.id}" />`);
@@ -193,11 +197,10 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         </bpmndi:BPMNShape>
         <bpmndi:BPMNEdge id="${assocId}_di" bpmnElement="${assocId}">
           <di:waypoint x="${dataX}" y="${dataY + 25}" />
-          <di:waypoint x="${positions[node.id].x}" y="${positions[node.id].y - positions[node.id].h/2}" />
+          <di:waypoint x="${currentPos.x}" y="${currentPos.y - currentPos.h/2}" />
         </bpmndi:BPMNEdge>`);
     }
 
-    const currentPos = positions[node.id];
     diElements.push(`
       <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}" ${node.type === 'exclusiveGateway' ? 'isMarkerVisible="true"' : ''}>
         <dc:Bounds x="${currentPos.x - currentPos.w/2}" y="${currentPos.y - currentPos.h/2}" width="${currentPos.w}" height="${currentPos.h}" />
@@ -206,6 +209,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>`);
 
+    // FORWARD FLOW Logic
     if (i > 0 && !node.isBoundaryError) {
       const prev = nodeDefs[i - 1];
       if (!prev.isBoundaryError) {
@@ -216,27 +220,24 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         const s = positions[prev.id];
         const t = positions[node.id];
         if (s && t) {
-          const isForwardInRow = s.row === t.row;
-          const isEvenRow = s.row % 2 === 0;
+          const sRow = s.row;
+          const tRow = t.row;
+          const isEvenRow = sRow % 2 === 0;
           let waypoints: {x: number, y: number}[] = [];
 
-          if (isForwardInRow) {
-            // Horizontal flow within same row
-            const exitX = (isEvenRow) ? s.x + s.w/2 : s.x - s.w/2;
-            const entryX = (isEvenRow) ? t.x - t.w/2 : t.x + t.w/2;
+          if (sRow === tRow) {
+            // Sequential horizontal flow
+            const exitX = isEvenRow ? s.x + s.w/2 : s.x - s.w/2;
+            const entryX = isEvenRow ? t.x - t.w/2 : t.x + t.w/2;
             waypoints = [{ x: exitX, y: s.y }, { x: entryX, y: t.y }];
           } else {
-            // Row transition: MANHATTAN ORTHOGONAL ROUTING
+            // Row transition (Manhattan)
             const midY = (s.y + t.y) / 2;
-            const exitY = s.y + s.h/2;
-            const entryY = t.y - t.h/2;
-            
-            // Exit downwards, move horizontally, entry downwards
             waypoints = [
-              { x: s.x, y: exitY },
+              { x: s.x, y: s.y + s.h/2 },
               { x: s.x, y: midY },
               { x: t.x, y: midY },
-              { x: t.x, y: entryY }
+              { x: t.x, y: t.y - t.h/2 }
             ];
           }
 
@@ -252,14 +253,14 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     }
   });
 
+  // BACK/LOOP FLOW Logic
   backFlows.forEach(f => {
     flows.push(`<bpmn:sequenceFlow id="${f.id}" name="${escapeXml(f.name)}" sourceRef="${f.sourceRef}" targetRef="${f.targetRef}" />`);
     const s = positions[f.sourceRef];
     const t = positions[f.targetRef];
     if (s && t) {
-      // HIGH CLEARANCE MANHATTAN LOOP-BACK
-      // Routes strictly above the highest row element to avoid box collision
-      const clearY = Math.min(s.y, t.y) - 180; 
+      // High-clearance Loop
+      const clearY = Math.min(s.y, t.y) - 220; 
       diElements.push(`
         <bpmndi:BPMNEdge id="${f.id}_di" bpmnElement="${f.id}">
           <di:waypoint x="${s.x}" y="${s.y - s.h/2}" />
