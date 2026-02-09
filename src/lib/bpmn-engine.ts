@@ -127,12 +127,12 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const elements: string[] = [];
   const flows: string[] = [];
   const diElements: string[] = [];
-  const positions: Record<string, { x: number, y: number, w: number, h: number }> = {};
+  const positions: Record<string, { x: number, y: number, w: number, h: number, row: number }> = {};
 
-  // Layout Constants - Ensuring 200+ unit distance between boxes
-  const MAX_COLS = 4;      // Reduced for horizontal space
-  const COL_SPACING = 320; // 120 (width) + 200 (distance) = 320
-  const ROW_SPACING = 300; // Vertical breathing room
+  // Layout Constants
+  const MAX_COLS = 4;
+  const COL_SPACING = 350; // High clearance
+  const ROW_SPACING = 300;
   const X_START = 200;
   const Y_START = 200;
 
@@ -149,7 +149,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     if (node.category === 'event') { w = 36; h = 36; }
     else if (node.category === 'gateway') { w = 50; h = 50; }
 
-    positions[node.id] = { x, y, w, h };
+    positions[node.id] = { x, y, w, h, row };
     const escapedName = escapeXml(node.name);
 
     switch (node.type) {
@@ -173,7 +173,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       const dataId = `DataObj_${node.id}`;
       const assocId = `Assoc_${node.id}`;
       const dataX = x;
-      const dataY = y - 110; // Shifted up for clarity
+      const dataY = y - 110; 
       const dataW = 36, dataH = 50;
 
       elements.push(`<bpmn:dataObjectReference id="${dataId}" name="${escapeXml(node.dataLabel)}" dataObjectRef="DO_Ref_${node.id}" />`);
@@ -183,9 +183,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       diElements.push(`
         <bpmndi:BPMNShape id="${dataId}_di" bpmnElement="${dataId}">
           <dc:Bounds x="${dataX - dataW/2}" y="${dataY - dataH/2}" width="${dataW}" height="${dataH}" />
-          <bpmndi:BPMNLabel>
-            <dc:Bounds x="${dataX - 40}" y="${dataY + dataH/2 + 5}" width="80" height="14" />
-          </bpmndi:BPMNLabel>
         </bpmndi:BPMNShape>
         <bpmndi:BPMNEdge id="${assocId}_di" bpmnElement="${assocId}">
           <di:waypoint x="${dataX}" y="${dataY + dataH/2}" />
@@ -201,6 +198,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>`);
 
+    // PASS 2: Sequence Flow Calculation with Orthogonal Waypoints
     if (i > 0 && !node.isReject) {
       const prev = nodeDefs[i - 1];
       if (!prev.isReject) {
@@ -208,55 +206,72 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         const label = (prev.type === 'exclusiveGateway') ? 'ከጸደቀ' : '';
         flows.push(`<bpmn:sequenceFlow id="${flowId}" name="${label}" sourceRef="${prev.id}" targetRef="${node.id}" />`);
         
-        const sPos = positions[prev.id];
-        if (sPos) {
-          const isForward = Math.floor((i-1) / MAX_COLS) === row;
-          if (isForward) {
-            diElements.push(`
-              <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
-                <di:waypoint x="${isEvenRow ? sPos.x + sPos.w / 2 : sPos.x - sPos.w / 2}" y="${sPos.y}" />
-                <di:waypoint x="${isEvenRow ? x - w / 2 : x + w / 2}" y="${y}" />
-                <bpmndi:BPMNLabel>
-                  <dc:Bounds x="${(sPos.x + x) / 2 - 25}" y="${y - 20}" width="50" height="14" />
-                </bpmndi:BPMNLabel>
-              </bpmndi:BPMNEdge>`);
+        const s = positions[prev.id];
+        const t = positions[node.id];
+        if (s && t) {
+          const isForwardInRow = s.row === t.row;
+          const isEvenRow = s.row % 2 === 0;
+
+          let waypoints: {x: number, y: number}[] = [];
+
+          if (isForwardInRow) {
+            // Straight Orthogonal Connection
+            const exitX = isEvenRow ? s.x + s.w/2 : s.x - s.w/2;
+            const entryX = isEvenRow ? t.x - t.w/2 : t.x + t.w/2;
+            waypoints = [
+              { x: exitX, y: s.y },
+              { x: entryX, y: t.y }
+            ];
           } else {
-            diElements.push(`
-              <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
-                <di:waypoint x="${sPos.x}" y="${sPos.y + sPos.h / 2}" />
-                <di:waypoint x="${sPos.x}" y="${y - h / 2 - 50}" />
-                <di:waypoint x="${x}" y="${y - h / 2 - 50}" />
-                <di:waypoint x="${x}" y="${y - h / 2}" />
-              </bpmndi:BPMNEdge>`);
+            // Manhattan Routing between rows to avoid collisions
+            const midY = (s.y + t.y) / 2;
+            waypoints = [
+              { x: s.x, y: s.y + s.h / 2 },
+              { x: s.x, y: midY },
+              { x: t.x, y: midY },
+              { x: t.x, y: t.y - t.h / 2 }
+            ];
           }
+
+          diElements.push(`
+            <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
+              ${waypoints.map(w => `<di:waypoint x="${w.x}" y="${w.y}" />`).join('\n')}
+              <bpmndi:BPMNLabel>
+                <dc:Bounds x="${(s.x + t.x) / 2 - 25}" y="${waypoints[waypoints.length-1].y - 20}" width="50" height="14" />
+              </bpmndi:BPMNLabel>
+            </bpmndi:BPMNEdge>`);
         }
       }
     }
   });
 
+  // Loop-Back Routing with -80 Clear Height
   backFlows.forEach(f => {
     flows.push(`<bpmn:sequenceFlow id="${f.id}" name="${escapeXml(f.name)}" sourceRef="${f.sourceRef}" targetRef="${f.targetRef}" />`);
-    const sPos = positions[f.sourceRef];
-    const tPos = positions[f.targetRef];
-    if (sPos && tPos) {
+    const s = positions[f.sourceRef];
+    const t = positions[f.targetRef];
+    if (s && t) {
       if (f.direction === 'loop') {
+        // High-Clearance Manhattan Routing
+        const clearY = s.y - s.h/2 - 80; 
         diElements.push(`
           <bpmndi:BPMNEdge id="${f.id}_di" bpmnElement="${f.id}">
-            <di:waypoint x="${sPos.x}" y="${sPos.y - sPos.h / 2}" />
-            <di:waypoint x="${sPos.x}" y="${sPos.y - 130}" />
-            <di:waypoint x="${tPos.x}" y="${sPos.y - 130}" />
-            <di:waypoint x="${tPos.x}" y="${tPos.y - tPos.h / 2}" />
+            <di:waypoint x="${s.x}" y="${s.y - s.h/2}" />
+            <di:waypoint x="${s.x}" y="${clearY}" />
+            <di:waypoint x="${t.x}" y="${clearY}" />
+            <di:waypoint x="${t.x}" y="${t.y - t.h/2}" />
             <bpmndi:BPMNLabel>
-              <dc:Bounds x="${(sPos.x + tPos.x) / 2 - 25}" y="${sPos.y - 150}" width="50" height="14" />
+              <dc:Bounds x="${(s.x + t.x) / 2 - 25}" y="${clearY - 20}" width="50" height="14" />
             </bpmndi:BPMNLabel>
           </bpmndi:BPMNEdge>`);
-      } else {
+      } else if (f.direction === 'reject') {
+        // Downward Orthogonal Routing
         diElements.push(`
           <bpmndi:BPMNEdge id="${f.id}_di" bpmnElement="${f.id}">
-            <di:waypoint x="${sPos.x}" y="${sPos.y + sPos.h / 2}" />
-            <di:waypoint x="${sPos.x}" y="${tPos.y - tPos.h / 2}" />
+            <di:waypoint x="${s.x}" y="${s.y + s.h/2}" />
+            <di:waypoint x="${s.x}" y="${t.y - t.h/2}" />
             <bpmndi:BPMNLabel>
-              <dc:Bounds x="${sPos.x + 10}" y="${(sPos.y + tPos.y) / 2}" width="50" height="14" />
+              <dc:Bounds x="${s.x + 10}" y="${(s.y + t.y) / 2}" width="50" height="14" />
             </bpmndi:BPMNLabel>
           </bpmndi:BPMNEdge>`);
       }
@@ -270,7 +285,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
                   xmlns:di="http://www.omg.org/spec/DD/20100524/DI" 
                   targetNamespace="http://bpmn.io/schema/bpmn"
                   exporter="Worku (ወርቁ) Pro Architect" 
-                  exporterVersion="11.0">
+                  exporterVersion="12.0">
   <bpmn:process id="Process_Worku_Pro" name="${escapeXml(title)}" isExecutable="true">
 ${elements.join('\n')}
 ${flows.join('\n')}
