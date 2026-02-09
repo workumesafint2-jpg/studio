@@ -23,6 +23,10 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     reject: ['ውድቅ', 'reject', 'no', 'cancel', 'አልተቀበለም', 'if no exit']
   };
 
+  function escapeRegExp(string: string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
   const nodeDefs: any[] = [];
   const backFlows: any[] = [];
   let lastUserTaskId: string | null = null;
@@ -96,18 +100,12 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     ];
 
     allTriggers.sort((a, b) => b.length - a.length).forEach(k => {
-      const escapedK = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      // Regex to remove prefixes, suffixes, and standalone keywords
+      const escapedK = escapeRegExp(k);
       const regex = new RegExp(`^${escapedK}\\s*[:\\-–—=>\\s]*|\\s*\\(${escapedK}\\)|\\b${escapedK}\\b|\\s*[:\\-–—=>]+\\s*`, 'gi');
       pureName = pureName.replace(regex, '');
     });
     
     pureName = pureName.replace(/[?፧？]$/, '').replace(/^[\s>->=>:]+/, '').trim();
-
-    // Avoid empty labels for gates/events if they match keywords exactly
-    if ((category === 'event' || category === 'gateway') && pureName === "") {
-      // Keep empty for start/end usually, or use descriptive defaults if needed
-    }
 
     const nodeId = `Node_${index}`;
     nodeDefs.push({
@@ -132,7 +130,8 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
   // Layout Constants
   const MAX_COLS = 4;
-  const COL_SPACING = 350; 
+  const BOX_WIDTH = 120;
+  const COL_SPACING = BOX_WIDTH + 250; // Ensure 250px gap between boxes
   const ROW_SPACING = 300;
   const X_START = 200;
   const Y_START = 200;
@@ -146,7 +145,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     const x = X_START + col * COL_SPACING;
     const y = Y_START + row * ROW_SPACING;
     
-    let w = 120, h = 80;
+    let w = BOX_WIDTH, h = 80;
     if (node.category === 'event') { w = 36; h = 36; }
     else if (node.category === 'gateway') { w = 50; h = 50; }
 
@@ -204,7 +203,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       const prev = nodeDefs[i - 1];
       if (!prev.isReject) {
         const flowId = `Flow_${prev.id}_${node.id}`;
-        // Use 'ከጸደቀ' for gateways, or empty for standard transitions
         const label = (prev.type === 'exclusiveGateway') ? 'ከጸደቀ' : '';
         flows.push(`<bpmn:sequenceFlow id="${flowId}" name="${label}" sourceRef="${prev.id}" targetRef="${node.id}" />`);
         
@@ -224,6 +222,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
               { x: entryX, y: t.y }
             ];
           } else {
+            // Orthogonal routing for row changes (Snake Layout)
             const midY = (s.y + t.y) / 2;
             waypoints = [
               { x: s.x, y: s.y + s.h / 2 },
