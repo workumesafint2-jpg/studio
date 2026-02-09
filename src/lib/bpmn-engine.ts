@@ -5,17 +5,17 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   
   const mappings = {
     start: ['መጀመሪያ', 'ጀምር', 'start', 'begin'],
-    end: ['መጨረሻ', 'ጨርስ', 'ተጠናቀቀ', 'end', 'finish'],
+    end: ['መጨረሻ', 'ጨርስ', 'ተጠናቀቀ', 'end', 'finish', 'success', 'done'],
     timer: ['ቆይታ', 'ሰዓት', 'timer', 'wait'],
-    userTask: ['ባለሙያ', 'human', 'user task', 'ተግባር', 'action'],
+    userTask: ['ባለሙያ', 'human', 'user task', 'ተግባር', 'action', 'ማከናወን'],
     serviceTask: ['ሲስተም', 'አውቶማቲክ', 'service task', 'system', 'auto', 'gear'],
     manualTask: ['በእጅ', 'ፊዚካል', 'manual task', 'physical'],
     scriptTask: ['ስክሪፕት', 'ኮድ', 'script task', 'code'],
     exclusiveGateway: ['ውሳኔ', 'ከሆነ', 'ወይስ', 'ቢሆን', 'decision', 'xor', 'if', 'gateway'],
-    parallelGateway: ['በአንድ ጊዜ', 'እና', 'ትይዩ', 'parallel', 'and', '+'],
+    parallelGateway: ['በአንድ ጊዜ', 'እና', 'ትይዩ', 'parallel', 'and', '+', 'simultaneous'],
     dataKeywords: ['ሰነድ', 'ፎርም', 'ማስረጃ', 'ደረሰኝ', 'document', 'form', 'file'],
     error: ['error', 'ስህተት', 'lightning'],
-    reject: ['ውድቅ', 'reject', 'cancel', 'አልተቀበለም', 'no']
+    reject: ['ውድቅ', 'reject', 'cancel', 'አልተቀበለም', 'no', 'ካልጸደቀ']
   };
 
   const flowLabels = {
@@ -24,7 +24,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   };
 
   const flowDirectionTriggers = {
-    loop: ['ካልጸደቀ', 'ካልሆነ', 'correction', 'fix', 'edit', 'back', 'return', 'ተመለስ', 'አስተካክል'],
+    loop: ['correction', 'fix', 'edit', 'back', 'return', 'ተመለስ', 'አስተካክል', 'ተመለሰ'],
     reject: ['ውድቅ', 'reject', 'cancel', 'አልተቀበለም']
   };
 
@@ -45,10 +45,11 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     
     if (isStrictLoop && nodeDefs.length > 0) {
       const sourceId = nodeDefs[nodeDefs.length - 1].id;
-      const targetId = lastUserTaskId || (nodeDefs.length > 1 ? nodeDefs[nodeDefs.length - 2].id : nodeDefs[0].id);
+      // Find the most recent task that isn't a gateway to return to
+      let targetId = lastUserTaskId || (nodeDefs.length > 1 ? nodeDefs[nodeDefs.length - 2].id : nodeDefs[0].id);
       
-      let flowLabel = 'ካልጸደቀ';
-      if (lowerLine.includes('ተመለስ')) flowLabel = 'ተመለስ';
+      let flowLabel = 'ተመለስ';
+      if (lowerLine.includes('ካልጸደቀ')) flowLabel = 'ካልጸደቀ';
 
       backFlows.push({
         id: `Flow_Back_${index}`,
@@ -92,7 +93,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       ...Object.values(mappings).flat(),
       ...Object.values(flowDirectionTriggers).flat(),
       ...Object.values(flowLabels).flat(),
-      'success', 'failed', 'done', 'task', 'error', 'decision', '->', '=>', '>', ':-', ':'
+      'success', 'failed', 'done', 'task', 'error', 'decision', '->', '=>', '>', ':-', ':', 'simultaneous'
     ];
 
     allTriggers.sort((a, b) => b.length - a.length).forEach(k => {
@@ -101,7 +102,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       pureName = pureName.replace(regex, '');
     });
     
-    pureName = pureName.replace(/[?፧？]$/, '').replace(/^[\s>->=>:]+/, '').trim();
+    pureName = pureName.replace(/[?፧？]$/, '').replace(/^[\s>->=>:]+/, '').replace(/\([^)]*\)/g, '').trim();
 
     const nodeId = `Node_${index}`;
     nodeDefs.push({
@@ -116,7 +117,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       attachedTo: isBoundaryError ? nodeDefs[nodeDefs.length-1].id : null
     });
 
-    if (type === 'userTask') {
+    if (type === 'userTask' || type === 'serviceTask' || type === 'manualTask' || type === 'scriptTask') {
       lastUserTaskId = nodeId;
     }
   });
@@ -124,13 +125,13 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const elements: string[] = [];
   const flows: string[] = [];
   const diElements: string[] = [];
-  const positions: Record<string, { x: number, y: number, w: number, h: number, row: number }> = {};
+  const positions: Record<string, { x: number, y: number, w: number, h: number, row: number, col: number }> = {};
 
   // Layout Constants - Increased spacing to prevent arrow/box overlap
   const MAX_COLS = 3; 
   const BOX_WIDTH = 120;
   const COL_SPACING = 350; 
-  const ROW_SPACING = 300; 
+  const ROW_SPACING = 350; 
   const X_START = 200;
   const Y_START = 200;
 
@@ -149,9 +150,9 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
     if (node.isBoundaryError && node.attachedTo) {
       const parentPos = positions[node.attachedTo];
-      positions[node.id] = { x: parentPos.x + 40, y: parentPos.y + 40, w: 36, h: 36, row: parentPos.row };
+      positions[node.id] = { x: parentPos.x + 40, y: parentPos.y + 40, w: 36, h: 36, row: parentPos.row, col: parentPos.col };
     } else {
-      positions[node.id] = { x, y, w, h, row };
+      positions[node.id] = { x, y, w, h, row, col };
     }
 
     const escapedName = escapeXml(node.name);
@@ -220,14 +221,17 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
           let waypoints: {x: number, y: number}[] = [];
 
           if (isForwardInRow) {
-            const exitX = isEvenRow ? s.x + s.w/2 : s.x - s.w/2;
-            const entryX = isEvenRow ? t.x - t.w/2 : t.x + t.w/2;
+            // Horizontal flow within same row
+            const exitX = (isEvenRow) ? s.x + s.w/2 : s.x - s.w/2;
+            const entryX = (isEvenRow) ? t.x - t.w/2 : t.x + t.w/2;
             waypoints = [{ x: exitX, y: s.y }, { x: entryX, y: t.y }];
           } else {
-            // Orthogonal row transition: avoid crossing tasks
+            // Row transition: MANHATTAN ORTHOGONAL ROUTING
             const midY = (s.y + t.y) / 2;
             const exitY = s.y + s.h/2;
             const entryY = t.y - t.h/2;
+            
+            // Exit downwards, move horizontally, entry downwards
             waypoints = [
               { x: s.x, y: exitY },
               { x: s.x, y: midY },
@@ -253,8 +257,9 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     const s = positions[f.sourceRef];
     const t = positions[f.targetRef];
     if (s && t) {
-      // Professional Manhattan Loop-back: routes strictly above the process line
-      const clearY = s.y - 140; 
+      // HIGH CLEARANCE MANHATTAN LOOP-BACK
+      // Routes strictly above the highest row element to avoid box collision
+      const clearY = Math.min(s.y, t.y) - 180; 
       diElements.push(`
         <bpmndi:BPMNEdge id="${f.id}_di" bpmnElement="${f.id}">
           <di:waypoint x="${s.x}" y="${s.y - s.h/2}" />
@@ -275,7 +280,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
                   xmlns:di="http://www.omg.org/spec/DD/20100524/DI" 
                   targetNamespace="http://bpmn.io/schema/bpmn"
                   exporter="Worku (ወርቁ) Pro Architect" 
-                  exporterVersion="12.0">
+                  exporterVersion="15.0">
   <bpmn:process id="Process_Worku_Pro" name="${escapeXml(title)}" isExecutable="true">
 ${elements.join('\n')}
 ${flows.join('\n')}
