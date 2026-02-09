@@ -4,21 +4,21 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const rawLines = input.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
   
   const mappings = {
-    start: ['መጀመሪያ', 'ጀምር', 'start', 'begin'],
-    end: ['መጨረሻ', 'ጨርስ', 'ተጠናቀቀ', 'end', 'finish'],
-    timer: ['ቆይታ', 'ሰዓት', 'ቀን', 'timer', 'wait'],
-    userTask: ['ተግባር', 'ይመረምራል', 'ይፈጸማል', 'ይከናወናል', 'ይደረጋል', 'ባለሙያ', 'human', 'user task', 'userAction'],
+    start: ['መጀመሪያ', 'ጀምር', 'start', 'begin', 'starting'],
+    end: ['መጨረሻ', 'ጨርስ', 'ተጠናቀቀ', 'end', 'finish', 'ending'],
+    timer: ['ቆይታ', 'ሰዓት', 'ቀን', 'timer', 'wait', 'duration'],
+    userTask: ['ተግባር', 'ይመረምራል', 'ይፈጸማል', 'ይከናወናል', 'ይደረጋል', 'ባለሙያ', 'human', 'user task', 'userAction', 'action'],
     serviceTask: ['ሲስተም', 'አውቶማቲክ', 'service task', 'service', 'system', 'auto', 'script'],
     manualTask: ['በእጅ', 'ፊዚካል', 'manual task', 'manual'],
-    exclusiveGateway: ['ውሳኔ', 'ከሆነ', 'ወይስ', 'ቢሆን', 'decision', 'xor', 'if'],
-    parallelGateway: ['በአንድ ጊዜ', 'እና', 'ትይዩ', 'parallel', 'and', '+'],
-    dataKeywords: ['ሰነድ', 'ፎርም', 'ማስረጃ', 'ደረሰኝ', 'document', 'form', 'data object'],
-    error: ['error', 'ስህተት', 'ተቋረጠ'],
-    reject: ['ውድቅ', 'reject', 'cancel', 'አልተቀበለም']
+    exclusiveGateway: ['ውሳኔ', 'ከሆነ', 'ወይስ', 'ቢሆን', 'decision', 'xor', 'if', 'gateway'],
+    parallelGateway: ['በአንድ ጊዜ', 'እና', 'ትይዩ', 'parallel', 'and', '+', 'multiple'],
+    dataKeywords: ['ሰነድ', 'ፎርም', 'ማስረጃ', 'ደረሰኝ', 'document', 'form', 'data object', 'file'],
+    error: ['error', 'ስህተት', 'ተቋረጠ', 'failure'],
+    reject: ['ውድቅ', 'reject', 'cancel', 'አልተቀበለም', 'no']
   };
 
   const flowDirectionTriggers = {
-    forward: ['ከጸደቀ', 'approve', 'yes', 'ok', 'if yes'],
+    forward: ['ከጸደቀ', 'approve', 'yes', 'ok', 'if yes', 'success'],
     loop: ['ካልጸደቀ', 'ካልሆነ', 'correction', 'fix', 'edit', 'back', 'return', 'ተመለስ', 'አስተካክል', 'if no back'],
     reject: ['ውድቅ', 'reject', 'no', 'cancel', 'አልተቀበለም', 'if no exit']
   };
@@ -31,8 +31,9 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   rawLines.forEach((line, index) => {
     const lowerLine = line.toLowerCase();
     
+    // Check for Loop/Back commands
     const isStrictLoop = flowDirectionTriggers.loop.some(t => lowerLine.includes(t));
-    const isStrictReject = flowDirectionTriggers.reject.some(t => lowerLine.includes(t));
+    const isStrictReject = flowDirectionTriggers.reject.some(t => lowerLine.includes(t)) && !lowerLine.includes('ውሳኔ');
 
     if (isStrictLoop && nodeDefs.length > 0) {
       const sourceId = nodeDefs[nodeDefs.length - 1].id;
@@ -86,26 +87,26 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     else if (mappings.serviceTask.some(k => lowerLine.includes(k))) { type = 'serviceTask'; category = 'task'; }
     else if (mappings.manualTask.some(k => lowerLine.includes(k))) { type = 'manualTask'; category = 'task'; }
 
+    // CLEANUP NAME: Remove all trigger keywords, arrows, and technical markers
     let pureName = line;
     const allTriggers = [
       ...Object.values(mappings).flat(),
       ...Object.values(flowDirectionTriggers).flat(),
-      'success', 'failed', 'done'
+      'success', 'failed', 'done', 'task', 'error', 'decision', '->', '=>', '>', ':-', ':'
     ];
 
-    allTriggers.forEach(k => {
+    allTriggers.sort((a, b) => b.length - a.length).forEach(k => {
       const escapedK = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const regex = new RegExp(`^${escapedK}\\s*[:\\-–—\\s]*|\\s*\\(${escapedK}\\)|\\b${escapedK}\\b`, 'gi');
+      // Regex to remove prefixes, suffixes, and standalone keywords
+      const regex = new RegExp(`^${escapedK}\\s*[:\\-–—=>\\s]*|\\s*\\(${escapedK}\\)|\\b${escapedK}\\b|\\s*[:\\-–—=>]+\\s*`, 'gi');
       pureName = pureName.replace(regex, '');
     });
-    pureName = pureName.replace(/[?፧？]$/, '').trim();
+    
+    pureName = pureName.replace(/[?፧？]$/, '').replace(/^[\s>->=>:]+/, '').trim();
 
-    if (category === 'event' || category === 'gateway') {
-      if (mappings.start.some(k => k === pureName.toLowerCase()) || 
-          mappings.end.some(k => k === pureName.toLowerCase()) ||
-          mappings.exclusiveGateway.some(k => k === pureName.toLowerCase())) {
-        pureName = "";
-      }
+    // Avoid empty labels for gates/events if they match keywords exactly
+    if ((category === 'event' || category === 'gateway') && pureName === "") {
+      // Keep empty for start/end usually, or use descriptive defaults if needed
     }
 
     const nodeId = `Node_${index}`;
@@ -131,7 +132,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
   // Layout Constants
   const MAX_COLS = 4;
-  const COL_SPACING = 350; // High clearance
+  const COL_SPACING = 350; 
   const ROW_SPACING = 300;
   const X_START = 200;
   const Y_START = 200;
@@ -198,11 +199,12 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>`);
 
-    // PASS 2: Sequence Flow Calculation with Orthogonal Waypoints
+    // PASS 2: Sequence Flow Calculation
     if (i > 0 && !node.isReject) {
       const prev = nodeDefs[i - 1];
       if (!prev.isReject) {
         const flowId = `Flow_${prev.id}_${node.id}`;
+        // Use 'ከጸደቀ' for gateways, or empty for standard transitions
         const label = (prev.type === 'exclusiveGateway') ? 'ከጸደቀ' : '';
         flows.push(`<bpmn:sequenceFlow id="${flowId}" name="${label}" sourceRef="${prev.id}" targetRef="${node.id}" />`);
         
@@ -215,7 +217,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
           let waypoints: {x: number, y: number}[] = [];
 
           if (isForwardInRow) {
-            // Straight Orthogonal Connection
             const exitX = isEvenRow ? s.x + s.w/2 : s.x - s.w/2;
             const entryX = isEvenRow ? t.x - t.w/2 : t.x + t.w/2;
             waypoints = [
@@ -223,7 +224,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
               { x: entryX, y: t.y }
             ];
           } else {
-            // Manhattan Routing between rows to avoid collisions
             const midY = (s.y + t.y) / 2;
             waypoints = [
               { x: s.x, y: s.y + s.h / 2 },
@@ -245,14 +245,13 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     }
   });
 
-  // Loop-Back Routing with -80 Clear Height
+  // Loop-Back Routing
   backFlows.forEach(f => {
     flows.push(`<bpmn:sequenceFlow id="${f.id}" name="${escapeXml(f.name)}" sourceRef="${f.sourceRef}" targetRef="${f.targetRef}" />`);
     const s = positions[f.sourceRef];
     const t = positions[f.targetRef];
     if (s && t) {
       if (f.direction === 'loop') {
-        // High-Clearance Manhattan Routing
         const clearY = s.y - s.h/2 - 80; 
         diElements.push(`
           <bpmndi:BPMNEdge id="${f.id}_di" bpmnElement="${f.id}">
@@ -265,7 +264,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
             </bpmndi:BPMNLabel>
           </bpmndi:BPMNEdge>`);
       } else if (f.direction === 'reject') {
-        // Downward Orthogonal Routing
         diElements.push(`
           <bpmndi:BPMNEdge id="${f.id}_di" bpmnElement="${f.id}">
             <di:waypoint x="${s.x}" y="${s.y + s.h/2}" />
