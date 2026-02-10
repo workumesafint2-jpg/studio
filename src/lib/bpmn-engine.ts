@@ -24,16 +24,16 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
   const nodeDefs: any[] = [];
   const backFlows: any[] = [];
-  const branchNodes: any[] = []; // Specifically for upward terminal paths
+  const branchNodes: any[] = [];
   let startTextToMove = "";
 
   // PASS 1: Identify Nodes and Categorize
   rawLines.forEach((line, index) => {
     const lowerLine = line.toLowerCase();
     
-    // Check for explicit loop-back keyword but prioritize the new terminal rejection rule
+    // Check for explicit loop-back keywords (but exclude cases handled by upward terminal paths)
     const isLoop = ['ተመለስ', 'back', 'correction', 'fix', 'edit'].some(t => lowerLine.includes(t)) && 
-                   !['ካልጸደቀ', 'reject', 'no'].some(t => lowerLine.includes(t));
+                   !['ካልጸደቀ', 'reject', 'no', 'ውድቅ'].some(t => lowerLine.includes(t));
     
     if (isLoop && nodeDefs.length > 0) {
       const sourceId = nodeDefs[nodeDefs.length - 1].id;
@@ -66,9 +66,14 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     else if (mappings.scriptTask.some(k => lowerLine.includes(k))) { type = 'scriptTask'; category = 'task'; }
     else if (mappings.reject.some(k => lowerLine.includes(k))) { type = 'rejectEnd'; category = 'event'; }
 
-    // Label Sanitization
+    // Label Sanitization: Remove technical prefixes
     let pureName = line;
-    const allTriggers = [...Object.values(mappings).flat(), 'task', 'error', 'if', 'yes', 'no', '->', '=>', ':', 'if yes', 'if no back'];
+    const allTriggers = [
+      ...Object.values(mappings).flat(), 
+      'user task', 'service task', 'manual task', 'script task', 'start', 'end', 'gateway', 'decision',
+      'task', 'error', 'if', 'yes', 'no', '->', '=>', ':', 'if yes', 'if no back'
+    ];
+    
     allTriggers.filter(Boolean).sort((a, b) => b.length - a.length).forEach(k => {
       try {
         const regex = new RegExp(`^${escapeRegExp(k)}|\\(${escapeRegExp(k)}\\)|\\b${escapeRegExp(k)}\\b`, 'gi');
@@ -78,7 +83,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     
     pureName = pureName.replace(/[?፧？]$/, '').replace(/^[\s>->:–—-]+/, '').trim();
 
-    // RULE: Start Box Purity (Shift label to first task)
+    // RULE: Start Box Purity (Shift label to first following task)
     if (type === 'startEvent') {
       if (pureName) startTextToMove = pureName;
       pureName = ""; 
@@ -89,9 +94,9 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
     const nodeId = `Node_${index}`;
     
-    // Camunda Specific: If this is a gateway, check for a 'No' (ካልጸደቀ) branch to an Error End Event
+    // Camunda Specific: If this is a gateway, handle upward 'No' branch
     let branch = null;
-    if (type === 'exclusiveGateway' && (lowerLine.includes('ካልጸደቀ') || lowerLine.includes('reject') || lowerLine.includes('no'))) {
+    if (type === 'exclusiveGateway' && (lowerLine.includes('ካልጸደቀ') || lowerLine.includes('reject') || lowerLine.includes('no') || lowerLine.includes('ውድቅ'))) {
       const errorEventId = `ErrorEvent_${index}`;
       branch = {
         id: errorEventId,
@@ -123,7 +128,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const BOX_WIDTH = 140;
   const BOX_HEIGHT = 80;
   const X_START = 200;
-  const Y_START = 350;
+  const Y_START = 400;
 
   // Main Nodes Processing
   nodeDefs.forEach((node, i) => {
@@ -159,12 +164,12 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>`);
 
-    // Data Objects (Shifted Side/Top to avoid clutter)
+    // Data Objects (Side-shifted to avoid Sequence Flow overlap)
     if (node.hasDataAssociation) {
       const dataId = `DataObj_${node.id}`;
       const assocId = `Assoc_${node.id}`;
-      const dataX = x + 100;
-      const dataY = y - 100;
+      const dataX = x;
+      const dataY = y - 130; // Position directly above
       elements.push(`<bpmn:dataObjectReference id="${dataId}" name="${escapeXml(node.dataLabel)}" dataObjectRef="DO_Ref_${node.id}" />`);
       elements.push(`<bpmn:dataObject id="DO_Ref_${node.id}" />`);
       elements.push(`<bpmn:association id="${assocId}" sourceRef="${node.id}" targetRef="${dataId}" />`);
@@ -173,12 +178,12 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
           <dc:Bounds x="${dataX - 18}" y="${dataY - 25}" width="36" height="50" />
         </bpmndi:BPMNShape>
         <bpmndi:BPMNEdge id="${assocId}_di" bpmnElement="${assocId}">
-          <di:waypoint x="${x + w/4}" y="${y - h/2}" />
+          <di:waypoint x="${x}" y="${y - h/2}" />
           <di:waypoint x="${dataX}" y="${dataY + 25}" />
         </bpmndi:BPMNEdge>`);
     }
 
-    // Main Sequence Flow (Approved/Forward path)
+    // Main Sequence Flow (Straight ahead path)
     if (i > 0) {
       const prev = nodeDefs[i-1];
       const s = positions[prev.id];
@@ -190,35 +195,30 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       
       flows.push(`<bpmn:sequenceFlow id="${flowId}" ${label ? `name="${label}"` : ''} sourceRef="${prev.id}" targetRef="${node.id}" />`);
 
-      // Orthogonal Manhattan Path
-      const waypoints = [
-        { x: s.x + s.w/2, y: s.y },
-        { x: (s.x + s.w/2 + t.x - t.w/2) / 2, y: s.y },
-        { x: (s.x + s.w/2 + t.x - t.w/2) / 2, y: t.y },
-        { x: t.x - t.w/2, y: t.y }
-      ];
-
+      // Manhattan Path (Straight center-to-center)
       diElements.push(`
         <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
-          ${waypoints.map(p => `<di:waypoint x="${p.x}" y="${p.y}" />`).join('\n')}
+          <di:waypoint x="${s.x + s.w/2}" y="${s.y}" />
+          <di:waypoint x="${t.x - t.w/2}" y="${t.y}" />
           ${label ? `
           <bpmndi:BPMNLabel>
-            <dc:Bounds x="${(waypoints[0].x + waypoints[waypoints.length-1].x) / 2 - 30}" y="${s.y - 15}" width="60" height="14" />
+            <dc:Bounds x="${(s.x + s.w/2 + t.x - t.w/2) / 2 - 20}" y="${s.y - 15}" width="40" height="14" />
           </bpmndi:BPMNLabel>` : ''}
         </bpmndi:BPMNEdge>`);
     }
   });
 
-  // Branch Nodes (Upward 'ካልጸደቀ' Terminal Error Paths)
+  // Branch Nodes: Upward terminal Error End Event from Gateway top vertex
   branchNodes.forEach(branch => {
     const parentPos = positions[branch.parentId];
     if (!parentPos) return;
 
     const x = parentPos.x;
-    const y = parentPos.y - 200; // Extend Upwards
+    const y = parentPos.y - 200; // Move Upwards
     const w = 36, h = 36;
     positions[branch.id] = { x, y, w, h };
 
+    // Camunda Error End Event symbol
     elements.push(`<bpmn:endEvent id="${branch.id}" name="ካልጸደቀ"><bpmn:errorEventDefinition id="ErrorDef_${branch.id}" /></bpmn:endEvent>`);
     
     diElements.push(`
@@ -230,6 +230,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       </bpmndi:BPMNShape>`);
 
     const flowId = `Flow_Branch_${branch.id}`;
+    // Rule: Label 'ካልጸደቀ' precisely on the midpoint of the upward line
     flows.push(`<bpmn:sequenceFlow id="${flowId}" name="${branch.label}" sourceRef="${branch.parentId}" targetRef="${branch.id}" />`);
 
     diElements.push(`
@@ -248,7 +249,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     const s = positions[f.sourceRef];
     const t = positions[f.targetRef];
     if (s && t) {
-      const skyY = Y_START - 180; 
+      const skyY = Y_START - 220; 
       diElements.push(`
         <bpmndi:BPMNEdge id="${f.id}_di" bpmnElement="${f.id}">
           <di:waypoint x="${s.x}" y="${s.y - s.h/2}" />

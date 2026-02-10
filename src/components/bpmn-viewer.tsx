@@ -74,7 +74,6 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Ensure we start with a clean container
     containerRef.current.innerHTML = '';
 
     const viewer = new BpmnViewer({
@@ -96,12 +95,8 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
       if (viewerRef.current && xml && !isImporting.current) {
         try {
           isImporting.current = true;
-          
-          // Small delay to ensure the DOM is ready for the engine
           await new Promise(resolve => setTimeout(resolve, 50));
-          
           await viewerRef.current.importXML(xml);
-          
           const canvas = viewerRef.current?.get('canvas');
           if (canvas) {
             canvas.zoom('fit-viewport');
@@ -119,15 +114,9 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
 
   return (
     <div className="w-full h-full relative group bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-      <div className="absolute top-0 left-0 right-0 z-10 bg-white/90 backdrop-blur-md py-3 px-6 border-b border-slate-100 flex items-center justify-center">
-        <h2 className="text-sm font-bold text-primary truncate uppercase tracking-widest">
-          {title}
-        </h2>
-      </div>
-
       <div 
         ref={containerRef} 
-        className="w-full h-full min-h-[500px] pt-14"
+        className="w-full h-full min-h-[500px]"
       />
       
       <div className="absolute bottom-6 right-6 bg-slate-900/10 text-slate-600 px-4 py-1.5 rounded-full text-[10px] font-bold pointer-events-none opacity-0 group-hover:opacity-100 transition-all">
