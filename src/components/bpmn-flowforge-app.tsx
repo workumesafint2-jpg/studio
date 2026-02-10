@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Copy, FileCode, Trash2, MoreVertical, FolderArchive, Eye, Code, Download, FileJson, Sparkles } from "lucide-react";
+import { FileCode, Trash2, MoreVertical, FolderArchive, Eye, Code, Download, FileJson, Sparkles, Copy } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -20,16 +20,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import JSZip from 'jszip';
 
-const DEFAULT_PROCESS = `Start -> የአገልግሎት ጥያቄ መቀበል
-User Task -> የደንበኛ ፍላጎት መለየት
-User Task -> ሰነድ ማዘጋጀት
-Decision (አዋጭ ነው?) -> if yes (ቀጥል), if no back (ወደ መጀመሪያ ተመለስ), Reject (ሰርዝ).
-End -> ተጠናቋል`;
-
 export function BPMNFlowForgeApp() {
   const [mounted, setMounted] = useState(false);
-  const [input, setInput] = useState(DEFAULT_PROCESS);
-  const [title, setTitle] = useState("የአገልግሎት ሂደት");
+  const [input, setInput] = useState("");
+  const [title, setTitle] = useState("");
   const [xmlResult, setXmlResult] = useState("");
   const [activeTab, setActiveTab] = useState("diagram");
   const viewerRef = useRef<BPMNViewerRef>(null);
@@ -37,9 +31,6 @@ export function BPMNFlowForgeApp() {
 
   useEffect(() => {
     setMounted(true);
-    // Initial generate
-    const result = generateBPMN(DEFAULT_PROCESS, "የአገልግሎት ሂደት");
-    setXmlResult(result);
   }, []);
 
   if (!mounted) {
@@ -60,19 +51,13 @@ export function BPMNFlowForgeApp() {
       });
       return;
     }
-    const result = generateBPMN(input, title || "የሂደት ዲያግራም");
+    const result = generateBPMN(input, title || "Process Diagram");
     if (result) {
       setXmlResult(result);
       setActiveTab("diagram");
       toast({
         title: "ዲያግራሙ ተዘጋጅቷል",
         description: "የእርስዎ BPMN 2.0 ዲያግራም ዝግጁ ነው።",
-      });
-    } else {
-      toast({
-        title: "የስህተት መልእክት",
-        description: "ሂደቱን መተርጎም አልተቻለም። እባክዎን አጻጻፍዎን ያረጋግጡ።",
-        variant: "destructive",
       });
     }
   };
@@ -110,8 +95,8 @@ export function BPMNFlowForgeApp() {
     
     zip.file(`${fileName}.bpmn`, xmlResult || "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" targetNamespace=\"http://bpmn.io/schema/bpmn\"></bpmn:definitions>");
     
-    const readmeContent = `# ${title || 'BPMN ፕሮጀክት'}\n\nበ(ወርቁ) Pro የተሰራ።\n\n### አጠቃቀም:\n1. ፋይሉን ${fileName}.bpmn በ Camunda Modeler ይክፈቱት።`;
-    zip.file("README_አንብበኝ.md", readmeContent);
+    const readmeContent = `# ${title || 'BPMN ፕሮጀክት'}\n\nበ(ወርቁ) Pro የተሰራ።`;
+    zip.file("README.md", readmeContent);
 
     try {
       const content = await zip.generateAsync({ type: "blob" });
@@ -123,22 +108,12 @@ export function BPMNFlowForgeApp() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-
-      toast({
-        title: "ፕሮጀክቱ ዝግጁ ነው",
-        description: "የምንጭ ፋይሎች በተሳካ ሁኔታ ወርደዋል።",
-      });
-    } catch (err) {
-      toast({
-        title: "ማውረድ አልተቻለም",
-        description: "ፕሮጀክቱን ማጠናቀር አልተቻለም።",
-        variant: "destructive",
-      });
-    }
+    } catch (err) {}
   };
 
   const handleClear = () => {
     setInput("");
+    setTitle("");
     setXmlResult("");
   };
 
@@ -170,7 +145,7 @@ export function BPMNFlowForgeApp() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64 rounded-xl shadow-2xl border-none p-2">
               <DropdownMenuItem 
-                className="flex items-center gap-3 py-3 px-4 cursor-pointer rounded-lg hover:bg-primary/5 focus:bg-primary/5" 
+                className="flex items-center gap-3 py-3 px-4 cursor-pointer rounded-lg hover:bg-primary/5" 
                 onClick={handleDownloadProject}
               >
                 <div className="p-2 bg-primary/10 rounded-lg">
@@ -189,45 +164,39 @@ export function BPMNFlowForgeApp() {
       <main className="flex flex-col lg:flex-row flex-1 overflow-hidden p-4 gap-4">
         <div className="w-full lg:w-[350px] flex flex-col gap-3 shrink-0 overflow-y-auto lg:overflow-visible">
           <Card className="flex flex-col shadow-xl border-none bg-card h-full lg:h-auto lg:flex-1 rounded-xl overflow-hidden ring-1 ring-slate-100">
-            <CardContent className="flex-1 flex flex-col gap-3 p-4">
+            <CardContent className="flex-1 flex flex-col gap-4 p-5">
               <div className="space-y-1.5">
-                <Label htmlFor="service-title" className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                  የአገልግሎቱ ስም
-                </Label>
                 <Input
                   id="service-title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="ለምሳሌ: ፍቃድ መስጠት"
-                  className="bg-muted/30 border-muted focus:ring-primary h-9 rounded-lg font-medium text-sm"
+                  placeholder="የአገልግሎቱ ስም (Service Title)"
+                  className="bg-muted/30 border-muted focus:ring-primary h-10 rounded-lg font-medium text-sm"
                 />
               </div>
 
               <div className="relative flex-1 flex flex-col">
-                <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1.5 block">
-                  የሂደቱ ዝርዝር መግለጫ
-                </Label>
                 <Textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="የሂደቱን ዝርዝር እዚህ ይጻፉ..."
-                  className="flex-1 w-full min-h-[200px] lg:min-h-0 resize-none font-body text-xs border-muted focus:ring-primary focus:border-primary p-3 rounded-lg shadow-inner bg-slate-50/50"
+                  placeholder="የሂደቱን ዝርዝር እዚህ ይጻፉ... (Process Steps Here)"
+                  className="flex-1 w-full min-h-[300px] lg:min-h-0 resize-none font-body text-xs border-muted focus:ring-primary focus:border-primary p-4 rounded-lg shadow-inner bg-slate-50/50"
                 />
               </div>
-              <div className="flex flex-col gap-2 pt-1">
+              <div className="flex flex-col gap-2 pt-2">
                 <div className="flex items-center gap-2">
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={handleClear}
-                    className="flex-1 items-center gap-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 border-muted rounded-lg h-10"
+                    className="flex-1 items-center gap-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 border-muted rounded-lg h-11"
                   >
-                    <Trash2 className="w-3.5 h-3.5" /> ሁሉንም አጥፋ
+                    <Trash2 className="w-4 h-4" /> አጽዳ (Clear)
                   </Button>
                   <Button 
                     size="sm"
                     onClick={handleGenerate}
-                    className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground h-10 rounded-lg text-sm font-bold shadow-lg flex items-center justify-center gap-2 transition-all"
+                    className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground h-11 rounded-lg text-sm font-bold shadow-lg flex items-center justify-center gap-2 transition-all"
                   >
                     <Sparkles className="w-4 h-4" /> አመንጭ (Generate)
                   </Button>
@@ -239,36 +208,36 @@ export function BPMNFlowForgeApp() {
 
         <div className="flex-1 flex flex-col gap-3 min-h-0">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-            <div className="flex items-center justify-between mb-1.5">
-              <TabsList className="bg-muted/50 p-1 h-9 rounded-lg">
-                <TabsTrigger value="diagram" className="flex items-center gap-1.5 rounded-md px-3 font-bold h-7 text-xs">
-                  <Eye className="w-3.5 h-3.5" /> የዲያግራም መሳያ ቦታ
+            <div className="flex items-center justify-between mb-2">
+              <TabsList className="bg-muted/50 p-1 h-10 rounded-lg">
+                <TabsTrigger value="diagram" className="flex items-center gap-1.5 rounded-md px-4 font-bold h-8 text-xs">
+                  <Eye className="w-4 h-4" /> ዲያግራም (Diagram)
                 </TabsTrigger>
-                <TabsTrigger value="xml" className="flex items-center gap-1.5 rounded-md px-3 font-bold h-7 text-xs">
-                  <Code className="w-3.5 h-3.5" /> ምንጭ ኮድ
+                <TabsTrigger value="xml" className="flex items-center gap-1.5 rounded-md px-4 font-bold h-8 text-xs">
+                  <Code className="w-4 h-4" /> ኮድ (XML)
                 </TabsTrigger>
               </TabsList>
               
               {xmlResult && (
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <Button 
                     variant="secondary" 
                     size="sm"
                     onClick={handleDownloadXML}
-                    className="flex items-center gap-1.5 font-bold shadow-sm rounded-md h-7 px-2 text-xs"
+                    className="flex items-center gap-1.5 font-bold shadow-sm rounded-md h-8 px-3 text-xs"
                   >
-                    <FileJson className="w-3 h-3" /> XML
+                    <FileJson className="w-3.5 h-3.5" /> BPMN
                   </Button>
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={handleDownloadPNG}
-                    className="flex items-center gap-1.5 font-bold rounded-md h-7 px-2 text-xs"
+                    className="flex items-center gap-1.5 font-bold rounded-md h-8 px-3 text-xs"
                   >
-                    <Download className="w-3 h-3" /> PNG
+                    <Download className="w-3.5 h-3.5" /> PNG
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={handleCopy} className="h-7 w-7 p-0">
-                    <Copy className="w-3 h-3" />
+                  <Button variant="ghost" size="sm" onClick={handleCopy} className="h-8 w-8 p-0">
+                    <Copy className="w-3.5 h-3.5" />
                   </Button>
                 </div>
               )}
@@ -278,7 +247,7 @@ export function BPMNFlowForgeApp() {
               <TabsContent value="diagram" className="flex-1 m-0 focus-visible:ring-0 h-full">
                 {xmlResult ? (
                   <div className="h-full w-full">
-                    <BPMNViewer xml={xmlResult} title={title || "የሂደት ዲያግራም"} ref={viewerRef} />
+                    <BPMNViewer xml={xmlResult} title={title || ""} ref={viewerRef} />
                   </div>
                 ) : (
                   <EmptyState message="ዲያግራሙን እዚህ ለማየት የሂደቱን ዝርዝር መግለጫ ያስገቡ።" />
@@ -288,7 +257,7 @@ export function BPMNFlowForgeApp() {
               <TabsContent value="xml" className="flex-1 m-0 focus-visible:ring-0 h-full">
                 {xmlResult ? (
                   <ScrollArea className="h-full w-full bg-slate-900">
-                    <pre className="p-6 font-code text-xs">
+                    <pre className="p-6 font-code text-[11px] leading-relaxed">
                       <code className="text-blue-300 block overflow-x-auto">
                         {xmlResult}
                       </code>
@@ -303,12 +272,12 @@ export function BPMNFlowForgeApp() {
         </div>
       </main>
       
-      <footer className="px-6 py-2 bg-white border-t border-muted hidden sm:flex items-center justify-between text-[9px] text-muted-foreground shrink-0 uppercase tracking-widest font-bold">
+      <footer className="px-6 py-2 bg-white border-t border-muted hidden sm:flex items-center justify-between text-[10px] text-muted-foreground shrink-0 uppercase tracking-widest font-bold">
         <p>© {mounted ? new Date().getFullYear() : "...."} (ወርቁ) PRO ARCHITECT</p>
-        <p className="flex items-center gap-4">
-          <span className="text-primary">ENTERPRISE READY</span>
-          <span>SNAKE ENGINE</span>
-        </p>
+        <div className="flex items-center gap-6">
+          <span className="text-primary">CAMUNDA COMPLIANT</span>
+          <span>MANHATTAN ENGINE v2.0</span>
+        </div>
       </footer>
     </div>
   );
@@ -316,11 +285,11 @@ export function BPMNFlowForgeApp() {
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="h-full w-full flex flex-col items-center justify-center p-8 text-center text-muted-foreground/50">
-      <div className="w-16 h-16 bg-muted/20 rounded-full flex items-center justify-center mb-4">
-        <FileCode className="w-8 h-8 opacity-10" />
+    <div className="h-full w-full flex flex-col items-center justify-center p-8 text-center text-muted-foreground/30">
+      <div className="w-20 h-20 bg-muted/20 rounded-full flex items-center justify-center mb-4">
+        <FileCode className="w-10 h-10 opacity-10" />
       </div>
-      <p className="text-xs font-bold max-w-[240px] leading-relaxed italic uppercase tracking-wider">
+      <p className="text-xs font-bold max-w-[280px] leading-relaxed italic uppercase tracking-widest">
         {message}
       </p>
     </div>
