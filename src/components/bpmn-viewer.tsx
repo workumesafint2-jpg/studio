@@ -10,6 +10,7 @@ interface BPMNViewerProps {
 
 export interface BPMNViewerRef {
   exportPNG: () => Promise<void>;
+  exportSVG: () => Promise<void>;
 }
 
 export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, title = "Process Diagram" }, ref) => {
@@ -18,6 +19,23 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
   const isImporting = useRef<boolean>(false);
 
   useImperativeHandle(ref, () => ({
+    exportSVG: async () => {
+      if (!viewerRef.current) return;
+      try {
+        const { svg } = await viewerRef.current.saveSVG();
+        const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${title.replace(/\s+/g, '-').toLowerCase()}.svg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error('Error exporting SVG:', err);
+      }
+    },
     exportPNG: async () => {
       if (!viewerRef.current) return;
 
@@ -32,32 +50,26 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
         img.crossOrigin = 'anonymous';
         
         img.onload = () => {
-          const padding = 100;
-          const headerHeight = 120;
+          // Rule: Use high resolution for PNG (2x scale)
+          const scale = 2;
+          const padding = 100 * scale;
           
-          canvas.width = img.width + padding * 2;
-          canvas.height = img.height + padding * 2 + headerHeight;
+          canvas.width = (img.width * scale) + padding * 2;
+          canvas.height = (img.height * scale) + padding * 2;
           
           const ctx = canvas.getContext('2d');
           if (ctx) {
+            // High quality background
             ctx.fillStyle = '#FFFFFF';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            ctx.fillStyle = '#1e3a8a'; 
-            ctx.font = 'bold 48px "Inter", "Segoe UI", sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(title, canvas.width / 2, 70);
-            
-            ctx.strokeStyle = '#e2e8f0';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
-            
-            ctx.drawImage(img, padding, padding + headerHeight);
+            // Scaled image draw for high resolution
+            ctx.drawImage(img, padding, padding, img.width * scale, img.height * scale);
             
             const pngUrl = canvas.toDataURL('image/png', 1.0);
             const downloadLink = document.createElement('a');
             downloadLink.href = pngUrl;
-            downloadLink.download = `${title.replace(/\s+/g, '-').toLowerCase()}-bpmn.png`;
+            downloadLink.download = `${title.replace(/\s+/g, '-').toLowerCase()}.png`;
             document.body.appendChild(downloadLink);
             downloadLink.click();
             document.body.removeChild(downloadLink);

@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileCode, Trash2, MoreVertical, FolderArchive, Eye, Code, Download, FileJson, Sparkles, Copy } from "lucide-react";
+import { FileCode, Trash2, MoreVertical, FolderArchive, Eye, Code, Download, FileJson, Sparkles, Copy, FileType } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -86,6 +86,12 @@ export function BPMNFlowForgeApp() {
   const handleDownloadPNG = async () => {
     if (viewerRef.current) {
       await viewerRef.current.exportPNG();
+    }
+  };
+
+  const handleDownloadSVG = async () => {
+    if (viewerRef.current) {
+      await viewerRef.current.exportSVG();
     }
   };
 
@@ -225,14 +231,25 @@ export function BPMNFlowForgeApp() {
                     size="sm"
                     onClick={handleDownloadXML}
                     className="flex items-center gap-1.5 font-bold shadow-sm rounded-md h-8 px-3 text-xs"
+                    title="Download BPMN XML"
                   >
                     <FileJson className="w-3.5 h-3.5" /> BPMN
                   </Button>
                   <Button 
                     variant="outline" 
                     size="sm"
+                    onClick={handleDownloadSVG}
+                    className="flex items-center gap-1.5 font-bold rounded-md h-8 px-3 text-xs"
+                    title="Download SVG (Vector)"
+                  >
+                    <FileType className="w-3.5 h-3.5" /> SVG
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
                     onClick={handleDownloadPNG}
                     className="flex items-center gap-1.5 font-bold rounded-md h-8 px-3 text-xs"
+                    title="Download High-Res PNG"
                   >
                     <Download className="w-3.5 h-3.5" /> PNG
                   </Button>

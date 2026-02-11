@@ -31,7 +31,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   rawLines.forEach((line, index) => {
     const lowerLine = line.toLowerCase();
     
-    // Logic for loop-back triggers (correction flows)
     const isLoop = ['ተመለስ', 'back', 'correction', 'fix', 'edit'].some(t => lowerLine.includes(t)) && 
                    !['ካልጸደቀ', 'reject', 'no', 'ውድቅ'].some(t => lowerLine.includes(t));
     
@@ -66,7 +65,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     else if (mappings.scriptTask.some(k => lowerLine.includes(k))) { type = 'scriptTask'; category = 'task'; }
     else if (mappings.reject.some(k => lowerLine.includes(k))) { type = 'rejectEnd'; category = 'event'; }
 
-    // Label Sanitization: Remove technical prefixes and keywords
     let pureName = line;
     const allTriggers = [
       ...Object.values(mappings).flat(), 
@@ -83,7 +81,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     
     pureName = pureName.replace(/[?፧？]$/, '').replace(/^[\s>->:–—-]+/, '').trim();
 
-    // RULE: Start Box Purity (Shift label to first following task)
     if (type === 'startEvent') {
       if (pureName) startTextToMove = pureName;
       pureName = ""; 
@@ -94,7 +91,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
     const nodeId = `Node_${index}`;
     
-    // Gateway branching logic (Upward Rejection)
     if (type === 'exclusiveGateway' && (lowerLine.includes('ካልጸደቀ') || lowerLine.includes('reject') || lowerLine.includes('no') || lowerLine.includes('ውድቅ'))) {
       const errorEventId = `ErrorEvent_${index}`;
       branchNodes.push({
@@ -120,14 +116,12 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const diElements: string[] = [];
   const positions: Record<string, { x: number, y: number, w: number, h: number }> = {};
 
-  // Industrial Grid Spacing
-  const COL_SPACING = 400; 
+  const COL_SPACING = 350; 
   const BOX_WIDTH = 140;
   const BOX_HEIGHT = 80;
   const X_START = 200;
   const Y_START = 400;
 
-  // Process Nodes
   nodeDefs.forEach((node, i) => {
     const x = X_START + i * COL_SPACING;
     const y = Y_START;
@@ -155,12 +149,11 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         <dc:Bounds x="${x - w/2}" y="${y - h/2}" width="${w}" height="${h}" />
       </bpmndi:BPMNShape>`);
 
-    // Data Objects (Shifted for zero sequence flow overlap)
     if (node.hasDataAssociation) {
       const dataId = `DataObj_${node.id}`;
       const assocId = `Assoc_${node.id}`;
-      const dataX = x + 100; // Side-shifted
-      const dataY = y - 100;
+      const dataX = x;
+      const dataY = y - 120;
       elements.push(`<bpmn:dataObjectReference id="${dataId}" name="${escapeXml(node.dataLabel)}" dataObjectRef="DO_Ref_${node.id}" />`);
       elements.push(`<bpmn:dataObject id="DO_Ref_${node.id}" />`);
       elements.push(`<bpmn:association id="${assocId}" sourceRef="${node.id}" targetRef="${dataId}" />`);
@@ -169,12 +162,11 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
           <dc:Bounds x="${dataX - 18}" y="${dataY - 25}" width="36" height="50" />
         </bpmndi:BPMNShape>
         <bpmndi:BPMNEdge id="${assocId}_di" bpmnElement="${assocId}">
-          <di:waypoint x="${x + w/2}" y="${y}" />
-          <di:waypoint x="${dataX}" y="${dataY}" />
+          <di:waypoint x="${x}" y="${y - h/2}" />
+          <di:waypoint x="${dataX}" y="${dataY + 25}" />
         </bpmndi:BPMNEdge>`);
     }
 
-    // Straight Sequence Flows (Manhattan Orthogonal)
     if (i > 0) {
       const prev = nodeDefs[i-1];
       const s = positions[prev.id];
@@ -192,7 +184,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     }
   });
 
-  // Upward Rejection Flows (from Top Vertex)
   branchNodes.forEach(branch => {
     const parentPos = positions[branch.parentId];
     if (!parentPos) return;
@@ -218,13 +209,12 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       </bpmndi:BPMNEdge>`);
   });
 
-  // High-Clearance Loop-backs (Skyway)
   backFlows.forEach(f => {
     flows.push(`<bpmn:sequenceFlow id="${f.id}" name="${f.name}" sourceRef="${f.sourceRef}" targetRef="${f.targetRef}" />`);
     const s = positions[f.sourceRef];
     const t = positions[f.targetRef];
     if (s && t) {
-      const skyY = Y_START - 250; 
+      const skyY = Y_START - 220; 
       diElements.push(`
         <bpmndi:BPMNEdge id="${f.id}_di" bpmnElement="${f.id}">
           <di:waypoint x="${s.x}" y="${s.y - s.h/2}" />
