@@ -27,13 +27,15 @@ To generate the production APK for your Android device:
    *In Android Studio, go to `Build > Build Bundle(s) / APK(s) > Build APK(s)`.*
 
 ## Key Features
-- **Empty Start Logic**: Complies with BPMN 2.0 purity standards.
-- **Midpoint Labeling**: Strategic text placement on sequence flow connectors.
-- **Horizontal-Only Engine**: Professional single-row layout for complex service steps.
-- **Save to Storage**: High-resolution SVG, PNG, and BPMN XML exports.
+- **Empty Start Logic**: Complies with BPMN 2.0 purity standards (bpmn:startEvent).
+- **Midpoint Labeling**: Strategic text placement on sequence flow connectors ('ከጸደቀ', 'ካልጸደቀ').
+- **Horizontal-Only Engine**: Professional single-row layout (350px gap) for complex processes up to 20 steps.
+- **Side-Positioned Data Objects**: Document icons positioned with dotted associations to avoid flow overlap.
+- **Dynamic Multi-Service Import**: Support for CSV/Text file processing for batch diagram generation.
+- **High-Resolution Storage**: High-resolution SVG, PNG, and BPMN XML exports to local mobile storage.
 
 ## Service Processing
 The system is tested and verified to handle **44+ industrial service steps** in a single workspace without overlap.
 
 ---
-© 2024 ወርቁ Pro - APK PRODUCTION READY.
+© 2024 ወርቁ Pro - FINAL PRODUCTION BUILD.

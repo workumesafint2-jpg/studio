@@ -4,9 +4,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileCode, Trash2, MoreVertical, FolderArchive, Eye, Code, Download, FileJson, Sparkles, Copy, FileType, Save } from "lucide-react";
+import { FileCode, Trash2, MoreVertical, FolderArchive, Eye, Code, Download, FileJson, Sparkles, Copy, FileType, Save, Upload } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -60,6 +59,28 @@ export function BPMNFlowForgeApp() {
         description: "የእርስዎ BPMN 2.0 ዲያግራም ዝግጁ ነው።",
       });
     }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      // Basic support for multiple services separated by double newline
+      if (content.includes('\n\n')) {
+        const services = content.split('\n\n').filter(s => s.trim().length > 0);
+        toast({
+          title: "ፋይል ገብቷል",
+          description: `${services.length} አገልግሎቶች ተገኝተዋል። የመጀመሪያው ተጭኗል።`,
+        });
+        setInput(services[0]);
+      } else {
+        setInput(content);
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleCopy = () => {
@@ -152,6 +173,18 @@ export function BPMNFlowForgeApp() {
             <DropdownMenuContent align="end" className="w-64 rounded-xl shadow-2xl border-none p-2">
               <DropdownMenuItem 
                 className="flex items-center gap-3 py-3 px-4 cursor-pointer rounded-lg hover:bg-primary/5" 
+                onClick={() => document.getElementById('file-upload')?.click()}
+              >
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Upload className="w-5 h-5 text-primary" />
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-bold text-sm">ፋይል አስገባ (CSV/Text)</span>
+                  <span className="text-[10px] text-muted-foreground leading-none">IMPORT MULTIPLE SERVICES</span>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                className="flex items-center gap-3 py-3 px-4 cursor-pointer rounded-lg hover:bg-primary/5" 
                 onClick={handleDownloadProject}
               >
                 <div className="p-2 bg-primary/10 rounded-lg">
@@ -164,6 +197,13 @@ export function BPMNFlowForgeApp() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <input 
+            type="file" 
+            id="file-upload" 
+            className="hidden" 
+            accept=".csv,.txt"
+            onChange={handleFileUpload} 
+          />
         </div>
       </header>
 
@@ -292,7 +332,7 @@ export function BPMNFlowForgeApp() {
       <footer className="px-6 py-2 bg-white border-t border-muted hidden sm:flex items-center justify-between text-[10px] text-muted-foreground shrink-0 uppercase tracking-widest font-bold">
         <p>© {mounted ? new Date().getFullYear() : "...."} (ወርቁ) PRO</p>
         <div className="flex items-center gap-6">
-          <span className="text-primary">HORIZONTAL-ONLY ENGINE v2.0</span>
+          <span className="text-primary">HORIZONTAL-ONLY ENGINE v3.0</span>
           <span>APK READY</span>
         </div>
       </footer>

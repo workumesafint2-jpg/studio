@@ -121,8 +121,8 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const diElements: string[] = [];
   const positions: Record<string, { x: number, y: number, w: number, h: number }> = {};
 
-  // RULE: HorizontalOnly Layout - 400px column spacing for absolute clearance
-  const COL_SPACING = 400; 
+  // RULE: HorizontalOnly Layout - 350px column spacing for absolute clearance
+  const COL_SPACING = 350; 
   const BOX_WIDTH = 140;
   const BOX_HEIGHT = 80;
   const X_START = 200;
@@ -171,11 +171,11 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         <dc:Bounds x="${x - w/2}" y="${y - h/2}" width="${w}" height="${h}" />
       </bpmndi:BPMNShape>`);
 
-    // Side-positioned Data Objects
+    // SIDE-POSITIONED Data Objects (RULE 1)
     if (node.hasDataAssociation) {
       const dataId = `DataObj_${node.id}`;
       const assocId = `Assoc_${node.id}`;
-      const dataX = x + 100;
+      const dataX = x + 100; // Side positioned
       const dataY = y - 100;
       elements.push(`<bpmn:dataObjectReference id="${dataId}" name="${escapeXml(node.dataLabel)}" dataObjectRef="DO_Ref_${node.id}" />`);
       elements.push(`<bpmn:dataObject id="DO_Ref_${node.id}" />`);
@@ -200,7 +200,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       
       flows.push(`<bpmn:sequenceFlow id="${flowId}" ${label ? `name="${label}"` : ''} sourceRef="${prev.id}" targetRef="${node.id}" />`);
       
-      // Midpoint labels for straight arrows
+      // FIXED MIDPOINT LABELS (RULE 1)
       diElements.push(`
         <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
           <di:waypoint x="${s.x + s.w/2}" y="${s.y}" />
@@ -212,13 +212,13 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     }
   });
 
-  // Upward Rejection paths
+  // Upward Rejection paths (RULE 1)
   branchNodes.forEach(branch => {
     const parentPos = positions[branch.parentId];
     if (!parentPos) return;
 
     const x = parentPos.x;
-    const y = parentPos.y - 200; 
+    const y = parentPos.y - 150; 
     const w = 36, h = 36;
     positions[branch.id] = { x, y, w, h };
 
@@ -241,13 +241,13 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       </bpmndi:BPMNEdge>`);
   });
 
-  // High-clearance Loop-backs
+  // Loop-backs
   backFlows.forEach(f => {
     flows.push(`<bpmn:sequenceFlow id="${f.id}" name="${f.name}" sourceRef="${f.sourceRef}" targetRef="${f.targetRef}" />`);
     const s = positions[f.sourceRef];
     const t = positions[f.targetRef];
     if (s && t) {
-      const skyY = Y_START - 220; 
+      const skyY = Y_START - 200; 
       diElements.push(`
         <bpmndi:BPMNEdge id="${f.id}_di" bpmnElement="${f.id}">
           <di:waypoint x="${s.x}" y="${s.y - s.h/2}" />
@@ -266,7 +266,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
                   xmlns:di="http://www.omg.org/spec/DD/20100524/DI" 
                   targetNamespace="http://bpmn.io/schema/bpmn"
                   exporter="Worku (ወርቁ) Pro" 
-                  exporterVersion="2.0">
+                  exporterVersion="1.0">
   <bpmn:process id="Process_Worku_Pro" name="${escapeXml(title)}" isExecutable="true">
 ${elements.join('\n')}
 ${flows.join('\n')}
