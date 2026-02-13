@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileCode, Trash2, MoreVertical, FolderArchive, Eye, Code, Download, FileJson, Sparkles, Copy, FileType } from "lucide-react";
+import { FileCode, Trash2, MoreVertical, FolderArchive, Eye, Code, Download, FileJson, Sparkles, Copy, FileType, Save } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -101,7 +101,7 @@ export function BPMNFlowForgeApp() {
     
     zip.file(`${fileName}.bpmn`, xmlResult || "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" targetNamespace=\"http://bpmn.io/schema/bpmn\"></bpmn:definitions>");
     
-    const readmeContent = `# ${title || 'BPMN ፕሮጀክት'}\n\nበ(ወርቁ) Pro የተሰራ።`;
+    const readmeContent = `# ${title || 'BPMN ፕሮጀክት'}\n\nበ(ወርቁ) Pro የተሰራ።\nSTRICT PRESERVATION BUILD.`;
     zip.file("README.md", readmeContent);
 
     try {
@@ -140,7 +140,7 @@ export function BPMNFlowForgeApp() {
             onClick={handleDownloadProject}
             className="hidden sm:flex items-center gap-2 bg-white text-primary hover:bg-white/90 font-bold rounded-lg h-9"
           >
-            <FolderArchive className="w-4 h-4" /> ፕሮጀክቱን አውርድ
+            <Save className="w-4 h-4" /> Save to Storage
           </Button>
           
           <DropdownMenu>
@@ -159,7 +159,7 @@ export function BPMNFlowForgeApp() {
                 </div>
                 <div className="flex flex-col gap-0.5">
                   <span className="font-bold text-sm">ፕሮጀክቱን አውርድ</span>
-                  <span className="text-[10px] text-muted-foreground leading-none">Export for Camunda Modeler</span>
+                  <span className="text-[10px] text-muted-foreground leading-none">STRICT PRESERVATION APK READY</span>
                 </div>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -185,7 +185,7 @@ export function BPMNFlowForgeApp() {
                 <Textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="የሂደቱን ዝርዝር እዚህ ይጻፉ... (Process Steps Here)"
+                  placeholder="የሂደቱን ዝርዝር እዚህ ይጻፉ..."
                   className="flex-1 w-full min-h-[300px] lg:min-h-0 resize-none font-body text-xs border-muted focus:ring-primary focus:border-primary p-4 rounded-lg shadow-inner bg-slate-50/50"
                 />
               </div>
@@ -197,14 +197,14 @@ export function BPMNFlowForgeApp() {
                     onClick={handleClear}
                     className="flex-1 items-center gap-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 border-muted rounded-lg h-11"
                   >
-                    <Trash2 className="w-4 h-4" /> አጽዳ (Clear)
+                    <Trash2 className="w-4 h-4" /> አጽዳ
                   </Button>
                   <Button 
                     size="sm"
                     onClick={handleGenerate}
                     className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground h-11 rounded-lg text-sm font-bold shadow-lg flex items-center justify-center gap-2 transition-all"
                   >
-                    <Sparkles className="w-4 h-4" /> አመንጭ (Generate)
+                    <Sparkles className="w-4 h-4" /> አመንጭ
                   </Button>
                 </div>
               </div>
@@ -217,10 +217,10 @@ export function BPMNFlowForgeApp() {
             <div className="flex items-center justify-between mb-2">
               <TabsList className="bg-muted/50 p-1 h-10 rounded-lg">
                 <TabsTrigger value="diagram" className="flex items-center gap-1.5 rounded-md px-4 font-bold h-8 text-xs">
-                  <Eye className="w-4 h-4" /> ዲያግራም (Diagram)
+                  <Eye className="w-4 h-4" /> ዲያግራም
                 </TabsTrigger>
                 <TabsTrigger value="xml" className="flex items-center gap-1.5 rounded-md px-4 font-bold h-8 text-xs">
-                  <Code className="w-4 h-4" /> ኮድ (XML)
+                  <Code className="w-4 h-4" /> ኮድ
                 </TabsTrigger>
               </TabsList>
               
@@ -233,25 +233,25 @@ export function BPMNFlowForgeApp() {
                     className="flex items-center gap-1.5 font-bold shadow-sm rounded-md h-8 px-3 text-xs"
                     title="Download BPMN XML"
                   >
-                    <FileJson className="w-3.5 h-3.5" /> BPMN
+                    <FileJson className="w-3.5 h-3.5" /> Save BPMN
                   </Button>
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={handleDownloadSVG}
                     className="flex items-center gap-1.5 font-bold rounded-md h-8 px-3 text-xs"
-                    title="Download SVG (Vector)"
+                    title="Download SVG"
                   >
-                    <FileType className="w-3.5 h-3.5" /> SVG
+                    <FileType className="w-3.5 h-3.5" /> Save SVG
                   </Button>
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={handleDownloadPNG}
                     className="flex items-center gap-1.5 font-bold rounded-md h-8 px-3 text-xs"
-                    title="Download High-Res PNG"
+                    title="Download PNG"
                   >
-                    <Download className="w-3.5 h-3.5" /> PNG
+                    <Download className="w-3.5 h-3.5" /> Save PNG
                   </Button>
                   <Button variant="ghost" size="sm" onClick={handleCopy} className="h-8 w-8 p-0">
                     <Copy className="w-3.5 h-3.5" />
@@ -267,7 +267,7 @@ export function BPMNFlowForgeApp() {
                     <BPMNViewer xml={xmlResult} title={title || ""} ref={viewerRef} />
                   </div>
                 ) : (
-                  <EmptyState message="ዲያግራሙን እዚህ ለማየት የሂደቱን ዝርዝር መግለጫ ያስገቡ።" />
+                  <EmptyState message="ዲያግራሙን እዚህ ለማየት የሂደቱን ዝርዝር ያስገቡ።" />
                 )}
               </TabsContent>
               
@@ -281,7 +281,7 @@ export function BPMNFlowForgeApp() {
                     </pre>
                   </ScrollArea>
                 ) : (
-                  <EmptyState message="የምንጭ ኮድ እዚህ ይታያል።" />
+                  <EmptyState message="የምንጭ ኮድ እዚህ ይታያል፡፡" />
                 )}
               </TabsContent>
             </Card>
@@ -290,10 +290,10 @@ export function BPMNFlowForgeApp() {
       </main>
       
       <footer className="px-6 py-2 bg-white border-t border-muted hidden sm:flex items-center justify-between text-[10px] text-muted-foreground shrink-0 uppercase tracking-widest font-bold">
-        <p>© {mounted ? new Date().getFullYear() : "...."} (ወርቁ) PRO ARCHITECT</p>
+        <p>© {mounted ? new Date().getFullYear() : "...."} (ወርቁ) PRO</p>
         <div className="flex items-center gap-6">
-          <span className="text-primary">CAMUNDA COMPLIANT</span>
-          <span>MANHATTAN ENGINE v2.0</span>
+          <span className="text-primary">HORIZONTAL-ONLY ENGINE v2.0</span>
+          <span>APK READY</span>
         </div>
       </footer>
     </div>

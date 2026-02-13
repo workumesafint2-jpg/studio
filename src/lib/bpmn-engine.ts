@@ -19,6 +19,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   };
 
   function escapeRegExp(string: string) {
+    if (!string) return '';
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
@@ -81,6 +82,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     
     pureName = pureName.replace(/[?፧？]$/, '').replace(/^[\s>->:–—-]+/, '').trim();
 
+    // RULE: Start Event is STRICTLY EMPTY. Label moves to first task.
     if (type === 'startEvent') {
       if (pureName) startTextToMove = pureName;
       pureName = ""; 
@@ -116,7 +118,8 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const diElements: string[] = [];
   const positions: Record<string, { x: number, y: number, w: number, h: number }> = {};
 
-  const COL_SPACING = 350; 
+  // RULE: Layout Stability - 400px Spacing, HorizontalOnly Strategy
+  const COL_SPACING = 400; 
   const BOX_WIDTH = 140;
   const BOX_HEIGHT = 80;
   const X_START = 200;
@@ -149,11 +152,12 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         <dc:Bounds x="${x - w/2}" y="${y - h/2}" width="${w}" height="${h}" />
       </bpmndi:BPMNShape>`);
 
+    // RULE: Data Objects side-positioned with dotted association
     if (node.hasDataAssociation) {
       const dataId = `DataObj_${node.id}`;
       const assocId = `Assoc_${node.id}`;
-      const dataX = x;
-      const dataY = y - 120;
+      const dataX = x + 100;
+      const dataY = y - 100;
       elements.push(`<bpmn:dataObjectReference id="${dataId}" name="${escapeXml(node.dataLabel)}" dataObjectRef="DO_Ref_${node.id}" />`);
       elements.push(`<bpmn:dataObject id="DO_Ref_${node.id}" />`);
       elements.push(`<bpmn:association id="${assocId}" sourceRef="${node.id}" targetRef="${dataId}" />`);
@@ -162,8 +166,8 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
           <dc:Bounds x="${dataX - 18}" y="${dataY - 25}" width="36" height="50" />
         </bpmndi:BPMNShape>
         <bpmndi:BPMNEdge id="${assocId}_di" bpmnElement="${assocId}">
-          <di:waypoint x="${x}" y="${y - h/2}" />
-          <di:waypoint x="${dataX}" y="${dataY + 25}" />
+          <di:waypoint x="${x + w/2}" y="${y - h/4}" />
+          <di:waypoint x="${dataX - 18}" y="${dataY}" />
         </bpmndi:BPMNEdge>`);
     }
 
@@ -175,11 +179,15 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       let label = (prev.category === 'gateway') ? "ከጸደቀ" : "";
       
       flows.push(`<bpmn:sequenceFlow id="${flowId}" ${label ? `name="${label}"` : ''} sourceRef="${prev.id}" targetRef="${node.id}" />`);
+      
+      // RULE: Arrow Labels hardcoded to Midpoint of the sequence flow
       diElements.push(`
         <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
           <di:waypoint x="${s.x + s.w/2}" y="${s.y}" />
           <di:waypoint x="${t.x - t.w/2}" y="${t.y}" />
-          ${label ? `<bpmndi:BPMNLabel><dc:Bounds x="${(s.x + t.x)/2 - 20}" y="${s.y - 20}" width="40" height="14" /></bpmndi:BPMNLabel>` : ''}
+          ${label ? `<bpmndi:BPMNLabel>
+            <dc:Bounds x="${(s.x + t.x)/2 - 30}" y="${s.y - 20}" width="60" height="14" />
+          </bpmndi:BPMNLabel>` : ''}
         </bpmndi:BPMNEdge>`);
     }
   });
@@ -189,7 +197,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     if (!parentPos) return;
 
     const x = parentPos.x;
-    const y = parentPos.y - 220; 
+    const y = parentPos.y - 200; 
     const w = 36, h = 36;
     positions[branch.id] = { x, y, w, h };
 
@@ -201,11 +209,15 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
     const flowId = `Flow_Branch_${branch.id}`;
     flows.push(`<bpmn:sequenceFlow id="${flowId}" name="${branch.label}" sourceRef="${branch.parentId}" targetRef="${branch.id}" />`);
+    
+    // Midpoint label for upward flow
     diElements.push(`
       <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
         <di:waypoint x="${parentPos.x}" y="${parentPos.y - parentPos.h/2}" />
         <di:waypoint x="${x}" y="${y + h/2}" />
-        <bpmndi:BPMNLabel><dc:Bounds x="${x + 10}" y="${(parentPos.y + y)/2 - 7}" width="60" height="14" /></bpmndi:BPMNLabel>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="${x + 10}" y="${(parentPos.y + y)/2 - 7}" width="60" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>`);
   });
 
@@ -233,7 +245,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
                   xmlns:di="http://www.omg.org/spec/DD/20100524/DI" 
                   targetNamespace="http://bpmn.io/schema/bpmn"
                   exporter="Worku (ወርቁ) Pro" 
-                  exporterVersion="1.2">
+                  exporterVersion="2.0">
   <bpmn:process id="Process_Worku_Pro" name="${escapeXml(title)}" isExecutable="true">
 ${elements.join('\n')}
 ${flows.join('\n')}
