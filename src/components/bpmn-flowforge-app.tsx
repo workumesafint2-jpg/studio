@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileCode, Trash2, MoreVertical, FolderArchive, Eye, Code, Download, FileJson, Sparkles, Copy, FileType, Save, Upload } from "lucide-react";
+import { FileCode, Trash2, MoreVertical, FolderArchive, Eye, Code, Download, Sparkles, Copy, FileType, Save, Upload, Info } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -17,7 +17,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import JSZip from 'jszip';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function BPMNFlowForgeApp() {
   const [mounted, setMounted] = useState(false);
@@ -32,323 +37,131 @@ export function BPMNFlowForgeApp() {
     setMounted(true);
   }, []);
 
-  if (!mounted) {
-    return <div className="flex h-screen w-screen bg-background items-center justify-center">
-      <div className="animate-pulse flex flex-col items-center gap-4">
-        <FileCode className="w-12 h-12 text-primary/20" />
-        <div className="h-4 w-32 bg-muted rounded"></div>
-      </div>
-    </div>;
-  }
+  if (!mounted) return null;
 
   const handleGenerate = () => {
     if (!input.trim()) {
-      toast({
-        title: "ምንም ዳታ የለም",
-        description: "እባክዎን የሂደቱን ዝርዝር ያስገቡ።",
-        variant: "destructive",
-      });
+      toast({ title: "ምንም ዳታ የለም", description: "እባክዎን የሂደቱን ዝርዝር ያስገቡ።", variant: "destructive" });
       return;
     }
     const result = generateBPMN(input, title || "Process Diagram");
     if (result) {
       setXmlResult(result);
       setActiveTab("diagram");
-      toast({
-        title: "ዲያግራሙ ተዘጋጅቷል",
-        description: "የእርስዎ BPMN 2.0 ዲያግራም ዝግጁ ነው።",
-      });
     }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = (event) => {
       const content = event.target?.result as string;
-      // Basic support for multiple services separated by double newline
-      if (content.includes('\n\n')) {
-        const services = content.split('\n\n').filter(s => s.trim().length > 0);
-        toast({
-          title: "ፋይል ገብቷል",
-          description: `${services.length} አገልግሎቶች ተገኝተዋል። የመጀመሪያው ተጭኗል።`,
-        });
-        setInput(services[0]);
-      } else {
-        setInput(content);
-      }
+      setInput(content);
+      toast({ title: "ፋይል ገብቷል", description: "የአገልግሎቱ ዝርዝር ተጭኗል።" });
     };
     reader.readAsText(file);
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(xmlResult);
-    toast({
-      title: "ተገልብጧል!",
-      description: "BPMN XML ወደ ቅንጥብ ሰሌዳዎ ተገልብጧል።",
-    });
-  };
-
-  const handleDownloadXML = () => {
-    const fileName = (title || "process-diagram").replace(/\s+/g, '-').toLowerCase();
-    const blob = new Blob(["\uFEFF", xmlResult], { type: "application/bpmn20-xml;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${fileName}.bpmn`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleDownloadPNG = async () => {
-    if (viewerRef.current) {
-      await viewerRef.current.exportPNG();
-    }
-  };
-
-  const handleDownloadSVG = async () => {
-    if (viewerRef.current) {
-      await viewerRef.current.exportSVG();
-    }
-  };
-
-  const handleDownloadProject = async () => {
-    const zip = new JSZip();
-    const fileName = (title || "process-diagram").replace(/\s+/g, '-').toLowerCase();
-    
-    zip.file(`${fileName}.bpmn`, xmlResult || "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" targetNamespace=\"http://bpmn.io/schema/bpmn\"></bpmn:definitions>");
-    
-    const readmeContent = `# ${title || 'BPMN ፕሮጀክት'}\n\nበ(ወርቁ) Pro የተሰራ።\nSTRICT PRESERVATION BUILD.`;
-    zip.file("README.md", readmeContent);
-
-    try {
-      const content = await zip.generateAsync({ type: "blob" });
-      const url = URL.createObjectURL(content);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${fileName}-project.zip`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (err) {}
-  };
-
-  const handleClear = () => {
-    setInput("");
-    setTitle("");
-    setXmlResult("");
-  };
-
   return (
     <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-background">
-      <header className="flex items-center justify-between px-6 py-3 bg-primary text-primary-foreground shadow-lg shrink-0 border-b border-primary/20">
+      <header className="flex items-center justify-between px-6 py-3 bg-primary text-primary-foreground shadow-lg shrink-0">
         <div className="flex items-center gap-3">
-          <div className="p-1.5 bg-white rounded-lg shadow-inner">
+          <div className="p-1.5 bg-white rounded-lg">
             <FileCode className="w-5 h-5 text-primary" />
           </div>
-          <div>
-            <h1 className="text-lg font-black tracking-tighter uppercase">(ወርቁ) PRO</h1>
-          </div>
+          <h1 className="text-lg font-black tracking-tighter uppercase">(ወርቁ) PRO - PRODUCTION BUILD</h1>
         </div>
         <div className="flex items-center gap-3">
-          <Button 
-            variant="secondary" 
-            onClick={handleDownloadProject}
-            className="hidden sm:flex items-center gap-2 bg-white text-primary hover:bg-white/90 font-bold rounded-lg h-9"
-          >
-            <Save className="w-4 h-4" /> Save to Storage
+          <Button variant="secondary" className="bg-white text-primary font-bold h-9 rounded-lg" onClick={() => viewerRef.current?.exportSVG()}>
+            <Save className="w-4 h-4 mr-2" /> Save to Storage
           </Button>
-          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-white/10 rounded-full h-8 w-8">
-                <MoreVertical className="w-4 h-4" />
-              </Button>
+              <Button variant="ghost" size="icon" className="text-primary-foreground rounded-full"><MoreVertical className="w-5 h-5" /></Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64 rounded-xl shadow-2xl border-none p-2">
-              <DropdownMenuItem 
-                className="flex items-center gap-3 py-3 px-4 cursor-pointer rounded-lg hover:bg-primary/5" 
-                onClick={() => document.getElementById('file-upload')?.click()}
-              >
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <Upload className="w-5 h-5 text-primary" />
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="font-bold text-sm">ፋይል አስገባ (CSV/Text)</span>
-                  <span className="text-[10px] text-muted-foreground leading-none">IMPORT MULTIPLE SERVICES</span>
-                </div>
+            <DropdownMenuContent align="end" className="w-56 p-2 rounded-xl">
+              <DropdownMenuItem onClick={() => document.getElementById('file-upload')?.click()}>
+                <Upload className="w-4 h-4 mr-2" /> CSV/Text Import
               </DropdownMenuItem>
-              <DropdownMenuItem 
-                className="flex items-center gap-3 py-3 px-4 cursor-pointer rounded-lg hover:bg-primary/5" 
-                onClick={handleDownloadProject}
-              >
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <FolderArchive className="w-5 h-5 text-primary" />
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="font-bold text-sm">ፕሮጀክቱን አውርድ</span>
-                  <span className="text-[10px] text-muted-foreground leading-none">STRICT PRESERVATION APK READY</span>
-                </div>
+              <DropdownMenuItem onClick={() => window.print()}>
+                <FileType className="w-4 h-4 mr-2" /> PDF Export
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <input 
-            type="file" 
-            id="file-upload" 
-            className="hidden" 
-            accept=".csv,.txt"
-            onChange={handleFileUpload} 
-          />
+          <input type="file" id="file-upload" className="hidden" accept=".csv,.txt" onChange={handleFileUpload} />
         </div>
       </header>
 
       <main className="flex flex-col lg:flex-row flex-1 overflow-hidden p-4 gap-4">
-        <div className="w-full lg:w-[350px] flex flex-col gap-3 shrink-0 overflow-y-auto lg:overflow-visible">
-          <Card className="flex flex-col shadow-xl border-none bg-card h-full lg:h-auto lg:flex-1 rounded-xl overflow-hidden ring-1 ring-slate-100">
-            <CardContent className="flex-1 flex flex-col gap-4 p-5">
-              <div className="space-y-1.5">
-                <Input
-                  id="service-title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="የአገልግሎቱ ስም (Service Title)"
-                  className="bg-muted/30 border-muted focus:ring-primary h-10 rounded-lg font-medium text-sm"
-                />
-              </div>
-
-              <div className="relative flex-1 flex flex-col">
+        <div className="w-full lg:w-[380px] flex flex-col gap-3 shrink-0">
+          <Card className="flex-1 shadow-xl border-none rounded-2xl overflow-hidden ring-1 ring-slate-100">
+            <CardContent className="p-5 flex flex-col gap-4 h-full">
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="የአገልግሎቱ ስም (Service Title)"
+                className="h-11 rounded-xl bg-slate-50 border-slate-200"
+              />
+              <div className="relative flex-1">
                 <Textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="የሂደቱን ዝርዝር እዚህ ይጻፉ..."
-                  className="flex-1 w-full min-h-[300px] lg:min-h-0 resize-none font-body text-xs border-muted focus:ring-primary focus:border-primary p-4 rounded-lg shadow-inner bg-slate-50/50"
+                  placeholder="የሂደቱን ዝርዝር እዚህ ይጻፉ... [wrap] ተጠቅመው ወደ ቀጣዩ መስመር መውረድ ይችላሉ።"
+                  className="h-full resize-none bg-slate-50 border-slate-200 rounded-xl p-4 text-xs font-medium"
                 />
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="absolute bottom-4 right-4 w-4 h-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-[200px] text-[10px]">
+                      በአንድ መስመር ብዙ ስራዎች ሲኖሩ [wrap] የሚለውን ኮድ በመጠቀም ወደ ታች መውረድ ይችላሉ።
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
-              <div className="flex flex-col gap-2 pt-2">
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={handleClear}
-                    className="flex-1 items-center gap-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 border-muted rounded-lg h-11"
-                  >
-                    <Trash2 className="w-4 h-4" /> አጽዳ
-                  </Button>
-                  <Button 
-                    size="sm"
-                    onClick={handleGenerate}
-                    className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground h-11 rounded-lg text-sm font-bold shadow-lg flex items-center justify-center gap-2 transition-all"
-                  >
-                    <Sparkles className="w-4 h-4" /> አመንጭ
-                  </Button>
-                </div>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1 h-12 rounded-xl" onClick={() => setInput("")}><Trash2 className="w-4 h-4 mr-2" /> አጽዳ</Button>
+                <Button className="flex-1 h-12 rounded-xl bg-primary text-lg font-bold shadow-xl" onClick={handleGenerate}><Sparkles className="w-4 h-4 mr-2" /> አመንጭ</Button>
               </div>
             </CardContent>
           </Card>
         </div>
 
         <div className="flex-1 flex flex-col gap-3 min-h-0">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-            <div className="flex items-center justify-between mb-2">
-              <TabsList className="bg-muted/50 p-1 h-10 rounded-lg">
-                <TabsTrigger value="diagram" className="flex items-center gap-1.5 rounded-md px-4 font-bold h-8 text-xs">
-                  <Eye className="w-4 h-4" /> ዲያግራም
-                </TabsTrigger>
-                <TabsTrigger value="xml" className="flex items-center gap-1.5 rounded-md px-4 font-bold h-8 text-xs">
-                  <Code className="w-4 h-4" /> ኮድ
-                </TabsTrigger>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+            <div className="flex justify-between items-center mb-2">
+              <TabsList className="bg-slate-100 h-10 p-1 rounded-xl">
+                <TabsTrigger value="diagram" className="font-bold text-xs"><Eye className="w-4 h-4 mr-1.5" /> ዲያግራም</TabsTrigger>
+                <TabsTrigger value="xml" className="font-bold text-xs"><Code className="w-4 h-4 mr-1.5" /> ኮድ</TabsTrigger>
               </TabsList>
-              
               {xmlResult && (
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="secondary" 
-                    size="sm"
-                    onClick={handleDownloadXML}
-                    className="flex items-center gap-1.5 font-bold shadow-sm rounded-md h-8 px-3 text-xs"
-                    title="Download BPMN XML"
-                  >
-                    <FileJson className="w-3.5 h-3.5" /> Save BPMN
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={handleDownloadSVG}
-                    className="flex items-center gap-1.5 font-bold rounded-md h-8 px-3 text-xs"
-                    title="Download SVG"
-                  >
-                    <FileType className="w-3.5 h-3.5" /> Save SVG
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={handleDownloadPNG}
-                    className="flex items-center gap-1.5 font-bold rounded-md h-8 px-3 text-xs"
-                    title="Download PNG"
-                  >
-                    <Download className="w-3.5 h-3.5" /> Save PNG
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={handleCopy} className="h-8 w-8 p-0">
-                    <Copy className="w-3.5 h-3.5" />
-                  </Button>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="h-8 rounded-lg text-[10px] font-bold" onClick={() => viewerRef.current?.exportPNG()}><Download className="w-3.5 h-3.5 mr-1" /> PNG</Button>
+                  <Button size="sm" variant="outline" className="h-8 rounded-lg text-[10px] font-bold" onClick={() => viewerRef.current?.exportSVG()}><FileType className="w-3.5 h-3.5 mr-1" /> SVG</Button>
                 </div>
               )}
             </div>
-
-            <Card className="flex-1 flex flex-col shadow-2xl border-none bg-white rounded-2xl overflow-hidden min-h-0 ring-1 ring-slate-200">
-              <TabsContent value="diagram" className="flex-1 m-0 focus-visible:ring-0 h-full">
-                {xmlResult ? (
-                  <div className="h-full w-full">
-                    <BPMNViewer xml={xmlResult} title={title || ""} ref={viewerRef} />
-                  </div>
-                ) : (
-                  <EmptyState message="ዲያግራሙን እዚህ ለማየት የሂደቱን ዝርዝር ያስገቡ።" />
-                )}
+            <div className="flex-1 bg-white rounded-2xl shadow-inner border border-slate-200 overflow-hidden min-h-0">
+              <TabsContent value="diagram" className="h-full m-0 p-0 focus-visible:ring-0">
+                {xmlResult ? <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} /> : <div className="h-full flex items-center justify-center text-slate-300 font-bold uppercase tracking-widest text-xs italic">ምንም ዲያግራም የለም</div>}
               </TabsContent>
-              
-              <TabsContent value="xml" className="flex-1 m-0 focus-visible:ring-0 h-full">
-                {xmlResult ? (
-                  <ScrollArea className="h-full w-full bg-slate-900">
-                    <pre className="p-6 font-code text-[11px] leading-relaxed">
-                      <code className="text-blue-300 block overflow-x-auto">
-                        {xmlResult}
-                      </code>
-                    </pre>
-                  </ScrollArea>
-                ) : (
-                  <EmptyState message="የምንጭ ኮድ እዚህ ይታያል፡፡" />
-                )}
+              <TabsContent value="xml" className="h-full m-0 focus-visible:ring-0">
+                <ScrollArea className="h-full bg-slate-900"><pre className="p-6 text-[10px] text-blue-300"><code>{xmlResult}</code></pre></ScrollArea>
               </TabsContent>
-            </Card>
+            </div>
           </Tabs>
         </div>
       </main>
       
-      <footer className="px-6 py-2 bg-white border-t border-muted hidden sm:flex items-center justify-between text-[10px] text-muted-foreground shrink-0 uppercase tracking-widest font-bold">
-        <p>© {mounted ? new Date().getFullYear() : "...."} (ወርቁ) PRO</p>
-        <div className="flex items-center gap-6">
-          <span className="text-primary">HORIZONTAL-ONLY ENGINE v3.0</span>
-          <span>APK READY</span>
+      <footer className="px-6 py-2 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-[10px] font-black uppercase text-slate-400 tracking-tighter">
+        <span>(ወርቁ) PRO V4.0 - STABLE APK BUILD</span>
+        <div className="flex gap-4">
+          <span className="text-primary">CAMUNDA COMPLIANT</span>
+          <span>44+ SERVICES READY</span>
         </div>
       </footer>
-    </div>
-  );
-}
-
-function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="h-full w-full flex flex-col items-center justify-center p-8 text-center text-muted-foreground/30">
-      <div className="w-20 h-20 bg-muted/20 rounded-full flex items-center justify-center mb-4">
-        <FileCode className="w-10 h-10 opacity-10" />
-      </div>
-      <p className="text-xs font-bold max-w-[280px] leading-relaxed italic uppercase tracking-widest">
-        {message}
-      </p>
     </div>
   );
 }

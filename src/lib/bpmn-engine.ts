@@ -1,3 +1,8 @@
+/**
+ * (ወርቁ) Pro - Industrial BPMN Engine v4.0
+ * STRICT PRODUCTION BUILD: Logic Freeze & Scale Optimization
+ */
+
 export function generateBPMN(input: string, title: string = "Process Diagram"): string {
   if (!input.trim()) return '';
 
@@ -8,80 +13,49 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     end: ['መጨረሻ', 'ጨርስ', 'ተጠናቀቀ', 'end', 'finish', 'success', 'done'],
     timer: ['ቆይታ', 'ሰዓት', 'timer', 'wait'],
     userTask: ['ባለሙያ', 'human', 'user task', 'ተግባር', 'action', 'ማከናወን', 'መለየት', 'ማዘጋጀት', 'መሰብሰብ', 'መለካት', 'ማቅረብ', 'ማደራጀት'],
-    serviceTask: ['ሲስተም', 'አውቶማቲክ', 'service task', 'system', 'auto', 'gear', 'መላክ', 'መቀበል', 'መመዝገብ'],
+    serviceTask: ['ሲስተም', 'አውቶማቲክ', 'service task', 'system', 'auto', 'gear', 'መላክ', 'መቀበል', 'መመዝገብ', 'check'],
     manualTask: ['በእጅ', 'ፊዚካል', 'manual task', 'physical'],
     scriptTask: ['ስክሪፕት', 'ኮድ', 'script task', 'code'],
     exclusiveGateway: ['ውሳኔ', 'ከሆነ', 'ወይስ', 'ቢሆን', 'decision', 'xor', 'if', 'gateway', 'ማጽደቅ?', 'ጥያቄ?', 'አዋጭ?'],
     parallelGateway: ['በአንድ ጊዜ', 'እና', 'ትይዩ', 'parallel', 'and', 'simultaneous'],
     dataKeywords: ['ሰነድ', 'ፎርም', 'ማስረጃ', 'document', 'form', 'file', 'ሪፖርት'],
-    error: ['error', 'ስህተት', 'lightning'],
-    reject: ['ውድቅ', 'reject', 'cancel', 'አልተቀበለም', 'no', 'ካልጸደቀ', 'ሰርዝ']
+    wrap: ['[wrap]', '[next]', 'ቀጥል', 'line break']
   };
 
-  function escapeRegExp(string: string) {
-    if (!string) return '';
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  }
-
   const nodeDefs: any[] = [];
-  const backFlows: any[] = [];
-  const branchNodes: any[] = [];
+  let currentRow = 0;
+  let nodesInRow = 0;
   let startTextToMove = "";
 
-  // PASS 1: Identify Nodes and Categorize
+  // PASS 1: Identify Nodes and Row Positions
   rawLines.forEach((line, index) => {
     const lowerLine = line.toLowerCase();
     
-    // Check for loop-back keywords
-    const isLoop = ['ተመለስ', 'back', 'correction', 'fix', 'edit'].some(t => lowerLine.includes(t)) && 
-                   !['ካልጸደቀ', 'reject', 'no', 'ውድቅ'].some(t => lowerLine.includes(t));
-    
-    if (isLoop && nodeDefs.length > 0) {
-      const sourceId = nodeDefs[nodeDefs.length - 1].id;
-      const targetId = nodeDefs[0].id; // Default back to start for loops
-      backFlows.push({
-        id: `Flow_Back_${index}`,
-        sourceRef: sourceId,
-        targetRef: targetId,
-        name: 'ተመለስ',
-        type: 'loop'
-      });
+    // Check for explicit wrap command
+    if (mappings.wrap.some(k => lowerLine.includes(k))) {
+      currentRow++;
+      nodesInRow = 0;
       return;
     }
 
     let type = 'userTask';
     let category = 'task';
     let hasDataAssociation = false;
-    let dataLabel = "ሰነድ";
 
-    if (mappings.dataKeywords.some(k => lowerLine.includes(k))) {
-      hasDataAssociation = true;
-    }
-
+    if (mappings.dataKeywords.some(k => lowerLine.includes(k))) hasDataAssociation = true;
     if (mappings.start.some(k => lowerLine.includes(k))) { type = 'startEvent'; category = 'event'; }
     else if (mappings.end.some(k => lowerLine.includes(k))) { type = 'endEvent'; category = 'event'; }
-    else if (mappings.timer.some(k => lowerLine.includes(k))) { type = 'timerEvent'; category = 'event'; }
     else if (mappings.exclusiveGateway.some(k => lowerLine.includes(k))) { type = 'exclusiveGateway'; category = 'gateway'; }
-    else if (mappings.parallelGateway.some(k => lowerLine.includes(k))) { type = 'parallelGateway'; category = 'gateway'; }
     else if (mappings.serviceTask.some(k => lowerLine.includes(k))) { type = 'serviceTask'; category = 'task'; }
-    else if (mappings.scriptTask.some(k => lowerLine.includes(k))) { type = 'scriptTask'; category = 'task'; }
-    else if (mappings.reject.some(k => lowerLine.includes(k))) { type = 'rejectEnd'; category = 'event'; }
 
     let pureName = line;
-    const allTriggers = [
-      ...Object.values(mappings).flat(), 
-      'user task', 'service task', 'manual task', 'script task', 'start', 'end', 'gateway', 'decision',
-      'task', 'error', 'if', 'yes', 'no', '->', '=>', ':', 'if yes', 'if no back'
-    ];
-    
-    // Safely remove technical keywords from the visual label
-    allTriggers.filter(Boolean).sort((a, b) => b.length - a.length).forEach(k => {
-      try {
-        const regex = new RegExp(`^${escapeRegExp(k)}|\\(${escapeRegExp(k)}\\)|\\b${escapeRegExp(k)}\\b`, 'gi');
-        pureName = pureName.replace(regex, '');
-      } catch (e) {}
+    // Clean label
+    const allKeywords = Object.values(mappings).flat();
+    allKeywords.forEach(k => {
+      if (k && k.startsWith('[')) return; // Keep wrap tags
+      const regex = new RegExp(`\\b${escapeRegExp(k)}\\b|\\(${escapeRegExp(k)}\\)`, 'gi');
+      pureName = pureName.replace(regex, '');
     });
-    
     pureName = pureName.replace(/[?፧？]$/, '').replace(/^[\s>->:–—-]+/, '').trim();
 
     // RULE: Start Event is STRICTLY EMPTY. Label moves to first task.
@@ -93,26 +67,14 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       startTextToMove = "";
     }
 
-    const nodeId = `Node_${index}`;
-    
-    // Handle branching (Error/Reject)
-    if (type === 'exclusiveGateway' && (lowerLine.includes('ካልጸደቀ') || lowerLine.includes('reject') || lowerLine.includes('no') || lowerLine.includes('ውድቅ'))) {
-      const errorEventId = `ErrorEvent_${index}`;
-      branchNodes.push({
-        id: errorEventId,
-        label: 'ካልጸደቀ',
-        type: 'errorEnd',
-        parentId: nodeId
-      });
-    }
-
     nodeDefs.push({
-      id: nodeId,
+      id: `Node_${index}`,
       name: pureName,
       type,
       category,
       hasDataAssociation,
-      dataLabel
+      row: currentRow,
+      col: nodesInRow++
     });
   });
 
@@ -121,16 +83,16 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const diElements: string[] = [];
   const positions: Record<string, { x: number, y: number, w: number, h: number }> = {};
 
-  // RULE: HorizontalOnly Layout - 350px column spacing for absolute clearance
-  const COL_SPACING = 350; 
-  const BOX_WIDTH = 140;
+  const COL_SPACING = 380; 
+  const ROW_SPACING = 350;
+  const BOX_WIDTH = 120;
   const BOX_HEIGHT = 80;
-  const X_START = 200;
-  const Y_START = 400;
+  const X_OFFSET = 150;
+  const Y_OFFSET = 250;
 
   nodeDefs.forEach((node, i) => {
-    const x = X_START + i * COL_SPACING;
-    const y = Y_START;
+    const x = X_OFFSET + node.col * COL_SPACING;
+    const y = Y_OFFSET + node.row * ROW_SPACING;
     
     let w = BOX_WIDTH, h = BOX_HEIGHT;
     if (node.category === 'event') { w = 36; h = 36; }
@@ -140,139 +102,57 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     const escapedName = escapeXml(node.name);
 
     switch (node.type) {
-      case 'startEvent':
-        elements.push(`<bpmn:startEvent id="${node.id}" name="" />`);
-        break;
-      case 'endEvent':
-        elements.push(`<bpmn:endEvent id="${node.id}" name="${escapedName}" />`);
-        break;
-      case 'rejectEnd':
-        elements.push(`<bpmn:endEvent id="${node.id}" name="ውድቅ"><bpmn:cancelEventDefinition id="Cancel_${node.id}" /></bpmn:endEvent>`);
-        break;
-      case 'exclusiveGateway':
-        elements.push(`<bpmn:exclusiveGateway id="${node.id}" name="${escapedName}" isMarkerVisible="true" />`);
-        break;
-      case 'parallelGateway':
-        elements.push(`<bpmn:parallelGateway id="${node.id}" name="${escapedName}" />`);
-        break;
-      case 'serviceTask':
-        elements.push(`<bpmn:serviceTask id="${node.id}" name="${escapedName}" />`);
-        break;
-      case 'scriptTask':
-        elements.push(`<bpmn:scriptTask id="${node.id}" name="${escapedName}" />`);
-        break;
-      default:
-        elements.push(`<bpmn:userTask id="${node.id}" name="${escapedName}" />`);
+      case 'startEvent': elements.push(`<bpmn:startEvent id="${node.id}" name="" />`); break;
+      case 'endEvent': elements.push(`<bpmn:endEvent id="${node.id}" name="${escapedName}" />`); break;
+      case 'exclusiveGateway': elements.push(`<bpmn:exclusiveGateway id="${node.id}" name="${escapedName}" isMarkerVisible="true" />`); break;
+      case 'serviceTask': elements.push(`<bpmn:serviceTask id="${node.id}" name="${escapedName}" />`); break;
+      default: elements.push(`<bpmn:userTask id="${node.id}" name="${escapedName}" />`);
     }
 
-    // Visualize nodes
-    diElements.push(`
-      <bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}">
-        <dc:Bounds x="${x - w/2}" y="${y - h/2}" width="${w}" height="${h}" />
-      </bpmndi:BPMNShape>`);
+    diElements.push(`<bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}"><dc:Bounds x="${x - w/2}" y="${y - h/2}" width="${w}" height="${h}" /></bpmndi:BPMNShape>`);
 
-    // SIDE-POSITIONED Data Objects (RULE 1)
+    // SIDE DATA OBJECTS (HARDCODED RULE)
     if (node.hasDataAssociation) {
-      const dataId = `DataObj_${node.id}`;
-      const assocId = `Assoc_${node.id}`;
-      const dataX = x + 100; // Side positioned
-      const dataY = y - 100;
-      elements.push(`<bpmn:dataObjectReference id="${dataId}" name="${escapeXml(node.dataLabel)}" dataObjectRef="DO_Ref_${node.id}" />`);
-      elements.push(`<bpmn:dataObject id="DO_Ref_${node.id}" />`);
-      elements.push(`<bpmn:association id="${assocId}" sourceRef="${node.id}" targetRef="${dataId}" />`);
+      const dataId = `Data_${node.id}`;
+      const dataX = x + 120; // Side positioned
+      const dataY = y - 80;
+      elements.push(`<bpmn:dataObjectReference id="${dataId}" name="ሰነድ" dataObjectRef="DO_${node.id}" />`);
+      elements.push(`<bpmn:dataObject id="DO_${node.id}" />`);
+      elements.push(`<bpmn:association id="Assoc_${node.id}" sourceRef="${node.id}" targetRef="${dataId}" />`);
       diElements.push(`
-        <bpmndi:BPMNShape id="${dataId}_di" bpmnElement="${dataId}">
-          <dc:Bounds x="${dataX - 18}" y="${dataY - 25}" width="36" height="50" />
-        </bpmndi:BPMNShape>
-        <bpmndi:BPMNEdge id="${assocId}_di" bpmnElement="${assocId}">
-          <di:waypoint x="${x + w/2}" y="${y - h/4}" />
-          <di:waypoint x="${dataX - 18}" y="${dataY}" />
-        </bpmndi:BPMNEdge>`);
+        <bpmndi:BPMNShape id="${dataId}_di" bpmnElement="${dataId}"><dc:Bounds x="${dataX - 18}" y="${dataY - 25}" width="36" height="50" /></bpmndi:BPMNShape>
+        <bpmndi:BPMNEdge id="Assoc_${node.id}_di" bpmnElement="Assoc_${node.id}"><di:waypoint x="${x + w/2}" y="${y}" /><di:waypoint x="${dataX - 18}" y="${dataY}" /></bpmndi:BPMNEdge>`);
     }
 
-    // Connect sequential nodes
+    // Connect nodes
     if (i > 0) {
       const prev = nodeDefs[i-1];
       const s = positions[prev.id];
       const t = positions[node.id];
-      const flowId = `Flow_${prev.id}_${node.id}`;
+      const flowId = `Flow_${i}`;
       let label = (prev.category === 'gateway') ? "ከጸደቀ" : "";
       
       flows.push(`<bpmn:sequenceFlow id="${flowId}" ${label ? `name="${label}"` : ''} sourceRef="${prev.id}" targetRef="${node.id}" />`);
       
-      // FIXED MIDPOINT LABELS (RULE 1)
+      // MIDPOINT LABELS (HARDCODED RULE)
       diElements.push(`
         <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
           <di:waypoint x="${s.x + s.w/2}" y="${s.y}" />
+          ${prev.row !== node.row ? `<di:waypoint x="${s.x + s.w/2 + 50}" y="${s.y}" /><di:waypoint x="${s.x + s.w/2 + 50}" y="${t.y}" />` : ''}
           <di:waypoint x="${t.x - t.w/2}" y="${t.y}" />
-          ${label ? `<bpmndi:BPMNLabel>
-            <dc:Bounds x="${(s.x + t.x)/2 - 30}" y="${s.y - 20}" width="60" height="14" />
-          </bpmndi:BPMNLabel>` : ''}
-        </bpmndi:BPMNEdge>`);
-    }
-  });
-
-  // Upward Rejection paths (RULE 1)
-  branchNodes.forEach(branch => {
-    const parentPos = positions[branch.parentId];
-    if (!parentPos) return;
-
-    const x = parentPos.x;
-    const y = parentPos.y - 150; 
-    const w = 36, h = 36;
-    positions[branch.id] = { x, y, w, h };
-
-    elements.push(`<bpmn:endEvent id="${branch.id}" name="ካልጸደቀ"><bpmn:errorEventDefinition id="ErrorDef_${branch.id}" /></bpmn:endEvent>`);
-    diElements.push(`
-      <bpmndi:BPMNShape id="${branch.id}_di" bpmnElement="${branch.id}">
-        <dc:Bounds x="${x - w/2}" y="${y - h/2}" width="${w}" height="${h}" />
-      </bpmndi:BPMNShape>`);
-
-    const flowId = `Flow_Branch_${branch.id}`;
-    flows.push(`<bpmn:sequenceFlow id="${flowId}" name="${branch.label}" sourceRef="${branch.parentId}" targetRef="${branch.id}" />`);
-    
-    diElements.push(`
-      <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
-        <di:waypoint x="${parentPos.x}" y="${parentPos.y - parentPos.h/2}" />
-        <di:waypoint x="${x}" y="${y + h/2}" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="${x + 10}" y="${(parentPos.y + y)/2 - 7}" width="60" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>`);
-  });
-
-  // Loop-backs
-  backFlows.forEach(f => {
-    flows.push(`<bpmn:sequenceFlow id="${f.id}" name="${f.name}" sourceRef="${f.sourceRef}" targetRef="${f.targetRef}" />`);
-    const s = positions[f.sourceRef];
-    const t = positions[f.targetRef];
-    if (s && t) {
-      const skyY = Y_START - 200; 
-      diElements.push(`
-        <bpmndi:BPMNEdge id="${f.id}_di" bpmnElement="${f.id}">
-          <di:waypoint x="${s.x}" y="${s.y - s.h/2}" />
-          <di:waypoint x="${s.x}" y="${skyY}" />
-          <di:waypoint x="${t.x}" y="${skyY}" />
-          <di:waypoint x="${t.x}" y="${t.y - t.h/2}" />
-          <bpmndi:BPMNLabel><dc:Bounds x="${(s.x + t.x)/2 - 30}" y="${skyY - 20}" width="60" height="14" /></bpmndi:BPMNLabel>
+          ${label ? `<bpmndi:BPMNLabel><dc:Bounds x="${(s.x + t.x)/2 - 30}" y="${(s.y + t.y)/2 - 20}" width="60" height="14" /></bpmndi:BPMNLabel>` : ''}
         </bpmndi:BPMNEdge>`);
     }
   });
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" 
-                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" 
-                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" 
-                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI" 
-                  targetNamespace="http://bpmn.io/schema/bpmn"
-                  exporter="Worku (ወርቁ) Pro" 
-                  exporterVersion="1.0">
-  <bpmn:process id="Process_Worku_Pro" name="${escapeXml(title)}" isExecutable="true">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Worku Pro" exporterVersion="1.0">
+  <bpmn:process id="Process_1" name="${escapeXml(title)}" isExecutable="true">
 ${elements.join('\n')}
 ${flows.join('\n')}
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_Worku_Pro">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
 ${diElements.join('\n')}
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
@@ -291,4 +171,8 @@ function escapeXml(unsafe: string): string {
       default: return c;
     }
   });
+}
+
+function escapeRegExp(string: string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

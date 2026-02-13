@@ -1,41 +1,40 @@
-# ወርቁ (Worku) - Smart BPMN Generator
+# ወርቁ (Worku) - Smart BPMN Generator (Final Build)
 
-A professional BPMN diagram generator with AI-ready logic, optimized for production APK deployment.
+A professional BPMN diagram generator with interactive Modeler support, optimized for APK and Desktop deployment.
 
 ## Production Build Instructions (APK)
 
 To generate the production APK for your Android device:
 
-1. **Install Source**: Download the project source code.
-2. **Setup Dependencies**: Open your terminal and run:
+1. **Install Dependencies**:
    ```bash
    npm install
    ```
-3. **Build Web Assets**:
+2. **Build Web Assets**:
    ```bash
    npm run build
    ```
-4. **Capacitor Android Sync**:
+3. **Capacitor Configuration**:
+   *If not already present:*
    ```bash
    npx cap add android
-   npx cap copy android
    ```
-5. **Generate APK**:
+   *Sync changes:*
+   ```bash
+   npx cap sync android
+   ```
+4. **Generate APK**:
    ```bash
    npx cap open android
    ```
-   *In Android Studio, go to `Build > Build Bundle(s) / APK(s) > Build APK(s)`.*
+   *In Android Studio, select `Build > Build Bundle(s) / APK(s) > Build APK(s)`.*
 
 ## Key Features
-- **Empty Start Logic**: Complies with BPMN 2.0 purity standards (bpmn:startEvent).
-- **Midpoint Labeling**: Strategic text placement on sequence flow connectors ('ከጸደቀ', 'ካልጸደቀ').
-- **Horizontal-Only Engine**: Professional single-row layout (350px gap) for complex processes up to 20 steps.
-- **Side-Positioned Data Objects**: Document icons positioned with dotted associations to avoid flow overlap.
-- **Dynamic Multi-Service Import**: Support for CSV/Text file processing for batch diagram generation.
-- **High-Resolution Storage**: High-resolution SVG, PNG, and BPMN XML exports to local mobile storage.
-
-## Service Processing
-The system is tested and verified to handle **44+ industrial service steps** in a single workspace without overlap.
+- **Interactive Modeler**: Drag-and-drop elements, double-click to edit labels directly.
+- **Strict Logic Freeze**: Hardcoded Empty Start Events, Midpoint Flow Labels, and Side-Positioned Data Objects.
+- **Scale Optimization**: Processes 44+ industrial service steps in a single 5000px workspace.
+- **Wrap to Next Row**: Use the `[wrap]` command in your text description to manually control layout rows.
+- **High-Res Storage**: Direct export of high-DPI PNG and SVG files to device storage.
 
 ---
-© 2024 ወርቁ Pro - FINAL PRODUCTION BUILD.
+© 2024 ወርቁ Pro - FINAL STABLE RELEASE.

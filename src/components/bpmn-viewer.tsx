@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
-import BpmnViewer from 'bpmn-js/lib/NavigatedViewer';
+import BpmnModeler from 'bpmn-js/lib/Modeler';
 
 interface BPMNViewerProps {
   xml: string;
@@ -15,14 +15,13 @@ export interface BPMNViewerRef {
 
 export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, title = "Process Diagram" }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const viewerRef = useRef<any>(null);
-  const isImporting = useRef<boolean>(false);
+  const modelerRef = useRef<any>(null);
 
   useImperativeHandle(ref, () => ({
     exportSVG: async () => {
-      if (!viewerRef.current) return;
+      if (!modelerRef.current) return;
       try {
-        const { svg } = await viewerRef.current.saveSVG();
+        const { svg } = await modelerRef.current.saveSVG();
         const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -37,36 +36,24 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
       }
     },
     exportPNG: async () => {
-      if (!viewerRef.current) return;
-
+      if (!modelerRef.current) return;
       try {
-        const { svg } = await viewerRef.current.saveSVG();
-        
+        const { svg } = await modelerRef.current.saveSVG();
         const canvas = document.createElement('canvas');
+        const img = new Image();
         const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
         const url = URL.createObjectURL(svgBlob);
         
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        
         img.onload = () => {
-          // Rule: Use high resolution for PNG (2x scale)
-          const scale = 2;
-          const padding = 100 * scale;
-          
-          canvas.width = (img.width * scale) + padding * 2;
-          canvas.height = (img.height * scale) + padding * 2;
-          
+          const scale = 2; // High Resolution
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
           const ctx = canvas.getContext('2d');
           if (ctx) {
-            // High quality background
-            ctx.fillStyle = '#FFFFFF';
+            ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Scaled image draw for high resolution
-            ctx.drawImage(img, padding, padding, img.width * scale, img.height * scale);
-            
-            const pngUrl = canvas.toDataURL('image/png', 1.0);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const pngUrl = canvas.toDataURL('image/png');
             const downloadLink = document.createElement('a');
             downloadLink.href = pngUrl;
             downloadLink.download = `${title.replace(/\s+/g, '-').toLowerCase()}.png`;
@@ -77,62 +64,36 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
           URL.revokeObjectURL(url);
         };
         img.src = url;
-      } catch (err) {
-        console.error('Error exporting PNG:', err);
-      }
+      } catch (err) {}
     }
   }));
 
   useEffect(() => {
     if (!containerRef.current) return;
-
-    containerRef.current.innerHTML = '';
-
-    const viewer = new BpmnViewer({
-      container: containerRef.current
+    const modeler = new BpmnModeler({
+      container: containerRef.current,
+      keyboard: { bindTo: window }
     });
-
-    viewerRef.current = viewer;
-
-    return () => {
-      if (viewerRef.current) {
-        viewerRef.current.destroy();
-        viewerRef.current = null;
-      }
-    };
+    modelerRef.current = modeler;
+    return () => modeler.destroy();
   }, []);
 
   useEffect(() => {
-    const importDiagram = async () => {
-      if (viewerRef.current && xml && !isImporting.current) {
-        try {
-          isImporting.current = true;
-          await new Promise(resolve => setTimeout(resolve, 50));
-          await viewerRef.current.importXML(xml);
-          const canvas = viewerRef.current?.get('canvas');
-          if (canvas) {
-            canvas.zoom('fit-viewport');
-          }
-        } catch (err) {
-          console.error('Error rendering BPMN diagram:', err);
-        } finally {
-          isImporting.current = false;
-        }
-      }
-    };
-
-    importDiagram();
+    if (modelerRef.current && xml) {
+      modelerRef.current.importXML(xml).then(() => {
+        const canvas = modelerRef.current.get('canvas');
+        canvas.zoom('fit-viewport');
+      });
+    }
   }, [xml]);
 
   return (
     <div className="w-full h-full relative group bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-      <div 
-        ref={containerRef} 
-        className="w-full h-full min-h-[500px]"
-      />
-      
-      <div className="absolute bottom-6 right-6 bg-slate-900/10 text-slate-600 px-4 py-1.5 rounded-full text-[10px] font-bold pointer-events-none opacity-0 group-hover:opacity-100 transition-all">
-        Pan: Drag • Zoom: Scroll
+      <div ref={containerRef} className="w-full h-full min-h-[600px]" />
+      <div className="absolute bottom-4 left-4 flex gap-2">
+        <div className="bg-slate-900/80 text-white px-3 py-1 rounded-full text-[10px] font-bold">
+          MODELER MODE: DRAG & EDIT ENABLED
+        </div>
       </div>
     </div>
   );
