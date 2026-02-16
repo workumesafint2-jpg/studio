@@ -88,16 +88,16 @@ export function BPMNFlowForgeApp() {
       <div className="h-2 w-full bg-[#1e3a8a]" />
       
       <header className="flex flex-col items-center justify-center py-8 px-8 bg-white border-b border-slate-100 shrink-0 z-10 relative">
-        <h1 className="text-xl font-bold text-[#1e3a8a] mb-4" style={{ fontFamily: "'Noto Sans Ethiopic', sans-serif" }}>
+        <h1 className="text-lg font-bold text-[#1e3a8a] mb-3" style={{ fontFamily: "'Noto Sans Ethiopic', sans-serif" }}>
           ኢኖቬሽንና ቴክኖሎጂ ልማት ቢሮ
         </h1>
         
         {/* Custom ITDB Circular Logo */}
-        <div className="w-16 h-16 bg-[#1e3a8a] rounded-full flex items-center justify-center shadow-sm mb-4">
-          <span className="text-white font-bold text-lg tracking-tighter">ITDB</span>
+        <div className="w-14 h-14 bg-[#1e3a8a] rounded-full flex items-center justify-center shadow-sm mb-3">
+          <span className="text-white font-bold text-base tracking-tighter">ITDB</span>
         </div>
 
-        <p className="text-sm font-medium italic text-slate-400">
+        <p className="text-[10px] font-medium italic text-slate-400 uppercase tracking-wider">
           Innovation and Technology Development Bureau
         </p>
 
