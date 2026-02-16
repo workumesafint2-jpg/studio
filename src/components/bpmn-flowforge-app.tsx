@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -18,7 +17,8 @@ import {
   Upload, 
   Info, 
   FileJson,
-  Layout
+  Layout,
+  Loader2
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +37,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { suggestSteps } from "@/ai/flows/suggest-steps-flow";
 
 export function BPMNFlowForgeApp() {
   const [mounted, setMounted] = useState(false);
@@ -44,6 +45,7 @@ export function BPMNFlowForgeApp() {
   const [title, setTitle] = useState("");
   const [xmlResult, setXmlResult] = useState("");
   const [activeTab, setActiveTab] = useState("diagram");
+  const [isSuggesting, setIsSuggesting] = useState(false);
   const viewerRef = useRef<BPMNViewerRef>(null);
   const { toast } = useToast();
 
@@ -67,6 +69,35 @@ export function BPMNFlowForgeApp() {
       setXmlResult(result);
       setActiveTab("diagram");
       toast({ title: "ተሳክቷል", description: "BPMN ዲያግራም በተሳካ ሁኔታ ተፈጥሯል።" });
+    }
+  };
+
+  const handleAutoSuggest = async () => {
+    if (!title.trim()) {
+      toast({ 
+        title: "መረጃ የለም", 
+        description: "እባክዎን መጀመሪያ የአገልግሎቱን ስም ያስገቡ።", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    setIsSuggesting(true);
+    try {
+      const result = await suggestSteps({ title });
+      if (result && result.steps) {
+        setInput(result.steps);
+        toast({ title: "ተሳክቷል", description: "ሂደቶቹ በራስ-ሰር ተፈጥረዋል።" });
+      }
+    } catch (error) {
+      console.error("Error suggesting steps:", error);
+      toast({ 
+        title: "ስህተት", 
+        description: "ሂደቶቹን ማመንጨት አልተቻለም። እባክዎ እንደገና ይሞክሩ።", 
+        variant: "destructive" 
+      });
+    } finally {
+      setIsSuggesting(false);
     }
   };
 
@@ -139,7 +170,25 @@ export function BPMNFlowForgeApp() {
                 />
               </div>
               <div className="relative flex-1 flex flex-col">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">ቴክኒካዊ መግለጫ</label>
+                <div className="flex justify-between items-end mb-2">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">ቴክኒካዊ መግለጫ</label>
+                  {title.trim() && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={handleAutoSuggest} 
+                      disabled={isSuggesting}
+                      className="h-6 px-2 text-[9px] text-[#1e3a8a] hover:bg-[#1e3a8a]/5 flex items-center gap-1 font-bold"
+                    >
+                      {isSuggesting ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-3 h-3" />
+                      )}
+                      ሂደቶችን በራስ-ሰር አግኝ
+                    </Button>
+                  )}
+                </div>
                 <Textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
