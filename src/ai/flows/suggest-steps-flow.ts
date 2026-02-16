@@ -1,13 +1,12 @@
 'use server';
 /**
- * @fileOverview Institutional Workflow Suggestion Flow
+ * @fileOverview Institutional Workflow Suggestion Flow (Professional Mock Database)
  * 
- * Uses Gemini 1.5 Flash to generate professional Amharic workflows
- * specifically formatted for the BPMN engine.
+ * Provides high-fidelity mock responses for specific ITDB services
+ * to ensure reliability and immediate BPMN rendering.
  */
 
-import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 
 const SuggestStepsInputSchema = z.object({
   title: z.string().describe('The title of the service or process.'),
@@ -20,39 +19,31 @@ const SuggestStepsOutputSchema = z.object({
 export type SuggestStepsInput = z.infer<typeof SuggestStepsInputSchema>;
 export type SuggestStepsOutput = z.infer<typeof SuggestStepsOutputSchema>;
 
-const suggestStepsFlow = ai.defineFlow(
-  {
-    name: 'suggestStepsFlow',
-    inputSchema: SuggestStepsInputSchema,
-    outputSchema: SuggestStepsOutputSchema,
-  },
-  async (input) => {
-    const response = await ai.generate({
-      prompt: `You are an expert institutional BPMN architect specializing in Ethiopian government workflows.
-      
-      TASK: Generate a logical 5-7 step professional workflow in Amharic for the following service: "${input.title}".
-      
-      STRICT FORMATTING RULES:
-      1. Start the entire response with exactly: "ወርቁ ነኝ ዝርዝሩን ላዘጋጅልህ/ልሽ [wrap] "
-      2. Separate every subsequent step with exactly " [wrap] ".
-      3. If a step is a question, decision, or verification (e.g., "Is it approved?"), it MUST end with a "?" to trigger a decision gateway.
-      4. Use professional administrative Amharic terminology.
-      5. DO NOT include numbering (1, 2, 3), bullet points, or any preamble.
-      6. The output MUST be a single continuous string.
-
-      EXAMPLE OUTPUT FORMAT:
-      ወርቁ ነኝ ዝርዝሩን ላዘጋጅልህ/ልሽ [wrap] የአገልግሎት ጥያቄ መቀበል [wrap] የቀረቡ ሰነዶችን ማጣራት? [wrap] የቢሮ ምርመራ ማካሄድ [wrap] የክፍያ ትእዛዝ ማውጣት [wrap] ክፍያውን ማረጋገጥ? [wrap] ፈቃዱን ማተም [wrap] ለተገልጋዩ መስጠት`,
-    });
-
-    return {
-      steps: response.text,
-    };
-  }
-);
+/**
+ * Professional Mock Database for ITDB Services
+ */
+const MOCK_DB: Record<string, string> = {
+  "የሶፍትዌር ማልማት": "ጥያቄ መቀበል [wrap] ፍላጎትን መተንተን [wrap] ዲዛይን ማዘጋጀት [wrap] ኮድ መጻፍ [wrap] ሙከራ ማድረግ [wrap] ስራ ላይ ማዋል",
+  "መሰረተ ልማት": "ቦታ መረጣ [wrap] ጥናት ማካሄድ [wrap] ግብዓት ማሟላት [wrap] ግንባታ መጀመር [wrap] ክትትል ማድረግ [wrap] ማጠናቀቅ",
+  "የቅጥር": "ክፍት የስራ ቦታ ማስታወቅ [wrap] ሲቪ መቀበል [wrap] ፈተና መጥራት [wrap] ቃለ መጠይቅ [wrap] መረጣ [wrap] ቅጥር መፈጸም",
+  "ክትትልና ድጋፍ": "እቅድ መገምገም [wrap] የመስክ ምልከታ [wrap] ግብረ መልስ መስጠት [wrap] ክፍተቶችን መለየት [wrap] ድጋፍ ማድረግ [wrap] ሪፖርት ማቅረብ",
+  "የሙያ ፍቃድ መስጠት": "ማመልከቻ መቀበል [wrap] ማስረጃ ማጣራት [wrap] ፈተና መስጠት [wrap] ውጤት ማሳወቅ [wrap] ክፍያ መፈጸም [wrap] ፍቃድ መስጠት",
+  "የጥናትና ምርምር": "ርዕስ መምረጥ [wrap] መረጃ ማሰባሰብ [wrap] ትንተና መስራት [wrap] ግኝቶችን መለየት [wrap] ምክረ ሃሳብ ማቅረብ [wrap] ህትመት ማውጣት",
+};
 
 /**
- * Server Action Wrapper
+ * Workflow Suggestion Engine
+ * Returns mock data if a match is found, otherwise returns a generic professional process.
  */
 export async function suggestSteps(input: SuggestStepsInput): Promise<SuggestStepsOutput> {
-  return suggestStepsFlow(input);
+  const greeting = "ወርቁ ነኝ ዝርዝሩን ላዘጋጅልህ/ልሽ [wrap] ";
+  const title = input.title.trim();
+  
+  // Logic: Search for the service title in our mock database
+  const matchKey = Object.keys(MOCK_DB).find(key => title.includes(key));
+  const workflowContent = matchKey ? MOCK_DB[matchKey] : "የአገልግሎት ጥያቄ መቀበል [wrap] የቀረቡ ሰነዶችን ማጣራት? [wrap] የቢሮ ምርመራ ማካሄድ [wrap] የክፍያ ትእዛዝ ማውጣት [wrap] ፈቃዱን ማተም [wrap] ለተገልጋዩ መስጠት";
+
+  return {
+    steps: greeting + workflowContent,
+  };
 }
