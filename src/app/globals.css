@@ -1,3 +1,4 @@
+
 @import "bpmn-js/dist/assets/diagram-js.css";
 @import "bpmn-js/dist/assets/bpmn-font/css/bpmn.css";
 
@@ -7,13 +8,13 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
+    --background: 210 20% 98%;
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 221 83% 53%;
+    --primary: 222 47% 31%; /* Institutional Navy Blue */
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96%;
     --secondary-foreground: 222 47% 11%;
@@ -25,8 +26,8 @@
     --destructive-foreground: 210 40% 98%;
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 221 83% 53%;
-    --radius: 1rem;
+    --ring: 222 47% 31%;
+    --radius: 0.5rem; /* More professional tighter radius */
   }
 }
 
@@ -52,15 +53,15 @@
 /* Rule: High resolution text rendering for diagrams */
 .djs-visual text {
   font-family: 'Inter', sans-serif !important;
-  font-weight: 600 !important;
+  font-weight: 500 !important;
   font-smooth: always !important;
   -webkit-font-smoothing: antialiased !important;
-  fill: #000000 !important; /* High contrast */
+  fill: #1a202c !important;
 }
 
 /* Ensure flow labels are legible */
 .djs-label {
-  font-weight: 700 !important;
-  font-size: 13px !important;
-  fill: #1e3a8a !important; /* Professional blue for labels */
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  fill: #2d3748 !important;
 }

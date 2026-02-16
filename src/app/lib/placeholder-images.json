@@ -2,6 +2,12 @@
 {
   "placeholderImages": [
     {
+      "id": "itdb-logo",
+      "description": "Innovation and Technology Development Bureau (ITDB) Logo",
+      "imageUrl": "https://picsum.photos/seed/itdb/200/200",
+      "imageHint": "bureau logo"
+    },
+    {
       "id": "pwa-icon-192",
       "description": "PWA Icon 192x192",
       "imageUrl": "https://picsum.photos/seed/pwa-1/192/192",
