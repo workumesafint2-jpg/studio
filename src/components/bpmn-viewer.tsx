@@ -12,6 +12,7 @@ interface BPMNViewerProps {
 export interface BPMNViewerRef {
   exportPNG: () => Promise<void>;
   exportSVG: () => Promise<void>;
+  exportXML: () => Promise<void>;
 }
 
 export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, title = "Process Diagram" }, ref) => {
@@ -19,6 +20,23 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
   const modelerRef = useRef<any>(null);
 
   useImperativeHandle(ref, () => ({
+    exportXML: async () => {
+      if (!modelerRef.current) return;
+      try {
+        const { xml: resultXml } = await modelerRef.current.saveXML({ format: true });
+        const blob = new Blob([resultXml], { type: 'application/xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${title.replace(/\s+/g, '-').toLowerCase()}.bpmn`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error('Error exporting BPMN XML:', err);
+      }
+    },
     exportSVG: async () => {
       if (!modelerRef.current) return;
       try {
@@ -46,7 +64,7 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
         const url = URL.createObjectURL(svgBlob);
         
         img.onload = () => {
-          const scale = 2; 
+          const scale = 3; // Ultra High Resolution for Production
           canvas.width = img.width * scale;
           canvas.height = img.height * scale;
           const ctx = canvas.getContext('2d');
@@ -54,7 +72,7 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            const pngUrl = canvas.toDataURL('image/png');
+            const pngUrl = canvas.toDataURL('image/png', 1.0);
             const downloadLink = document.createElement('a');
             downloadLink.href = pngUrl;
             downloadLink.download = `${title.replace(/\s+/g, '-').toLowerCase()}.png`;
@@ -65,7 +83,9 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
           URL.revokeObjectURL(url);
         };
         img.src = url;
-      } catch (err) {}
+      } catch (err) {
+        console.error('Error exporting PNG:', err);
+      }
     }
   }));
 
@@ -92,8 +112,8 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
     <div className="w-full h-full relative group bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
       <div ref={containerRef} className="w-full h-full min-h-[600px]" />
       <div className="absolute bottom-4 left-4 flex gap-2">
-        <div className="bg-slate-900/80 text-white px-3 py-1 rounded-full text-[10px] font-bold">
-          MODELER MODE: INTERACTIVE EDITING ENABLED
+        <div className="bg-primary text-white px-3 py-1 rounded-full text-[10px] font-bold shadow-lg">
+          INTERACTIVE MODELER ACTIVE
         </div>
       </div>
     </div>
