@@ -93,10 +93,16 @@ export function BPMNFlowForgeApp() {
         toast({ title: "ተሳክቷል", description: "ሂደቶቹ በራስ-ሰር ተፈጥረዋል።" });
       }
     } catch (error: any) {
-      console.error("AI Suggestion Detailed Error:", error);
+      console.error("AI Suggestion Error:", error);
+      let errorDesc = error.message || "ሂደቶቹን ማመንጨት አልተቻለም።";
+      
+      if (errorDesc.includes("API_KEY_MISSING")) {
+        errorDesc = "የ Gemini API Key አልተገኘም። እባክዎ በ Environment Variables ውስጥ 'GEMINI_API_KEY' ይጨምሩ።";
+      }
+
       toast({ 
         title: "የ AI ስህተት", 
-        description: error.message || "ሂደቶቹን ማመንጨት አልተቻለም። እባክዎ API Key ወይም Quota ያረጋግጡ።", 
+        description: errorDesc, 
         variant: "destructive" 
       });
     } finally {
