@@ -33,14 +33,15 @@ const suggestStepsFlow = ai.defineFlow(
       TASK: Generate a logical 5-7 step professional workflow in Amharic for the following service: "${input.title}".
       
       STRICT FORMATTING RULES:
-      1. Separate every step with exactly " [wrap] ".
-      2. If a step is a question, decision, or verification (e.g., "Is it approved?"), it MUST end with a "?" to trigger a decision gateway.
-      3. Use professional administrative Amharic terminology.
-      4. DO NOT include numbering (1, 2, 3), bullet points, or any preamble like "Here are the steps".
-      5. The output should be a single continuous string.
+      1. Start the entire response with exactly: "ወርቁ ነኝ ዝርዝሩን ላዘጋጅልህ/ልሽ [wrap] "
+      2. Separate every subsequent step with exactly " [wrap] ".
+      3. If a step is a question, decision, or verification (e.g., "Is it approved?"), it MUST end with a "?" to trigger a decision gateway.
+      4. Use professional administrative Amharic terminology.
+      5. DO NOT include numbering (1, 2, 3), bullet points, or any preamble.
+      6. The output MUST be a single continuous string.
 
       EXAMPLE OUTPUT FORMAT:
-      የአገልግሎት ጥያቄ መቀበል [wrap] የቀረቡ ሰነዶችን ማጣራት? [wrap] የቢሮ ምርመራ ማካሄድ [wrap] የክፍያ ትእዛዝ ማውጣት [wrap] ክፍያውን ማረጋገጥ? [wrap] ፈቃዱን ማተም [wrap] ለተገልጋዩ መስጠት`,
+      ወርቁ ነኝ ዝርዝሩን ላዘጋጅልህ/ልሽ [wrap] የአገልግሎት ጥያቄ መቀበል [wrap] የቀረቡ ሰነዶችን ማጣራት? [wrap] የቢሮ ምርመራ ማካሄድ [wrap] የክፍያ ትእዛዝ ማውጣት [wrap] ክፍያውን ማረጋገጥ? [wrap] ፈቃዱን ማተም [wrap] ለተገልጋዩ መስጠት`,
     });
 
     return {
