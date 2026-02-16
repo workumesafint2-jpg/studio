@@ -93,8 +93,8 @@ export function BPMNFlowForgeApp() {
         </h1>
         
         {/* Custom ITDB Circular Logo */}
-        <div className="w-12 h-12 bg-[#1e3a8a] rounded-full flex items-center justify-center shadow-sm mb-2">
-          <span className="text-white font-bold text-sm tracking-tighter">ITDB</span>
+        <div className="w-10 h-10 bg-[#1e3a8a] rounded-full flex items-center justify-center shadow-sm mb-2">
+          <span className="text-white font-bold text-xs tracking-tighter">ITDB</span>
         </div>
 
         <p className="text-[9px] font-medium italic text-slate-400 uppercase tracking-wider">
@@ -129,11 +129,11 @@ export function BPMNFlowForgeApp() {
           <Card className="flex-1 shadow-sm border border-slate-200 rounded-xl overflow-hidden bg-white">
             <CardContent className="p-6 flex flex-col gap-6 h-full">
               <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">የሂደት መለያ</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">የአገልግሎቱ/የሂደቱ መለያ</label>
                 <Input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="የአገልግሎት/የሂደት ርዕስ ያስገቡ..."
+                  placeholder="የአገልግሎቱን ወይም የሂደቱን ስም እዚህ ያስገቡ..."
                   className="h-11 rounded-lg bg-slate-50 border-slate-200 focus:ring-primary text-sm"
                   style={{ fontFamily: "'Noto Sans Ethiopic', sans-serif" }}
                 />
@@ -143,7 +143,7 @@ export function BPMNFlowForgeApp() {
                 <Textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="የስራ ሂደቱን ደረጃዎች እዚህ ይግለጹ..."
+                  placeholder="የሂደቱን ዝርዝር ተግባራት እዚህ ይግለጹ..."
                   className="flex-1 resize-none bg-slate-50 border-slate-200 rounded-lg p-4 text-xs font-medium leading-relaxed"
                   style={{ fontFamily: "'Noto Sans Ethiopic', sans-serif" }}
                 />
@@ -160,10 +160,10 @@ export function BPMNFlowForgeApp() {
               </div>
               <div className="flex gap-3">
                 <Button variant="ghost" className="flex-1 h-11 rounded-lg text-slate-500 hover:text-destructive transition-colors" onClick={() => setInput("")}>
-                  <Trash2 className="w-4 h-4 mr-2" /> አጥፋ
+                  <Trash2 className="w-4 h-4 mr-2" /> አፅዳ
                 </Button>
                 <Button className="flex-1 h-11 rounded-lg bg-[#1e3a8a] hover:bg-[#1e3a8a]/90 text-sm font-semibold shadow-md transition-all active:scale-95 text-white" onClick={handleGenerate}>
-                  <Sparkles className="w-4 h-4 mr-2" /> ፍጠር
+                  <Sparkles className="w-4 h-4 mr-2" /> አመንጭ
                 </Button>
               </div>
             </CardContent>
@@ -179,7 +179,7 @@ export function BPMNFlowForgeApp() {
                     <Eye className="w-3.5 h-3.5 mr-2" /> ዲያግራም
                   </TabsTrigger>
                   <TabsTrigger value="xml" className="font-semibold text-xs px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                    <Code className="w-3.5 h-3.5 mr-2" /> XML ኮድ
+                    <Code className="w-3.5 h-3.5 mr-2" /> የ XML ኮድ
                   </TabsTrigger>
                 </TabsList>
                 
