@@ -5,7 +5,7 @@ import {googleAI} from '@genkit-ai/google-genai';
  * Genkit initialization for (ወርቁ) Pro.
  * Hardcoded API Key for immediate activation.
  */
-const API_KEY = 'AIzaSyC_9Hy5ki-M3P2NJWB7O3BiBPKV7U66w0o';
+const API_KEY = 'AIzaSyAyqydj701Lp82I9YYIkIA1zFOg348gWBU';
 
 export const ai = genkit({
   plugins: [

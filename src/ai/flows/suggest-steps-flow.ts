@@ -27,7 +27,6 @@ const suggestStepsFlow = ai.defineFlow(
     outputSchema: SuggestStepsOutputSchema,
   },
   async (input) => {
-    // Live AI Generation using Gemini 1.5 Flash
     const response = await ai.generate({
       prompt: `You are an expert institutional BPMN architect specializing in Ethiopian government workflows.
       
@@ -37,7 +36,7 @@ const suggestStepsFlow = ai.defineFlow(
       1. Separate every step with exactly " [wrap] ".
       2. If a step is a question, decision, or verification (e.g., "Is it approved?"), it MUST end with a "?" to trigger a decision gateway.
       3. Use professional administrative Amharic terminology.
-      4. DO NOT include numbering (1, 2, 3), bullet points, or any preamble.
+      4. DO NOT include numbering (1, 2, 3), bullet points, or any preamble like "Here are the steps".
       5. The output should be a single continuous string.
 
       EXAMPLE OUTPUT FORMAT:
