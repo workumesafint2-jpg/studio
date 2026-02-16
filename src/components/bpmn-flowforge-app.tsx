@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import Image from 'next/image';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -26,7 +25,6 @@ import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BPMNViewer, type BPMNViewerRef } from "@/components/bpmn-viewer";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,8 +46,6 @@ export function BPMNFlowForgeApp() {
   const [activeTab, setActiveTab] = useState("diagram");
   const viewerRef = useRef<BPMNViewerRef>(null);
   const { toast } = useToast();
-
-  const itdbLogo = PlaceHolderImages.find(img => img.id === 'itdb-logo');
 
   useEffect(() => {
     setMounted(true);
@@ -87,32 +83,28 @@ export function BPMNFlowForgeApp() {
   };
 
   return (
-    <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-slate-50">
-      <header className="flex flex-col items-center justify-center py-6 px-8 bg-white border-b border-slate-200 shadow-sm shrink-0 z-10">
-        <h1 className="text-2xl font-bold text-primary mb-3" style={{ fontFamily: "'Noto Sans Ethiopic', sans-serif" }}>
+    <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-white">
+      {/* Institutional Top Bar */}
+      <div className="h-2 w-full bg-[#1e3a8a]" />
+      
+      <header className="flex flex-col items-center justify-center py-8 px-8 bg-white border-b border-slate-100 shrink-0 z-10 relative">
+        <h1 className="text-3xl font-bold text-[#1e3a8a] mb-4" style={{ fontFamily: "'Noto Sans Ethiopic', sans-serif" }}>
           ኢኖቬሽንና ቴክኖሎጂ ልማት ቢሮ
         </h1>
         
-        {itdbLogo && (
-          <div className="relative w-16 h-16 overflow-hidden rounded-full border border-slate-100 shadow-md mb-3">
-            <Image 
-              src={itdbLogo.imageUrl} 
-              alt="ITDB Logo" 
-              fill 
-              className="object-cover"
-              data-ai-hint="bureau logo"
-            />
-          </div>
-        )}
+        {/* Custom ITDB Circular Logo */}
+        <div className="w-20 h-20 bg-[#1e3a8a] rounded-full flex items-center justify-center shadow-sm mb-4">
+          <span className="text-white font-bold text-xl tracking-tighter">ITDB</span>
+        </div>
 
-        <p className="text-sm font-medium italic text-muted-foreground uppercase tracking-wide">
+        <p className="text-sm font-medium italic text-slate-400">
           Innovation and Technology Development Bureau
         </p>
 
         <div className="absolute right-8 top-1/2 -translate-y-1/2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="rounded-full h-10 w-10">
+              <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 text-slate-400 hover:text-primary">
                 <MoreVertical className="w-5 h-5" />
               </Button>
             </DropdownMenuTrigger>
@@ -132,7 +124,7 @@ export function BPMNFlowForgeApp() {
         </div>
       </header>
 
-      <main className="flex flex-col lg:flex-row flex-1 overflow-hidden p-6 gap-6">
+      <main className="flex flex-col lg:flex-row flex-1 overflow-hidden p-6 gap-6 bg-slate-50/50">
         <div className="w-full lg:w-[380px] flex flex-col gap-4 shrink-0">
           <Card className="flex-1 shadow-sm border border-slate-200 rounded-xl overflow-hidden bg-white">
             <CardContent className="p-6 flex flex-col gap-6 h-full">
@@ -150,7 +142,7 @@ export function BPMNFlowForgeApp() {
                 <Textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Describe the workflow steps here. Use [wrap] for row breaks..."
+                  placeholder="Describe the workflow steps here..."
                   className="flex-1 resize-none bg-slate-50 border-slate-200 rounded-lg p-4 text-xs font-medium leading-relaxed"
                 />
                 <TooltipProvider>
@@ -159,7 +151,7 @@ export function BPMNFlowForgeApp() {
                       <Info className="absolute bottom-4 right-4 w-4 h-4 text-slate-300 hover:text-primary transition-colors cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent className="max-w-[200px] text-[10px] bg-primary text-white p-3 rounded-lg">
-                      Use the [wrap] keyword to manually force elements to the next row in complex processes.
+                      Use [wrap] to manually force elements to the next row.
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -168,7 +160,7 @@ export function BPMNFlowForgeApp() {
                 <Button variant="ghost" className="flex-1 h-11 rounded-lg text-slate-500 hover:text-destructive transition-colors" onClick={() => setInput("")}>
                   <Trash2 className="w-4 h-4 mr-2" /> Reset
                 </Button>
-                <Button className="flex-1 h-11 rounded-lg bg-primary hover:bg-primary/90 text-sm font-semibold shadow-md transition-all active:scale-95" onClick={handleGenerate}>
+                <Button className="flex-1 h-11 rounded-lg bg-[#1e3a8a] hover:bg-[#1e3a8a]/90 text-sm font-semibold shadow-md transition-all active:scale-95 text-white" onClick={handleGenerate}>
                   <Sparkles className="w-4 h-4 mr-2" /> Generate
                 </Button>
               </div>
@@ -193,7 +185,7 @@ export function BPMNFlowForgeApp() {
                   <Button 
                     variant="default" 
                     size="sm" 
-                    className="h-9 px-4 rounded-lg text-xs font-bold shadow-sm transition-all active:scale-95" 
+                    className="h-9 px-4 rounded-lg text-xs font-bold bg-[#1e3a8a] text-white shadow-sm transition-all active:scale-95" 
                     onClick={() => viewerRef.current?.exportPNG()}
                   >
                     <Save className="w-3.5 h-3.5 mr-2" /> Save PNG
@@ -203,7 +195,7 @@ export function BPMNFlowForgeApp() {
               
               <div className="flex gap-2">
                 {xmlResult && (
-                  <Button variant="outline" size="sm" className="h-9 px-4 rounded-lg text-xs font-bold border-slate-200" onClick={() => viewerRef.current?.exportXML()}>
+                  <Button variant="outline" size="sm" className="h-9 px-4 rounded-lg text-xs font-bold border-slate-200 text-slate-600 hover:bg-slate-50" onClick={() => viewerRef.current?.exportXML()}>
                     <Download className="w-3.5 h-3.5 mr-2" /> Download BPMN
                   </Button>
                 )}
@@ -240,8 +232,8 @@ export function BPMNFlowForgeApp() {
       
       <footer className="px-8 py-3 bg-white border-t border-slate-200 flex justify-between items-center text-[9px] font-bold uppercase text-slate-400 tracking-wider">
         <div className="flex gap-6">
-          <span>Official Institutional Build v5.3</span>
-          <span className="text-primary/60">© 2024 Innovation and Technology Development Bureau</span>
+          <span>Official Institutional Build v6.0</span>
+          <span className="text-[#1e3a8a]/60">© 2024 Innovation and Technology Development Bureau</span>
         </div>
         <div className="flex gap-4">
           <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-green-500"></div> BPMN 2.0 Compliant</span>
