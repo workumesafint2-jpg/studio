@@ -73,7 +73,7 @@ export function BPMNFlowForgeApp() {
   };
 
   /**
-   * AI Auto-Suggest Steps Handler
+   * AI Auto-Suggest Steps Handler (Mocked for Stability)
    */
   const handleAutoSuggest = async () => {
     if (!title.trim()) {
@@ -87,6 +87,7 @@ export function BPMNFlowForgeApp() {
 
     setIsSuggesting(true);
     try {
+      // Using the server action which currently returns a high-fidelity mock
       const result = await suggestSteps({ title });
       if (result && result.steps) {
         setInput(result.steps);
@@ -191,7 +192,7 @@ export function BPMNFlowForgeApp() {
                       ) : (
                         <Sparkles className="w-3 h-3" />
                       )}
-                      ሂደቱን በAI አዘጋጅ
+                      ወርቁ ነኝ ዝርዝሩን ላዘጋጅልህ/ልሽ
                     </Button>
                   )}
                 </div>
