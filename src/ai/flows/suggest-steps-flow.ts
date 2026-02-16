@@ -1,53 +1,57 @@
 'use server';
 /**
- * @fileOverview Institutional Workflow Suggestion Flow (Dynamic Mock Build)
+ * @fileOverview Institutional Workflow Suggestion Flow
  * 
- * Provides professional Amharic responses formatted for the BPMN engine
- * based on the input title.
+ * Uses Gemini 1.5 Flash to generate professional Amharic workflows
+ * specifically formatted for the BPMN engine.
  */
 
-import { z } from 'zod';
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
 
 const SuggestStepsInputSchema = z.object({
   title: z.string().describe('The title of the service or process.'),
 });
 
 const SuggestStepsOutputSchema = z.object({
-  steps: z.string().describe('The formatted workflow steps.'),
+  steps: z.string().describe('The formatted workflow steps in Amharic.'),
 });
 
 export type SuggestStepsInput = z.infer<typeof SuggestStepsInputSchema>;
 export type SuggestStepsOutput = z.infer<typeof SuggestStepsOutputSchema>;
 
+const suggestStepsFlow = ai.defineFlow(
+  {
+    name: 'suggestStepsFlow',
+    inputSchema: SuggestStepsInputSchema,
+    outputSchema: SuggestStepsOutputSchema,
+  },
+  async (input) => {
+    const response = await ai.generate({
+      prompt: `You are an expert institutional BPMN architect specializing in Ethiopian government workflows.
+      
+      TASK: Generate a logical 5-7 step professional workflow in Amharic for the following service: "${input.title}".
+      
+      STRICT FORMATTING RULES:
+      1. Separate every step with exactly " [wrap] ".
+      2. If a step is a question, decision, or verification (e.g., "Is it approved?"), it MUST end with a "?" to trigger a decision gateway.
+      3. Use professional administrative Amharic terminology.
+      4. DO NOT include numbering (1, 2, 3), bullet points, or any preamble.
+      5. The output should be a single continuous string.
+
+      EXAMPLE OUTPUT FORMAT:
+      የአገልግሎት ጥያቄ መቀበል [wrap] የቀረቡ ሰነዶችን ማጣራት? [wrap] የቢሮ ምርመራ ማካሄድ [wrap] የክፍያ ትእዛዝ ማውጣት [wrap] ክፍያውን ማረጋገጥ? [wrap] ፈቃዱን ማተም [wrap] ለተገልጋዩ መስጠት`,
+    });
+
+    return {
+      steps: response.text,
+    };
+  }
+);
+
 /**
- * Server Action Wrapper with Dynamic Case-Based Mocking
+ * Server Action Wrapper
  */
 export async function suggestSteps(input: SuggestStepsInput): Promise<SuggestStepsOutput> {
-  // Simulate a brief network delay
-  await new Promise(resolve => setTimeout(resolve, 600));
-
-  const title = input.title.toLowerCase();
-  let workflow = "";
-
-  // Dynamic Logic: Match based on Amharic or English keywords
-  if (title.includes("ንግድ") || title.includes("business") || title.includes("license")) {
-    workflow = `የአገልግሎት ጥያቄ መቀበል [wrap] ሰነዶችን ማጣራት? [wrap] የቢሮ ምርመራ ማካሄድ [wrap] የክፍያ ትእዛዝ ማውጣት [wrap] ክፍያውን ማረጋገጥ? [wrap] የንግድ ፈቃድ ማተም [wrap] ፈቃዱን ለባለቤቱ መስጠት`;
-  } 
-  else if (title.includes("ልደት") || title.includes("birth") || title.includes("certificate")) {
-    workflow = `ማመልከቻውን በሲስተም መመዝገብ [wrap] ደጋፊ ማስረጃዎችን ማረጋገጥ? [wrap] ፎርሙን በሚገባ መሙላት [wrap] ክፍያ መፈጸም [wrap] የምስክር ወረቀቱን ማተም [wrap] መዝገብ ላይ ማረጋገጥ? [wrap] ለተገልጋዩ መስጠት`;
-  }
-  else if (title.includes("መንጃ") || title.includes("driving") || title.includes("driver")) {
-    workflow = `የብቃት ማረጋገጫ ጥያቄ መቀበል [wrap] የጽሁፍ ፈተና መውሰድ? [wrap] የተግባር ፈተና መፈተን? [wrap] ውጤቱን መመዝገብ [wrap] ክፍያ መፈጸም [wrap] መንጃ ፈቃዱን ማተም [wrap] ለተሳታፊው መስጠት`;
-  }
-  else if (title.includes("ፓስፖርት") || title.includes("passport")) {
-    workflow = `የቀጠሮ ሰነድ ማቅረብ [wrap] ዋና መረጃዎችን ማጣራት? [wrap] ፎቶና አሻራ መውሰድ [wrap] የደህንነት ማጣሪያ ማካሄድ? [wrap] ፓስፖርቱን ማተም [wrap] ማድረስ`;
-  }
-  else {
-    // Default Professional Institutional Workflow
-    workflow = `የደብዳቤ ወይም የቃል ጥያቄ መቀበል [wrap] ጉዳዩን ለሚመለከተው መምራት [wrap] ምላሽ ማዘጋጀት? [wrap] በኃላፊ ማስፈረም [wrap] ማህተም ማድረግ [wrap] ለተገልጋዩ ምላሽ መስጠት`;
-  }
-
-  return {
-    steps: workflow
-  };
+  return suggestStepsFlow(input);
 }

@@ -1,4 +1,3 @@
-
 /**
  * ወርቁ Pro - Industrial BPMN Engine v5.0
  * STABLE PRODUCTION BUILD: Logic Freeze & Scale Optimization
@@ -7,7 +6,10 @@
 export function generateBPMN(input: string, title: string = "Process Diagram"): string {
   if (!input.trim()) return '';
 
-  const rawLines = input.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
+  // Pre-process: ensure [wrap] is treated as a clean line break for the layout logic
+  // This allows the AI to output a single string with [wrap] markers
+  const processedInput = input.replace(/\[wrap\]/gi, '\n[wrap]\n');
+  const rawLines = processedInput.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
   
   const mappings = {
     start: ['መጀመሪያ', 'ጀምር', 'start', 'begin'],
@@ -128,10 +130,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       if (prev.category === 'gateway') {
         label = (node.type === 'endEvent' || node.name.includes('ተመለስ')) ? "ካልጸደቀ" : "ከጸደቀ";
       }
-
-      // HANDLE UPWARD REJECTION ROUTING
-      const isUpward = label === "ካልጸደቀ";
-      const targetY = isUpward ? t.y - 150 : t.y;
 
       flows.push(`<bpmn:sequenceFlow id="${flowId}" ${label ? `name="${label}"` : ''} sourceRef="${prev.id}" targetRef="${node.id}" />`);
       
