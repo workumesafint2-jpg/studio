@@ -56,17 +56,17 @@ export function BPMNFlowForgeApp() {
   const handleGenerate = () => {
     if (!input.trim()) {
       toast({ 
-        title: "No Data", 
-        description: "Please enter the process description.", 
+        title: "መረጃ የለም", 
+        description: "እባክዎን የሂደቱን ዝርዝር መግለጫ ያስገቡ።", 
         variant: "destructive" 
       });
       return;
     }
-    const result = generateBPMN(input, title || "Process Diagram");
+    const result = generateBPMN(input, title || "የሂደት ዲያግራም");
     if (result) {
       setXmlResult(result);
       setActiveTab("diagram");
-      toast({ title: "Success", description: "BPMN Diagram generated successfully." });
+      toast({ title: "ተሳክቷል", description: "BPMN ዲያግራም በተሳካ ሁኔታ ተፈጥሯል።" });
     }
   };
 
@@ -77,7 +77,7 @@ export function BPMNFlowForgeApp() {
     reader.onload = (event) => {
       const content = event.target?.result as string;
       setInput(content);
-      toast({ title: "File Uploaded", description: "Process description loaded." });
+      toast({ title: "ፋይል ተጭኗል", description: "የሂደቱ መግለጫ ተጭኗል።" });
     };
     reader.readAsText(file);
   };
@@ -87,17 +87,17 @@ export function BPMNFlowForgeApp() {
       {/* Institutional Top Bar */}
       <div className="h-2 w-full bg-[#1e3a8a]" />
       
-      <header className="flex flex-col items-center justify-center py-8 px-8 bg-white border-b border-slate-100 shrink-0 z-10 relative">
-        <h1 className="text-lg font-bold text-[#1e3a8a] mb-3" style={{ fontFamily: "'Noto Sans Ethiopic', sans-serif" }}>
+      <header className="flex flex-col items-center justify-center py-6 px-8 bg-white border-b border-slate-100 shrink-0 z-10 relative">
+        <h1 className="text-xl font-bold text-[#1e3a8a] mb-2" style={{ fontFamily: "'Noto Sans Ethiopic', sans-serif" }}>
           ኢኖቬሽንና ቴክኖሎጂ ልማት ቢሮ
         </h1>
         
         {/* Custom ITDB Circular Logo */}
-        <div className="w-14 h-14 bg-[#1e3a8a] rounded-full flex items-center justify-center shadow-sm mb-3">
-          <span className="text-white font-bold text-base tracking-tighter">ITDB</span>
+        <div className="w-12 h-12 bg-[#1e3a8a] rounded-full flex items-center justify-center shadow-sm mb-2">
+          <span className="text-white font-bold text-sm tracking-tighter">ITDB</span>
         </div>
 
-        <p className="text-[10px] font-medium italic text-slate-400 uppercase tracking-wider">
+        <p className="text-[9px] font-medium italic text-slate-400 uppercase tracking-wider">
           Innovation and Technology Development Bureau
         </p>
 
@@ -110,13 +110,13 @@ export function BPMNFlowForgeApp() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 p-2 rounded-xl">
               <DropdownMenuItem onClick={() => viewerRef.current?.exportXML()}>
-                <FileJson className="w-4 h-4 mr-2 text-primary" /> Export BPMN (XML)
+                <FileJson className="w-4 h-4 mr-2 text-primary" /> BPMN (XML) ላክ
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => viewerRef.current?.exportSVG()}>
-                <FileType className="w-4 h-4 mr-2 text-primary" /> Export SVG
+                <FileType className="w-4 h-4 mr-2 text-primary" /> SVG ላክ
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => document.getElementById('file-upload')?.click()}>
-                <Upload className="w-4 h-4 mr-2 text-primary" /> Import Text/CSV
+                <Upload className="w-4 h-4 mr-2 text-primary" /> Text/CSV አስገባ
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -129,21 +129,23 @@ export function BPMNFlowForgeApp() {
           <Card className="flex-1 shadow-sm border border-slate-200 rounded-xl overflow-hidden bg-white">
             <CardContent className="p-6 flex flex-col gap-6 h-full">
               <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Process Identification</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">የሂደት መለያ</label>
                 <Input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Enter Service/Process Title..."
+                  placeholder="የአገልግሎት/የሂደት ርዕስ ያስገቡ..."
                   className="h-11 rounded-lg bg-slate-50 border-slate-200 focus:ring-primary text-sm"
+                  style={{ fontFamily: "'Noto Sans Ethiopic', sans-serif" }}
                 />
               </div>
               <div className="relative flex-1 flex flex-col">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Technical Description</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">ቴክኒካዊ መግለጫ</label>
                 <Textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Describe the workflow steps here..."
+                  placeholder="የስራ ሂደቱን ደረጃዎች እዚህ ይግለጹ..."
                   className="flex-1 resize-none bg-slate-50 border-slate-200 rounded-lg p-4 text-xs font-medium leading-relaxed"
+                  style={{ fontFamily: "'Noto Sans Ethiopic', sans-serif" }}
                 />
                 <TooltipProvider>
                   <Tooltip>
@@ -151,17 +153,17 @@ export function BPMNFlowForgeApp() {
                       <Info className="absolute bottom-4 right-4 w-4 h-4 text-slate-300 hover:text-primary transition-colors cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent className="max-w-[200px] text-[10px] bg-primary text-white p-3 rounded-lg">
-                      Use [wrap] to manually force elements to the next row.
+                      ንጥረ ነገሮችን ወደ ቀጣዩ ረድፍ ለማስገደድ [wrap] ይጠቀሙ።
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
               <div className="flex gap-3">
                 <Button variant="ghost" className="flex-1 h-11 rounded-lg text-slate-500 hover:text-destructive transition-colors" onClick={() => setInput("")}>
-                  <Trash2 className="w-4 h-4 mr-2" /> Reset
+                  <Trash2 className="w-4 h-4 mr-2" /> አጥፋ
                 </Button>
                 <Button className="flex-1 h-11 rounded-lg bg-[#1e3a8a] hover:bg-[#1e3a8a]/90 text-sm font-semibold shadow-md transition-all active:scale-95 text-white" onClick={handleGenerate}>
-                  <Sparkles className="w-4 h-4 mr-2" /> Generate
+                  <Sparkles className="w-4 h-4 mr-2" /> ፍጠር
                 </Button>
               </div>
             </CardContent>
@@ -174,10 +176,10 @@ export function BPMNFlowForgeApp() {
               <div className="flex items-center gap-4">
                 <TabsList className="bg-slate-100 h-9 p-1 rounded-lg">
                   <TabsTrigger value="diagram" className="font-semibold text-xs px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                    <Eye className="w-3.5 h-3.5 mr-2" /> Diagram
+                    <Eye className="w-3.5 h-3.5 mr-2" /> ዲያግራም
                   </TabsTrigger>
                   <TabsTrigger value="xml" className="font-semibold text-xs px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                    <Code className="w-3.5 h-3.5 mr-2" /> XML Code
+                    <Code className="w-3.5 h-3.5 mr-2" /> XML ኮድ
                   </TabsTrigger>
                 </TabsList>
                 
@@ -188,7 +190,7 @@ export function BPMNFlowForgeApp() {
                     className="h-9 px-4 rounded-lg text-xs font-bold bg-[#1e3a8a] text-white shadow-sm transition-all active:scale-95" 
                     onClick={() => viewerRef.current?.exportPNG()}
                   >
-                    <Save className="w-3.5 h-3.5 mr-2" /> Save PNG
+                    <Save className="w-3.5 h-3.5 mr-2" /> PNG አስቀምጥ
                   </Button>
                 )}
               </div>
@@ -196,7 +198,7 @@ export function BPMNFlowForgeApp() {
               <div className="flex gap-2">
                 {xmlResult && (
                   <Button variant="outline" size="sm" className="h-9 px-4 rounded-lg text-xs font-bold border-slate-200 text-slate-600 hover:bg-slate-50" onClick={() => viewerRef.current?.exportXML()}>
-                    <Download className="w-3.5 h-3.5 mr-2" /> Download BPMN
+                    <Download className="w-3.5 h-3.5 mr-2" /> BPMN አውርድ
                   </Button>
                 )}
               </div>
@@ -212,8 +214,8 @@ export function BPMNFlowForgeApp() {
                       <Layout className="w-12 h-12 opacity-20" />
                     </div>
                     <div className="text-center">
-                      <span className="font-bold uppercase tracking-widest text-xs opacity-40 block">No Active Diagram</span>
-                      <p className="text-[10px] mt-1 opacity-40">Describe a process to start modeling</p>
+                      <span className="font-bold uppercase tracking-widest text-xs opacity-40 block">ምንም ገባሪ ዲያግራም የለም</span>
+                      <p className="text-[10px] mt-1 opacity-40">ሞዴሊንግ ለመጀመር ሂደቱን ይግለጹ</p>
                     </div>
                   </div>
                 )}
@@ -232,12 +234,12 @@ export function BPMNFlowForgeApp() {
       
       <footer className="px-8 py-3 bg-white border-t border-slate-200 flex justify-between items-center text-[9px] font-bold uppercase text-slate-400 tracking-wider">
         <div className="flex gap-6">
-          <span>Official Institutional Build v6.0</span>
-          <span className="text-[#1e3a8a]/60">© 2024 Innovation and Technology Development Bureau</span>
+          <span>ኦፊሴላዊ ተቋማዊ ግንባታ v6.0</span>
+          <span className="text-[#1e3a8a]/60">© 2024 የኢኖቬሽንና ቴክኖሎጂ ልማት ቢሮ</span>
         </div>
         <div className="flex gap-4">
-          <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-green-500"></div> BPMN 2.0 Compliant</span>
-          <span>Encrypted Session Enabled</span>
+          <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-green-500"></div> BPMN 2.0 ተገዢ</span>
+          <span>የተመሰጠረ ክፍለ ጊዜ ነቅቷል</span>
         </div>
       </footer>
     </div>
