@@ -94,15 +94,9 @@ export function BPMNFlowForgeApp() {
       }
     } catch (error: any) {
       console.error("AI Suggestion Error:", error);
-      let errorDesc = error.message || "ሂደቶቹን ማመንጨት አልተቻለም።";
-      
-      if (errorDesc.includes("API_KEY_MISSING")) {
-        errorDesc = "የ Gemini API Key አልተገኘም። እባክዎ በ Environment Variables ውስጥ 'GEMINI_API_KEY' ይጨምሩ።";
-      }
-
       toast({ 
         title: "የ AI ስህተት", 
-        description: errorDesc, 
+        description: "ሂደቶቹን ማመንጨት አልተቻለም።", 
         variant: "destructive" 
       });
     } finally {
@@ -127,14 +121,14 @@ export function BPMNFlowForgeApp() {
       {/* Institutional Top Bar */}
       <div className="h-2 w-full bg-[#1e3a8a]" />
       
-      <header className="flex flex-col items-center justify-center py-6 px-8 bg-white border-b border-slate-100 shrink-0 z-10 relative">
+      <header className="flex flex-col items-center justify-center py-6 px-8 bg-white border-b border-slate-100 shrink-0 z-10 relative text-center">
         <h1 className="text-xl font-bold text-[#1e3a8a] mb-2" style={{ fontFamily: "'Noto Sans Ethiopic', sans-serif" }}>
           ኢኖቬሽንና ቴክኖሎጂ ልማት ቢሮ
         </h1>
         
         {/* ITDB Circular Logo */}
-        <div className="w-10 h-10 bg-[#1e3a8a] rounded-full flex items-center justify-center shadow-sm mb-2">
-          <span className="text-white font-bold text-xs tracking-tighter">ITDB</span>
+        <div className="w-9 h-9 bg-[#1e3a8a] rounded-full flex items-center justify-center shadow-sm mb-2">
+          <span className="text-white font-bold text-[10px] tracking-tighter">ITDB</span>
         </div>
 
         <p className="text-[9px] font-medium italic text-slate-400 uppercase tracking-wider">
@@ -197,7 +191,7 @@ export function BPMNFlowForgeApp() {
                       ) : (
                         <Sparkles className="w-3 h-3" />
                       )}
-                      ሂደቶችን በራስ-ሰር አግኝ
+                      ሂደቱን በAI አዘጋጅ
                     </Button>
                   )}
                 </div>
@@ -236,7 +230,7 @@ export function BPMNFlowForgeApp() {
         <div className="flex-1 flex flex-col gap-4 min-h-0">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
             <div className="flex justify-between items-center bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm mb-4">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
                 <TabsList className="bg-slate-100 h-9 p-1 rounded-lg">
                   <TabsTrigger value="diagram" className="font-semibold text-xs px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm">
                     <Eye className="w-3.5 h-3.5 mr-2" /> ዲያግራም
@@ -250,7 +244,7 @@ export function BPMNFlowForgeApp() {
                   <Button 
                     variant="default" 
                     size="sm" 
-                    className="h-9 px-4 rounded-lg text-xs font-bold bg-[#1e3a8a] text-white shadow-sm transition-all active:scale-95" 
+                    className="h-9 px-4 rounded-lg text-xs font-bold bg-[#1e3a8a] text-white shadow-sm transition-all active:scale-95 ml-2" 
                     onClick={() => viewerRef.current?.exportPNG()}
                   >
                     <Save className="w-3.5 h-3.5 mr-2" /> PNG አስቀምጥ

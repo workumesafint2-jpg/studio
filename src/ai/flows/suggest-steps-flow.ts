@@ -1,9 +1,8 @@
 'use server';
 /**
- * @fileOverview Mock Workflow Suggestion Flow
+ * @fileOverview Institutional Workflow Suggestion Flow
  * 
- * This file provides a simulated AI response for testing purposes 
- * without requiring an external API connection.
+ * Provides a simulated professional Amharic response formatted for the BPMN engine.
  */
 
 import { z } from 'zod';
@@ -20,15 +19,15 @@ export type SuggestStepsInput = z.infer<typeof SuggestStepsInputSchema>;
 export type SuggestStepsOutput = z.infer<typeof SuggestStepsOutputSchema>;
 
 /**
- * Server Action Wrapper (Mock Implementation)
+ * Server Action Wrapper (Mock Implementation for Stability)
  */
 export async function suggestSteps(input: SuggestStepsInput): Promise<SuggestStepsOutput> {
-  // Simulate a brief network delay for a realistic feel
-  await new Promise(resolve => setTimeout(resolve, 600));
+  // Simulate a brief network delay
+  await new Promise(resolve => setTimeout(resolve, 500));
 
-  // Professional Amharic BPMN Mock Workflow
-  // Includes [wrap] for row breaks and '?' for decision gateways
-  const mockWorkflow = `መጀመሪያ ጥያቄውን መቀበል [wrap] መረጃውን ማጣራት? [wrap] ውሳኔውን ማሳወቅ [wrap] መጨረሻ ፋይሉን መዝጋት`;
+  // Professional Amharic Institutional Mock Workflow
+  // Strictly uses [wrap] for row breaks and '?' for decision gateways
+  const mockWorkflow = `መጀመሪያ ጥያቄውን መቀበል [wrap] መረጃውን ማጣራት? [wrap] ለተገልጋዩ ምላሽ መስጠት [wrap] መዝገቡን ማረጋገጥ? [wrap] ሂደቱን ማጠናቀቅ [wrap] መጨረሻ ፋይሉን መዝጋት`;
 
   return {
     steps: mockWorkflow
