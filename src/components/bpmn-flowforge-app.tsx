@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
-  FileCode, 
   Trash2, 
   MoreVertical, 
   Eye, 
@@ -89,31 +88,28 @@ export function BPMNFlowForgeApp() {
 
   return (
     <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-slate-50">
-      <header className="flex items-center justify-between px-8 py-4 bg-white border-b border-slate-200 shadow-sm shrink-0 z-10">
-        <div className="flex items-center gap-4">
-          {itdbLogo && (
-            <div className="relative w-12 h-12 overflow-hidden rounded-full border border-slate-100 shadow-sm">
-              <Image 
-                src={itdbLogo.imageUrl} 
-                alt="ITDB Logo" 
-                fill 
-                className="object-cover"
-                data-ai-hint="bureau logo"
-              />
-            </div>
-          )}
-        </div>
+      <header className="flex flex-col items-center justify-center py-6 px-8 bg-white border-b border-slate-200 shadow-sm shrink-0 z-10">
+        <h1 className="text-2xl font-bold text-primary mb-3" style={{ fontFamily: "'Noto Sans Ethiopic', sans-serif" }}>
+          ኢኖቬሽንና ቴክኖሎጂ ልማት ቢሮ
+        </h1>
         
-        <div className="absolute left-1/2 -translate-x-1/2 text-center">
-          <h1 className="text-xl font-bold text-primary tracking-tight uppercase">
-            Innovation and Technology Development Bureau
-          </h1>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.2em] mt-0.5">
-            Process Design & Standardization Portal
-          </p>
-        </div>
+        {itdbLogo && (
+          <div className="relative w-16 h-16 overflow-hidden rounded-full border border-slate-100 shadow-md mb-3">
+            <Image 
+              src={itdbLogo.imageUrl} 
+              alt="ITDB Logo" 
+              fill 
+              className="object-cover"
+              data-ai-hint="bureau logo"
+            />
+          </div>
+        )}
 
-        <div className="flex items-center gap-2">
+        <p className="text-sm font-medium italic text-muted-foreground uppercase tracking-wide">
+          Innovation and Technology Development Bureau
+        </p>
+
+        <div className="absolute right-8 top-1/2 -translate-y-1/2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon" className="rounded-full h-10 w-10">
@@ -183,25 +179,33 @@ export function BPMNFlowForgeApp() {
         <div className="flex-1 flex flex-col gap-4 min-h-0">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
             <div className="flex justify-between items-center bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm mb-4">
-              <TabsList className="bg-slate-100 h-9 p-1 rounded-lg">
-                <TabsTrigger value="diagram" className="font-semibold text-xs px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                  <Eye className="w-3.5 h-3.5 mr-2" /> Diagram
-                </TabsTrigger>
-                <TabsTrigger value="xml" className="font-semibold text-xs px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                  <Code className="w-3.5 h-3.5 mr-2" /> XML Code
-                </TabsTrigger>
-              </TabsList>
+              <div className="flex items-center gap-4">
+                <TabsList className="bg-slate-100 h-9 p-1 rounded-lg">
+                  <TabsTrigger value="diagram" className="font-semibold text-xs px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                    <Eye className="w-3.5 h-3.5 mr-2" /> Diagram
+                  </TabsTrigger>
+                  <TabsTrigger value="xml" className="font-semibold text-xs px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                    <Code className="w-3.5 h-3.5 mr-2" /> XML Code
+                  </TabsTrigger>
+                </TabsList>
+                
+                {xmlResult && (
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    className="h-9 px-4 rounded-lg text-xs font-bold shadow-sm transition-all active:scale-95" 
+                    onClick={() => viewerRef.current?.exportPNG()}
+                  >
+                    <Save className="w-3.5 h-3.5 mr-2" /> Save PNG
+                  </Button>
+                )}
+              </div>
               
               <div className="flex gap-2">
                 {xmlResult && (
-                  <>
-                    <Button variant="default" size="sm" className="h-9 px-4 rounded-lg text-xs font-bold shadow-sm" onClick={() => viewerRef.current?.exportPNG()}>
-                      <Save className="w-3.5 h-3.5 mr-2" /> Save PNG (High-Res)
-                    </Button>
-                    <Button variant="outline" size="sm" className="h-9 px-4 rounded-lg text-xs font-bold border-slate-200" onClick={() => viewerRef.current?.exportXML()}>
-                      <Download className="w-3.5 h-3.5 mr-2" /> Download BPMN
-                    </Button>
-                  </>
+                  <Button variant="outline" size="sm" className="h-9 px-4 rounded-lg text-xs font-bold border-slate-200" onClick={() => viewerRef.current?.exportXML()}>
+                    <Download className="w-3.5 h-3.5 mr-2" /> Download BPMN
+                  </Button>
                 )}
               </div>
             </div>
@@ -236,7 +240,7 @@ export function BPMNFlowForgeApp() {
       
       <footer className="px-8 py-3 bg-white border-t border-slate-200 flex justify-between items-center text-[9px] font-bold uppercase text-slate-400 tracking-wider">
         <div className="flex gap-6">
-          <span>Official Institutional Build v5.2</span>
+          <span>Official Institutional Build v5.3</span>
           <span className="text-primary/60">© 2024 Innovation and Technology Development Bureau</span>
         </div>
         <div className="flex gap-4">
