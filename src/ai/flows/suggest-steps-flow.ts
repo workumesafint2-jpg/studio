@@ -27,6 +27,7 @@ const suggestStepsFlow = ai.defineFlow(
     outputSchema: SuggestStepsOutputSchema,
   },
   async (input) => {
+    // Live AI Generation using Gemini 1.5 Flash
     const response = await ai.generate({
       prompt: `You are an expert institutional BPMN architect specializing in Ethiopian government workflows.
       

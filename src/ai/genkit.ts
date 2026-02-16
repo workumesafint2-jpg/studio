@@ -3,12 +3,9 @@ import {googleAI} from '@genkit-ai/google-genai';
 
 /**
  * Genkit initialization for (ወርቁ) Pro.
- * 
- * TO MANUALLY ADD YOUR API KEY:
- * 1. Get your key from https://aistudio.google.com/
- * 2. Replace 'YOUR_GEMINI_API_KEY_HERE' below with your actual key.
+ * Hardcoded API Key for immediate activation.
  */
-const API_KEY = process.env.GEMINI_API_KEY || 'YOUR_GEMINI_API_KEY_HERE';
+const API_KEY = 'AIzaSyC_9Hy5ki-M3P2NJWB7O3BiBPKV7U66w0o';
 
 export const ai = genkit({
   plugins: [
