@@ -1,6 +1,7 @@
+
 /**
- * (ወርቁ) Pro - Industrial BPMN Engine v4.0
- * STRICT PRODUCTION BUILD: Logic Freeze & Scale Optimization
+ * ወርቁ Pro - Industrial BPMN Engine v5.0
+ * STABLE PRODUCTION BUILD: Logic Freeze & Scale Optimization
  */
 
 export function generateBPMN(input: string, title: string = "Process Diagram"): string {
@@ -11,15 +12,10 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const mappings = {
     start: ['መጀመሪያ', 'ጀምር', 'start', 'begin'],
     end: ['መጨረሻ', 'ጨርስ', 'ተጠናቀቀ', 'end', 'finish', 'success', 'done'],
-    timer: ['ቆይታ', 'ሰዓት', 'timer', 'wait'],
-    userTask: ['ባለሙያ', 'human', 'user task', 'ተግባር', 'action', 'ማከናወን', 'መለየት', 'ማዘጋጀት', 'መሰብሰብ', 'መለካት', 'ማቅረብ', 'ማደራጀት'],
-    serviceTask: ['ሲስተም', 'አውቶማቲክ', 'service task', 'system', 'auto', 'gear', 'መላክ', 'መቀበል', 'መመዝገብ', 'check'],
-    manualTask: ['በእጅ', 'ፊዚካል', 'manual task', 'physical'],
-    scriptTask: ['ስክሪፕት', 'ኮድ', 'script task', 'code'],
     exclusiveGateway: ['ውሳኔ', 'ከሆነ', 'ወይስ', 'ቢሆን', 'decision', 'xor', 'if', 'gateway', 'ማጽደቅ?', 'ጥያቄ?', 'አዋጭ?'],
-    parallelGateway: ['በአንድ ጊዜ', 'እና', 'ትይዩ', 'parallel', 'and', 'simultaneous'],
+    serviceTask: ['ሲስተም', 'አውቶማቲክ', 'service task', 'system', 'auto', 'gear'],
     dataKeywords: ['ሰነድ', 'ፎርም', 'ማስረጃ', 'document', 'form', 'file', 'ሪፖርት'],
-    wrap: ['[wrap]', '[next]', 'ቀጥል', 'line break']
+    wrap: ['[wrap]', '[next]']
   };
 
   const nodeDefs: any[] = [];
@@ -27,11 +23,9 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   let nodesInRow = 0;
   let startTextToMove = "";
 
-  // PASS 1: Identify Nodes and Row Positions
   rawLines.forEach((line, index) => {
     const lowerLine = line.toLowerCase();
     
-    // Check for explicit wrap command
     if (mappings.wrap.some(k => lowerLine.includes(k))) {
       currentRow++;
       nodesInRow = 0;
@@ -49,16 +43,15 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     else if (mappings.serviceTask.some(k => lowerLine.includes(k))) { type = 'serviceTask'; category = 'task'; }
 
     let pureName = line;
-    // Clean label
     const allKeywords = Object.values(mappings).flat();
     allKeywords.forEach(k => {
-      if (k && k.startsWith('[')) return; // Keep wrap tags
-      const regex = new RegExp(`\\b${escapeRegExp(k)}\\b|\\(${escapeRegExp(k)}\\)`, 'gi');
+      if (k && k.startsWith('[')) return;
+      const regex = new RegExp(`\\b${escapeRegExp(k)}\\b`, 'gi');
       pureName = pureName.replace(regex, '');
     });
     pureName = pureName.replace(/[?፧？]$/, '').replace(/^[\s>->:–—-]+/, '').trim();
 
-    // RULE: Start Event is STRICTLY EMPTY. Label moves to first task.
+    // RULE: Start Event is STRICTLY EMPTY
     if (type === 'startEvent') {
       if (pureName) startTextToMove = pureName;
       pureName = ""; 
@@ -83,8 +76,8 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const diElements: string[] = [];
   const positions: Record<string, { x: number, y: number, w: number, h: number }> = {};
 
-  const COL_SPACING = 380; 
-  const ROW_SPACING = 350;
+  const COL_SPACING = 350; 
+  const ROW_SPACING = 300;
   const BOX_WIDTH = 120;
   const BOX_HEIGHT = 80;
   const X_OFFSET = 150;
@@ -111,11 +104,11 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
     diElements.push(`<bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}"><dc:Bounds x="${x - w/2}" y="${y - h/2}" width="${w}" height="${h}" /></bpmndi:BPMNShape>`);
 
-    // SIDE DATA OBJECTS (HARDCODED RULE)
+    // SIDE DATA OBJECTS
     if (node.hasDataAssociation) {
       const dataId = `Data_${node.id}`;
-      const dataX = x + 120; // Side positioned
-      const dataY = y - 80;
+      const dataX = x + 120; 
+      const dataY = y - 70;
       elements.push(`<bpmn:dataObjectReference id="${dataId}" name="ሰነድ" dataObjectRef="DO_${node.id}" />`);
       elements.push(`<bpmn:dataObject id="DO_${node.id}" />`);
       elements.push(`<bpmn:association id="Assoc_${node.id}" sourceRef="${node.id}" targetRef="${dataId}" />`);
@@ -124,21 +117,27 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         <bpmndi:BPMNEdge id="Assoc_${node.id}_di" bpmnElement="Assoc_${node.id}"><di:waypoint x="${x + w/2}" y="${y}" /><di:waypoint x="${dataX - 18}" y="${dataY}" /></bpmndi:BPMNEdge>`);
     }
 
-    // Connect nodes
+    // CONNECT NODES
     if (i > 0) {
       const prev = nodeDefs[i-1];
       const s = positions[prev.id];
       const t = positions[node.id];
       const flowId = `Flow_${i}`;
-      let label = (prev.category === 'gateway') ? "ከጸደቀ" : "";
       
+      let label = "";
+      if (prev.category === 'gateway') {
+        label = (node.type === 'endEvent' || node.name.includes('ተመለስ')) ? "ካልጸደቀ" : "ከጸደቀ";
+      }
+
+      // HANDLE UPWARD REJECTION ROUTING
+      const isUpward = label === "ካልጸደቀ";
+      const targetY = isUpward ? t.y - 150 : t.y;
+
       flows.push(`<bpmn:sequenceFlow id="${flowId}" ${label ? `name="${label}"` : ''} sourceRef="${prev.id}" targetRef="${node.id}" />`);
       
-      // MIDPOINT LABELS (HARDCODED RULE)
       diElements.push(`
         <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
           <di:waypoint x="${s.x + s.w/2}" y="${s.y}" />
-          ${prev.row !== node.row ? `<di:waypoint x="${s.x + s.w/2 + 50}" y="${s.y}" /><di:waypoint x="${s.x + s.w/2 + 50}" y="${t.y}" />` : ''}
           <di:waypoint x="${t.x - t.w/2}" y="${t.y}" />
           ${label ? `<bpmndi:BPMNLabel><dc:Bounds x="${(s.x + t.x)/2 - 30}" y="${(s.y + t.y)/2 - 20}" width="60" height="14" /></bpmndi:BPMNLabel>` : ''}
         </bpmndi:BPMNEdge>`);

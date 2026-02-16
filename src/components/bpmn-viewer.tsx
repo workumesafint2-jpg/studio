@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
@@ -45,7 +46,7 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
         const url = URL.createObjectURL(svgBlob);
         
         img.onload = () => {
-          const scale = 2; // High Resolution
+          const scale = 2; 
           canvas.width = img.width * scale;
           canvas.height = img.height * scale;
           const ctx = canvas.getContext('2d');
@@ -92,7 +93,7 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
       <div ref={containerRef} className="w-full h-full min-h-[600px]" />
       <div className="absolute bottom-4 left-4 flex gap-2">
         <div className="bg-slate-900/80 text-white px-3 py-1 rounded-full text-[10px] font-bold">
-          MODELER MODE: DRAG & EDIT ENABLED
+          MODELER MODE: INTERACTIVE EDITING ENABLED
         </div>
       </div>
     </div>

@@ -1,40 +1,21 @@
-# ወርቁ (Worku) - Smart BPMN Generator (Final Build)
 
-A professional BPMN diagram generator with interactive Modeler support, optimized for APK and Desktop deployment.
+# ወርቁ (Worku) - Smart BPMN Generator (Stable Production Build)
 
-## Production Build Instructions (APK)
+Professional BPMN diagram generator with interactive Modeler support, optimized for APK and Desktop deployment via Next.js and Capacitor.
 
-To generate the production APK for your Android device:
+## Build Instructions (APK)
 
-1. **Install Dependencies**:
-   ```bash
-   npm install
-   ```
-2. **Build Web Assets**:
-   ```bash
-   npm run build
-   ```
-3. **Capacitor Configuration**:
-   *If not already present:*
-   ```bash
-   npx cap add android
-   ```
-   *Sync changes:*
-   ```bash
-   npx cap sync android
-   ```
-4. **Generate APK**:
-   ```bash
-   npx cap open android
-   ```
-   *In Android Studio, select `Build > Build Bundle(s) / APK(s) > Build APK(s)`.*
+1. **Install Dependencies**: `npm install`
+2. **Build Web Assets**: `npm run build`
+3. **Add Android Platform**: `npx cap add android`
+4. **Sync Assets**: `npx cap sync android`
+5. **Open Android Studio**: `npx cap open android`
+6. **Generate APK**: Build > Build APKs in Android Studio.
 
 ## Key Features
-- **Interactive Modeler**: Drag-and-drop elements, double-click to edit labels directly.
-- **Strict Logic Freeze**: Hardcoded Empty Start Events, Midpoint Flow Labels, and Side-Positioned Data Objects.
-- **Scale Optimization**: Processes 44+ industrial service steps in a single 5000px workspace.
-- **Wrap to Next Row**: Use the `[wrap]` command in your text description to manually control layout rows.
-- **High-Res Storage**: Direct export of high-DPI PNG and SVG files to device storage.
+- **Interactive Modeler**: Drag-and-drop elements, double-click to edit labels.
+- **Strict Logic**: Empty Start Events, Midpoint Flow Labels, and Side-Positioned Data Objects.
+- **Industrial Scale**: Supports complex horizontal processes on a 5000px workspace.
+- **Manual Wrap**: Use `[wrap]` in text to force a row break.
 
----
-© 2024 ወርቁ Pro - FINAL STABLE RELEASE.
+© 2024 ወርቁ Pro - STABLE RECOVERY BUILD.
