@@ -20,20 +20,22 @@ export type SuggestStepsInput = z.infer<typeof SuggestStepsInputSchema>;
 export type SuggestStepsOutput = z.infer<typeof SuggestStepsOutputSchema>;
 
 /**
- * Wrapper for the suggestStepsFlow to be used as a Server Action.
+ * Suggest Steps Flow Definition
  */
-export async function suggestSteps(input: SuggestStepsInput): Promise<SuggestStepsOutput> {
-  return suggestStepsFlow(input);
-}
-
-const suggestStepsPrompt = ai.definePrompt({
-  name: 'suggestStepsPrompt',
-  input: { schema: SuggestStepsInputSchema },
-  output: { schema: SuggestStepsOutputSchema },
-  prompt: `You are a Senior Process Analyst at a government technology bureau (ITDB). 
+const suggestStepsFlow = ai.defineFlow(
+  {
+    name: 'suggestStepsFlow',
+    inputSchema: SuggestStepsInputSchema,
+    outputSchema: SuggestStepsOutputSchema,
+  },
+  async (input) => {
+    const response = await ai.generate({
+      model: 'googleai/gemini-1.5-flash',
+      output: { schema: SuggestStepsOutputSchema },
+      prompt: `You are a Senior Process Analyst at a government technology bureau (ITDB). 
 Generate a logical 5-7 step BPMN workflow description in Amharic for the following service title.
 
-TITLE: {{{title}}}
+TITLE: ${input.title}
 
 REQUIREMENTS:
 1. Output exactly 5-7 steps.
@@ -43,19 +45,18 @@ REQUIREMENTS:
 5. If logical, include a decision point using words like 'ውሳኔ' or 'ቢሆን'.
 6. Do not include numbers, bullet points, or conversational filler. Output ONLY the raw process text.
 7. Ensure the steps represent a realistic administrative or technical process.`,
-});
+    });
 
-const suggestStepsFlow = ai.defineFlow(
-  {
-    name: 'suggestStepsFlow',
-    inputSchema: SuggestStepsInputSchema,
-    outputSchema: SuggestStepsOutputSchema,
-  },
-  async (input) => {
-    const { output } = await suggestStepsPrompt(input);
-    if (!output) {
+    if (!response.output) {
       throw new Error('AI failed to generate steps.');
     }
-    return output;
+    return response.output;
   }
 );
+
+/**
+ * Wrapper for the suggestStepsFlow to be used as a Server Action.
+ */
+export async function suggestSteps(input: SuggestStepsInput): Promise<SuggestStepsOutput> {
+  return suggestStepsFlow(input);
+}

@@ -3,7 +3,7 @@ import {googleAI} from '@genkit-ai/google-genai';
 
 /**
  * Genkit initialization for (ወርቁ) Pro.
- * Uses standard environment variables for the Google AI plugin.
+ * Standard configuration for Genkit 1.x.
  */
 export const ai = genkit({
   plugins: [
