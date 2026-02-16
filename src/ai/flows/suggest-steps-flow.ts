@@ -2,7 +2,7 @@
 /**
  * @fileOverview AI Workflow Suggestion Flow
  * 
- * This flow generates logical workflow steps in Amharic based on a process title.
+ * Optimized for BPMN [wrap] and '?' logic.
  */
 
 import { ai } from '@/ai/genkit';
@@ -13,7 +13,7 @@ const SuggestStepsInputSchema = z.object({
 });
 
 const SuggestStepsOutputSchema = z.object({
-  steps: z.string().describe('A logical 5-7 step workflow description in Amharic.'),
+  steps: z.string().describe('The formatted workflow steps.'),
 });
 
 export type SuggestStepsInput = z.infer<typeof SuggestStepsInputSchema>;
@@ -32,31 +32,37 @@ const suggestStepsFlow = ai.defineFlow(
     const response = await ai.generate({
       model: 'googleai/gemini-1.5-flash',
       output: { schema: SuggestStepsOutputSchema },
-      prompt: `You are a Senior Process Analyst at a government technology bureau (ITDB). 
-Generate a logical 5-7 step BPMN workflow description in Amharic for the following service title.
+      prompt: `You are a Senior Process Analyst. Generate a professional BPMN workflow in Amharic.
 
-TITLE: ${input.title}
+SERVICE TITLE: ${input.title}
 
-REQUIREMENTS:
-1. Output exactly 5-7 steps.
-2. Each step should be on a new line.
-3. Use professional Amharic language suitable for government bureaucracy.
-4. ALWAYS include a start step containing 'መጀመሪያ' and an end step containing 'መጨረሻ'.
-5. If logical, include a decision point using words like 'ውሳኔ' or 'ቢሆን'.
-6. Do not include numbers, bullet points, or conversational filler. Output ONLY the raw process text.
-7. Ensure the steps represent a realistic administrative or technical process.`,
+STRICT OUTPUT FORMAT RULES:
+1. Generate exactly 5-7 logical steps in Amharic.
+2. Use '[wrap]' after every 2-3 steps to force a row break in the diagram.
+3. If a step involves a decision or approval, end that step with a '?' to trigger a BPMN Gateway.
+4. Output ONLY the raw steps with [wrap] markers. No numbers, no bullet points.
+
+EXAMPLE FORMAT:
+መጀመሪያ ጥያቄውን መቀበል [wrap] መረጃውን ማጣራት? [wrap] ውሳኔውን ማሳወቅ [wrap] መጨረሻ ፋይሉን መዝጋት
+
+ALWAYS start with 'መጀመሪያ' and end with 'መጨረሻ'.`,
     });
 
     if (!response.output) {
-      throw new Error('AI failed to generate steps.');
+      throw new Error(`AI failed to generate output. Response status: ${response.finishReason || 'Unknown'}`);
     }
     return response.output;
   }
 );
 
 /**
- * Wrapper for the suggestStepsFlow to be used as a Server Action.
+ * Server Action Wrapper
  */
 export async function suggestSteps(input: SuggestStepsInput): Promise<SuggestStepsOutput> {
-  return suggestStepsFlow(input);
+  try {
+    return await suggestStepsFlow(input);
+  } catch (error: any) {
+    console.error("Genkit Flow Error:", error);
+    throw new Error(error.message || "Internal AI Connection Error");
+  }
 }

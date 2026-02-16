@@ -92,11 +92,11 @@ export function BPMNFlowForgeApp() {
         setInput(result.steps);
         toast({ title: "ተሳክቷል", description: "ሂደቶቹ በራስ-ሰር ተፈጥረዋል።" });
       }
-    } catch (error) {
-      console.error("Error suggesting steps:", error);
+    } catch (error: any) {
+      console.error("AI Suggestion Detailed Error:", error);
       toast({ 
-        title: "ስህተት", 
-        description: "ሂደቶቹን ማመንጨት አልተቻለም። እባክዎ እንደገና ይሞክሩ።", 
+        title: "የ AI ስህተት", 
+        description: error.message || "ሂደቶቹን ማመንጨት አልተቻለም። እባክዎ API Key ወይም Quota ያረጋግጡ።", 
         variant: "destructive" 
       });
     } finally {
