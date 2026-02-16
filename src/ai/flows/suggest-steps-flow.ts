@@ -1,8 +1,9 @@
 'use server';
 /**
- * @fileOverview Institutional Workflow Suggestion Flow
+ * @fileOverview Institutional Workflow Suggestion Flow (Dynamic Mock Build)
  * 
- * Provides a simulated professional Amharic response formatted for the BPMN engine.
+ * Provides professional Amharic responses formatted for the BPMN engine
+ * based on the input title.
  */
 
 import { z } from 'zod';
@@ -19,17 +20,34 @@ export type SuggestStepsInput = z.infer<typeof SuggestStepsInputSchema>;
 export type SuggestStepsOutput = z.infer<typeof SuggestStepsOutputSchema>;
 
 /**
- * Server Action Wrapper (Mock Implementation for Stability)
+ * Server Action Wrapper with Dynamic Case-Based Mocking
  */
 export async function suggestSteps(input: SuggestStepsInput): Promise<SuggestStepsOutput> {
   // Simulate a brief network delay
-  await new Promise(resolve => setTimeout(resolve, 500));
+  await new Promise(resolve => setTimeout(resolve, 600));
 
-  // Professional Amharic Institutional Mock Workflow
-  // Strictly uses [wrap] for row breaks and '?' for decision gateways
-  const mockWorkflow = `መጀመሪያ ጥያቄውን መቀበል [wrap] መረጃውን ማጣራት? [wrap] ለተገልጋዩ ምላሽ መስጠት [wrap] መዝገቡን ማረጋገጥ? [wrap] ሂደቱን ማጠናቀቅ [wrap] መጨረሻ ፋይሉን መዝጋት`;
+  const title = input.title.toLowerCase();
+  let workflow = "";
+
+  // Dynamic Logic: Match based on Amharic or English keywords
+  if (title.includes("ንግድ") || title.includes("business") || title.includes("license")) {
+    workflow = `የአገልግሎት ጥያቄ መቀበል [wrap] ሰነዶችን ማጣራት? [wrap] የቢሮ ምርመራ ማካሄድ [wrap] የክፍያ ትእዛዝ ማውጣት [wrap] ክፍያውን ማረጋገጥ? [wrap] የንግድ ፈቃድ ማተም [wrap] ፈቃዱን ለባለቤቱ መስጠት`;
+  } 
+  else if (title.includes("ልደት") || title.includes("birth") || title.includes("certificate")) {
+    workflow = `ማመልከቻውን በሲስተም መመዝገብ [wrap] ደጋፊ ማስረጃዎችን ማረጋገጥ? [wrap] ፎርሙን በሚገባ መሙላት [wrap] ክፍያ መፈጸም [wrap] የምስክር ወረቀቱን ማተም [wrap] መዝገብ ላይ ማረጋገጥ? [wrap] ለተገልጋዩ መስጠት`;
+  }
+  else if (title.includes("መንጃ") || title.includes("driving") || title.includes("driver")) {
+    workflow = `የብቃት ማረጋገጫ ጥያቄ መቀበል [wrap] የጽሁፍ ፈተና መውሰድ? [wrap] የተግባር ፈተና መፈተን? [wrap] ውጤቱን መመዝገብ [wrap] ክፍያ መፈጸም [wrap] መንጃ ፈቃዱን ማተም [wrap] ለተሳታፊው መስጠት`;
+  }
+  else if (title.includes("ፓስፖርት") || title.includes("passport")) {
+    workflow = `የቀጠሮ ሰነድ ማቅረብ [wrap] ዋና መረጃዎችን ማጣራት? [wrap] ፎቶና አሻራ መውሰድ [wrap] የደህንነት ማጣሪያ ማካሄድ? [wrap] ፓስፖርቱን ማተም [wrap] ማድረስ`;
+  }
+  else {
+    // Default Professional Institutional Workflow
+    workflow = `የደብዳቤ ወይም የቃል ጥያቄ መቀበል [wrap] ጉዳዩን ለሚመለከተው መምራት [wrap] ምላሽ ማዘጋጀት? [wrap] በኃላፊ ማስፈረም [wrap] ማህተም ማድረግ [wrap] ለተገልጋዩ ምላሽ መስጠት`;
+  }
 
   return {
-    steps: mockWorkflow
+    steps: workflow
   };
 }
