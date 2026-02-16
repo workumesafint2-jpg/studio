@@ -3,13 +3,11 @@ import {googleAI} from '@genkit-ai/google-genai';
 
 /**
  * Genkit initialization for (ወርቁ) Pro.
- * The API key is hardcoded here to ensure stability in the Electron/Desktop environment.
+ * Uses standard environment variables for the Google AI plugin.
  */
 export const ai = genkit({
   plugins: [
-    googleAI({
-      apiKey: process.env.GOOGLE_GENAI_API_KEY || 'YOUR_GEMINI_API_KEY_HERE',
-    }),
+    googleAI(),
   ],
-  model: 'googleai/gemini-2.5-flash',
+  model: 'googleai/gemini-1.5-flash',
 });

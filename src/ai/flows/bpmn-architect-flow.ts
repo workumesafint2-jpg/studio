@@ -19,19 +19,18 @@ const ArchitectOutputSchema = z.object({
   refinedTitle: z.string().describe('A professional title for the process.'),
 });
 
-export async function architectBPMN(input: z.infer<typeof ArchitectInputSchema>) {
+export type ArchitectInput = z.infer<typeof ArchitectInputSchema>;
+export type ArchitectOutput = z.infer<typeof ArchitectOutputSchema>;
+
+export async function architectBPMN(input: ArchitectInput): Promise<ArchitectOutput> {
   return architectBPMNFlow(input);
 }
 
-const architectBPMNFlow = ai.defineFlow(
-  {
-    name: 'architectBPMNFlow',
-    inputSchema: ArchitectInputSchema,
-    outputSchema: ArchitectOutputSchema,
-  },
-  async (input) => {
-    const { output } = await ai.generate({
-      prompt: `You are a Senior BPMN Architect. Your task is to translate a user's natural language process description into a strictly structured format for a BPMN engine.
+const architectPrompt = ai.definePrompt({
+  name: 'architectPrompt',
+  input: { schema: ArchitectInputSchema },
+  output: { schema: ArchitectOutputSchema },
+  prompt: `You are a Senior BPMN Architect. Your task is to translate a user's natural language process description into a strictly structured format for a BPMN engine.
 
 RULES:
 1. Identify steps and label them with (userTask) for human actions or (serviceTask) for automated/system actions.
@@ -48,15 +47,19 @@ USER DESCRIPTION:
 
 USER TITLE (Optional):
 {{{title}}}`,
-      input: {
-        description: input.description,
-        title: input.title || '',
-      },
-      output: {
-        schema: ArchitectOutputSchema,
-      },
-    });
+});
 
-    return output!;
+const architectBPMNFlow = ai.defineFlow(
+  {
+    name: 'architectBPMNFlow',
+    inputSchema: ArchitectInputSchema,
+    outputSchema: ArchitectOutputSchema,
+  },
+  async (input) => {
+    const { output } = await architectPrompt(input);
+    if (!output) {
+      throw new Error('AI failed to architect the BPMN process.');
+    }
+    return output;
   }
 );
