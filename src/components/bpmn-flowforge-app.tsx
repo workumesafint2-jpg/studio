@@ -72,6 +72,9 @@ export function BPMNFlowForgeApp() {
     }
   };
 
+  /**
+   * AI Auto-Suggest Steps Handler
+   */
   const handleAutoSuggest = async () => {
     if (!title.trim()) {
       toast({ 
@@ -123,7 +126,7 @@ export function BPMNFlowForgeApp() {
           ኢኖቬሽንና ቴክኖሎጂ ልማት ቢሮ
         </h1>
         
-        {/* Custom ITDB Circular Logo */}
+        {/* ITDB Circular Logo */}
         <div className="w-10 h-10 bg-[#1e3a8a] rounded-full flex items-center justify-center shadow-sm mb-2">
           <span className="text-white font-bold text-xs tracking-tighter">ITDB</span>
         </div>
@@ -159,6 +162,7 @@ export function BPMNFlowForgeApp() {
         <div className="w-full lg:w-[380px] flex flex-col gap-4 shrink-0">
           <Card className="flex-1 shadow-sm border border-slate-200 rounded-xl overflow-hidden bg-white">
             <CardContent className="p-6 flex flex-col gap-6 h-full">
+              {/* Process Identification Section */}
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">የአገልግሎቱ/የሂደቱ መለያ</label>
                 <Input
@@ -169,6 +173,8 @@ export function BPMNFlowForgeApp() {
                   style={{ fontFamily: "'Noto Sans Ethiopic', sans-serif" }}
                 />
               </div>
+
+              {/* Technical Description with AI Suggestion Button */}
               <div className="relative flex-1 flex flex-col">
                 <div className="flex justify-between items-end mb-2">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">ቴክኒካዊ መግለጫ</label>
@@ -207,6 +213,8 @@ export function BPMNFlowForgeApp() {
                   </Tooltip>
                 </TooltipProvider>
               </div>
+
+              {/* Action Buttons */}
               <div className="flex gap-3">
                 <Button variant="ghost" className="flex-1 h-11 rounded-lg text-slate-500 hover:text-destructive transition-colors" onClick={() => setInput("")}>
                   <Trash2 className="w-4 h-4 mr-2" /> አፅዳ
