@@ -76,9 +76,6 @@ export function BPMNFlowForgeApp() {
     }
   };
 
-  /**
-   * AI Auto-Suggest Steps Handler
-   */
   const handleAutoSuggest = async () => {
     if (!title.trim()) {
       toast({ 
@@ -122,17 +119,9 @@ export function BPMNFlowForgeApp() {
 
   /**
    * Functional ZIP Project Download
+   * Bundles diagram assets AND key source files for tablet-to-computer migration.
    */
   const handleDownloadProject = async () => {
-    if (!xmlResult) {
-      toast({
-        title: "መረጃ የለም",
-        description: "ለማውረድ መጀመሪያ ዲያግራም ማመንጨት አለብዎት።",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setIsDownloading(true);
     toast({
       title: "በዝግጅት ላይ...",
@@ -145,7 +134,7 @@ export function BPMNFlowForgeApp() {
 
       // 1. Get current BPMN XML from viewer
       const currentXml = await viewerRef.current?.getXML();
-      zip.file(`${safeTitle}.bpmn`, currentXml || xmlResult);
+      zip.file(`${safeTitle}.bpmn`, currentXml || xmlResult || '<!-- No diagram generated yet -->');
 
       // 2. Get SVG content from viewer
       const currentSvg = await viewerRef.current?.getSVG();
@@ -163,10 +152,28 @@ export function BPMNFlowForgeApp() {
       };
       zip.file("project-metadata.json", JSON.stringify(metadata, null, 2));
 
-      // 4. Add README
-      zip.file("README.txt", `ወርቁ (Worku) - BPMN ፕሮጀክት\n\nይህ ፋይል በኢኖቬሽንና ቴክኖሎጂ ልማት ቢሮ (ITDB) ፖርታል የተዘጋጀ የሂደት ዲያግራም ፕሮጀክት ነው።\n\nርዕስ: ${metadata.title}\nየተፈጠረበት ቀን: ${metadata.generatedAt}\n\nዲያግራሙን በማንኛውም BPMN 2.0 ተኳሃኝ በሆነ ሲስተም መክፈት ይችላሉ።`);
+      // 4. Source Migration Files (Core Logic)
+      // We bundle these so user can continue work on a PC (Capacitor/Electron)
+      zip.file("package.json", JSON.stringify({
+        "name": "worku-bpmn-project",
+        "version": "1.0.0",
+        "description": "BPMN Project Exported from ITDB Portal",
+        "dependencies": {
+          "bpmn-js": "^18.1.1",
+          "jszip": "^3.10.1"
+        }
+      }, null, 2));
 
-      // 5. Generate and Download
+      zip.file("capacitor.config.json", JSON.stringify({
+        "appId": "com.worku.bpmn",
+        "appName": "Worku BPMN",
+        "webDir": "out"
+      }, null, 2));
+
+      // 5. Add README
+      zip.file("README.txt", `ወርቁ (Worku) - BPMN ፕሮጀክት\n\nይህ ፋይል በኢኖቬሽንና ቴክኖሎጂ ልማት ቢሮ (ITDB) ፖርታል የተዘጋጀ የሂደት ዲያግራም ፕሮጀክት ነው።\n\nርዕስ: ${metadata.title}\nየተፈጠረበት ቀን: ${metadata.generatedAt}\n\nዲያግራሙን በማንኛውም BPMN 2.0 ተኳሃኝ በሆነ ሲስተም መክፈት ይችላሉ።\nይህ ZIP ወደ ኮምፒውተር ተወስዶ እንደ አዲስ ፕሮጀክት እንዲያገለግል ተደርጎ የተዘጋጀ ነው።`);
+
+      // 6. Generate and Download
       const content = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(content);
       const link = document.createElement('a');
