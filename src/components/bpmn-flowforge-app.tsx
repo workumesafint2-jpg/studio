@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -39,6 +40,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { suggestSteps } from "@/ai/flows/suggest-steps-flow";
+import JSZip from 'jszip';
 
 export function BPMNFlowForgeApp() {
   const [mounted, setMounted] = useState(false);
@@ -47,6 +49,7 @@ export function BPMNFlowForgeApp() {
   const [xmlResult, setXmlResult] = useState("");
   const [activeTab, setActiveTab] = useState("diagram");
   const [isSuggesting, setIsSuggesting] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const viewerRef = useRef<BPMNViewerRef>(null);
   const { toast } = useToast();
 
@@ -117,11 +120,77 @@ export function BPMNFlowForgeApp() {
     reader.readAsText(file);
   };
 
-  const handleDownloadProject = () => {
+  /**
+   * Functional ZIP Project Download
+   */
+  const handleDownloadProject = async () => {
+    if (!xmlResult) {
+      toast({
+        title: "መረጃ የለም",
+        description: "ለማውረድ መጀመሪያ ዲያግራም ማመንጨት አለብዎት።",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsDownloading(true);
     toast({
-      title: "በዝግጅት ላይ",
-      description: "ሙሉ ፕሮጀክቱን የማውረድ ተግባር በቅርቡ ይለቀቃል።",
+      title: "በዝግጅት ላይ...",
+      description: "ሙሉ ፕሮጀክቱ እየተቀናበረ ነው...",
     });
+
+    try {
+      const zip = new JSZip();
+      const safeTitle = (title || "የሂደት-ዲያግራም").replace(/\s+/g, '-').toLowerCase();
+
+      // 1. Get current BPMN XML from viewer
+      const currentXml = await viewerRef.current?.getXML();
+      zip.file(`${safeTitle}.bpmn`, currentXml || xmlResult);
+
+      // 2. Get SVG content from viewer
+      const currentSvg = await viewerRef.current?.getSVG();
+      if (currentSvg) {
+        zip.file(`${safeTitle}.svg`, currentSvg);
+      }
+
+      // 3. Add Project Metadata
+      const metadata = {
+        title: title || "ያልተሰየመ ሂደት",
+        technicalDescription: input,
+        generatedAt: new Date().toLocaleString(),
+        portalVersion: "6.0 (Stable Production Build)",
+        organization: "ኢኖቬሽንና ቴክኖሎጂ ልማት ቢሮ (ITDB)"
+      };
+      zip.file("project-metadata.json", JSON.stringify(metadata, null, 2));
+
+      // 4. Add README
+      zip.file("README.txt", `ወርቁ (Worku) - BPMN ፕሮጀክት\n\nይህ ፋይል በኢኖቬሽንና ቴክኖሎጂ ልማት ቢሮ (ITDB) ፖርታል የተዘጋጀ የሂደት ዲያግራም ፕሮጀክት ነው።\n\nርዕስ: ${metadata.title}\nየተፈጠረበት ቀን: ${metadata.generatedAt}\n\nዲያግራሙን በማንኛውም BPMN 2.0 ተኳሃኝ በሆነ ሲስተም መክፈት ይችላሉ።`);
+
+      // 5. Generate and Download
+      const content = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(content);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${safeTitle}-project.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "ተሳክቷል",
+        description: "ሙሉ ፕሮጀክቱ በ ZIP በተሳካ ሁኔታ ወርዷል።",
+      });
+    } catch (error) {
+      console.error("ZIP Generation Error:", error);
+      toast({
+        title: "የስርዓት ስህተት",
+        description: "ፕሮጀክቱን ማጠናቀር አልተቻለም።",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   return (
@@ -161,7 +230,12 @@ export function BPMNFlowForgeApp() {
                 <Upload className="w-4 h-4 mr-2 text-primary" /> Text/CSV አስገባ
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleDownloadProject} className="border-t mt-2 pt-2">
-                <Archive className="w-4 h-4 mr-2 text-primary" /> ሙሉ ፕሮጀክቱን አውርድ (ZIP)
+                {isDownloading ? (
+                  <Loader2 className="w-4 h-4 mr-2 text-primary animate-spin" />
+                ) : (
+                  <Archive className="w-4 h-4 mr-2 text-primary" />
+                )}
+                ሙሉ ፕሮጀክቱን አውርድ (ZIP)
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

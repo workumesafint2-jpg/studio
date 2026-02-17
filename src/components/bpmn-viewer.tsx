@@ -13,6 +13,8 @@ export interface BPMNViewerRef {
   exportPNG: () => Promise<void>;
   exportSVG: () => Promise<void>;
   exportXML: () => Promise<void>;
+  getXML: () => Promise<string>;
+  getSVG: () => Promise<string>;
 }
 
 export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, title = "Process Diagram" }, ref) => {
@@ -20,6 +22,26 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
   const modelerRef = useRef<any>(null);
 
   useImperativeHandle(ref, () => ({
+    getXML: async () => {
+      if (!modelerRef.current) return '';
+      try {
+        const { xml: resultXml } = await modelerRef.current.saveXML({ format: true });
+        return resultXml;
+      } catch (err) {
+        console.error('Error getting XML:', err);
+        return '';
+      }
+    },
+    getSVG: async () => {
+      if (!modelerRef.current) return '';
+      try {
+        const { svg } = await modelerRef.current.saveSVG();
+        return svg;
+      } catch (err) {
+        console.error('Error getting SVG:', err);
+        return '';
+      }
+    },
     exportXML: async () => {
       if (!modelerRef.current) return;
       try {
