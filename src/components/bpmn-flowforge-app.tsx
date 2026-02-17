@@ -18,7 +18,8 @@ import {
   Info, 
   FileJson,
   Layout,
-  Loader2
+  Loader2,
+  Archive
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -73,7 +74,7 @@ export function BPMNFlowForgeApp() {
   };
 
   /**
-   * AI Auto-Suggest Steps Handler (Mocked for Stability)
+   * AI Auto-Suggest Steps Handler
    */
   const handleAutoSuggest = async () => {
     if (!title.trim()) {
@@ -87,7 +88,6 @@ export function BPMNFlowForgeApp() {
 
     setIsSuggesting(true);
     try {
-      // Using the server action which currently returns a high-fidelity mock
       const result = await suggestSteps({ title });
       if (result && result.steps) {
         setInput(result.steps);
@@ -117,6 +117,13 @@ export function BPMNFlowForgeApp() {
     reader.readAsText(file);
   };
 
+  const handleDownloadProject = () => {
+    toast({
+      title: "በዝግጅት ላይ",
+      description: "ሙሉ ፕሮጀክቱን የማውረድ ተግባር በቅርቡ ይለቀቃል።",
+    });
+  };
+
   return (
     <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-white">
       {/* Institutional Top Bar */}
@@ -143,7 +150,7 @@ export function BPMNFlowForgeApp() {
                 <MoreVertical className="w-5 h-5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 p-2 rounded-xl">
+            <DropdownMenuContent align="end" className="w-64 p-2 rounded-xl">
               <DropdownMenuItem onClick={() => viewerRef.current?.exportXML()}>
                 <FileJson className="w-4 h-4 mr-2 text-primary" /> BPMN (XML) ላክ
               </DropdownMenuItem>
@@ -152,6 +159,9 @@ export function BPMNFlowForgeApp() {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => document.getElementById('file-upload')?.click()}>
                 <Upload className="w-4 h-4 mr-2 text-primary" /> Text/CSV አስገባ
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleDownloadProject} className="border-t mt-2 pt-2">
+                <Archive className="w-4 h-4 mr-2 text-primary" /> ሙሉ ፕሮጀክቱን አውርድ (ZIP)
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
