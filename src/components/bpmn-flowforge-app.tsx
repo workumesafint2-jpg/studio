@@ -26,7 +26,8 @@ import {
   ShieldCheck,
   CheckCircle2,
   FileSearch,
-  ChevronDown
+  ChevronDown,
+  Zap
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -102,6 +103,7 @@ export function BPMNFlowForgeApp() {
       };
       
       setVault(prev => {
+        // Prevent duplicate entries for exact same title/description
         if (prev.some(item => item.title === newDoc.title && item.description === newDoc.description)) return prev;
         return [newDoc, ...prev];
       });
@@ -147,12 +149,15 @@ export function BPMNFlowForgeApp() {
       const zip = new JSZip();
       const safeTitle = (title || "itdb-bureau-project").replace(/\s+/g, '-').toLowerCase();
 
+      // Get current content from viewer or state
       const currentXml = await viewerRef.current?.getXML() || xmlResult;
       const currentSvg = await viewerRef.current?.getSVG();
       
+      // 1. Core BPMN Assets
       if (currentXml) zip.file(`${safeTitle}.bpmn`, currentXml);
       if (currentSvg) zip.file(`${safeTitle}.svg`, currentSvg);
 
+      // 2. Project Configs for Deployment
       zip.file("package.json", JSON.stringify({
         name: "itdb-management-system",
         version: "1.0.0",
@@ -165,6 +170,7 @@ export function BPMNFlowForgeApp() {
         webDir: "out"
       }, null, 2));
 
+      // 3. Vault Manifest
       zip.file("vault-manifest.json", JSON.stringify(vault, null, 2));
 
       const content = await zip.generateAsync({ type: "blob" });
@@ -251,7 +257,7 @@ export function BPMNFlowForgeApp() {
 
               <div className="relative flex-1 flex flex-col min-h-0">
                 <div className="flex justify-between items-end mb-1.5">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">ቴክኒካዊ መግለጫ</label>
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">የአገልግሎቱን ፍሰት ያስገቡ</label>
                   {title.trim() && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -284,7 +290,7 @@ export function BPMNFlowForgeApp() {
                 <Textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="የሪፎርም ሂደቱን ዝርዝር እዚህ ይግለጹ..."
+                  placeholder="የሂደቱን ዝርዝር እዚህ ይግለጹ..."
                   className="flex-1 resize-none bg-slate-50 border-slate-100 rounded-lg p-3 text-xs font-medium leading-relaxed"
                 />
               </div>
@@ -294,7 +300,7 @@ export function BPMNFlowForgeApp() {
                   <Trash2 className="w-3.5 h-3.5 mr-2" /> አፅዳ
                 </Button>
                 <Button className="flex-1 h-10 rounded-lg bg-[#1e3a8a] text-white shadow-md hover:shadow-lg transition-all" onClick={handleGenerate}>
-                  <ShieldCheck className="w-3.5 h-3.5 mr-2" /> ሪፎርሙን አጽድቅ
+                  <Zap className="w-3.5 h-3.5 mr-2" /> አመንጭ
                 </Button>
               </div>
             </CardContent>
