@@ -166,13 +166,12 @@ export function BPMNFlowForgeApp() {
       }, null, 2));
 
       zip.file("vault-manifest.json", JSON.stringify(vault, null, 2));
-      zip.file("README.txt", `ITDB Bureau Management System\n\nGenerated: ${new Date().toLocaleString()}\nApproved Documents: ${vault.length}`);
 
       const content = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(content);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${safeTitle}-full-system-export.zip`;
+      link.download = `${safeTitle}-full-project.zip`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -190,26 +189,26 @@ export function BPMNFlowForgeApp() {
 
   return (
     <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-white">
-      <div className="h-1.5 w-full bg-[#1e3a8a]" />
+      <div className="h-1 w-full bg-[#1e3a8a]" />
       
-      <header className="flex flex-col items-center justify-center py-6 px-8 bg-white border-b border-slate-100 shrink-0 z-10 relative text-center">
-        <p className="text-[14px] font-bold text-[#1e3a8a] mb-2 tracking-widest uppercase" style={{ fontFamily: "'Noto Sans Ethiopic', sans-serif" }}>
+      <header className="flex flex-col items-center justify-center py-2 px-8 bg-white border-b border-slate-100 shrink-0 z-10 relative text-center">
+        <p className="text-[11px] font-bold text-[#1e3a8a] mb-1 tracking-widest uppercase" style={{ fontFamily: "'Noto Sans Ethiopic', sans-serif" }}>
           ኢኖቬሽንና ቴክኖሎጂ ልማት ቢሮ
         </p>
 
-        <div className="w-10 h-10 bg-[#1e3a8a] rounded-full flex items-center justify-center shadow-sm mb-2 ring-4 ring-slate-50">
-          <span className="text-white font-black text-[10px] tracking-tighter">ITDB</span>
+        <div className="w-8 h-8 bg-[#1e3a8a] rounded-full flex items-center justify-center shadow-sm mb-1">
+          <span className="text-white font-black text-[8px] tracking-tighter">ITDB</span>
         </div>
 
-        <h1 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em] font-headline">
+        <h1 className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.4em] font-headline">
           Document Management System
         </h1>
 
         <div className="absolute right-8 top-1/2 -translate-y-1/2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 text-slate-300 hover:text-primary transition-colors">
-                <MoreVertical className="w-5 h-5" />
+              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 text-slate-300 hover:text-primary transition-colors">
+                <MoreVertical className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64 p-2 rounded-xl shadow-xl border-slate-100">
@@ -231,28 +230,28 @@ export function BPMNFlowForgeApp() {
         </div>
       </header>
 
-      <main className="flex flex-col lg:flex-row flex-1 overflow-hidden p-6 gap-6 bg-slate-50/50">
-        <div className="w-full lg:w-[400px] flex flex-col gap-4 shrink-0">
-          <Card className="flex-1 shadow-sm border border-slate-200 rounded-2xl overflow-hidden bg-white">
-            <CardContent className="p-6 flex flex-col gap-6 h-full">
-              <div className="space-y-2">
+      <main className="flex flex-col lg:flex-row flex-1 overflow-hidden p-4 gap-4 bg-slate-50/50">
+        <div className="w-full lg:w-[350px] flex flex-col gap-4 shrink-0">
+          <Card className="flex-1 shadow-sm border border-slate-200 rounded-xl overflow-hidden bg-white">
+            <CardContent className="p-4 flex flex-col gap-4 h-full">
+              <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">የአገልግሎት ስም</label>
-                  <span className="text-[9px] font-mono text-primary bg-primary/5 px-2 py-0.5 rounded border border-primary/10">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">የአገልግሎት ስም</label>
+                  <span className="text-[8px] font-mono text-primary bg-primary/5 px-2 py-0.5 rounded border border-primary/10">
                     ID: {generateSystemCode()}
                   </span>
                 </div>
                 <Input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="የአገልግሎቱን ስም እዚህ ያስገቡ..."
-                  className="h-11 rounded-xl bg-slate-50 border-slate-100 focus:ring-primary text-sm font-medium"
+                  placeholder="የአገልግሎቱን ስም ያስገቡ..."
+                  className="h-10 rounded-lg bg-slate-50 border-slate-100 focus:ring-primary text-sm font-medium"
                 />
               </div>
 
-              <div className="relative flex-1 flex flex-col">
-                <div className="flex justify-between items-end mb-2">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ቴክኒካዊ መግለጫ</label>
+              <div className="relative flex-1 flex flex-col min-h-0">
+                <div className="flex justify-between items-end mb-1.5">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">ቴክኒካዊ መግለጫ</label>
                   {title.trim() && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -260,10 +259,10 @@ export function BPMNFlowForgeApp() {
                           variant="ghost" 
                           size="sm" 
                           disabled={isSuggesting}
-                          className="h-7 px-2 text-[9px] text-[#1e3a8a] font-bold border border-[#1e3a8a]/20 rounded-lg hover:bg-primary/5"
+                          className="h-6 px-2 text-[8px] text-[#1e3a8a] font-bold border border-[#1e3a8a]/20 rounded hover:bg-primary/5"
                         >
                           {isSuggesting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3 mr-1" />}
-                          ወርቁ ነኝ ዝርዝሩን ላዘጋጅልህ? <ChevronDown className="w-2 h-2 ml-1" />
+                          ወርቁ ነኝ? <ChevronDown className="w-2 h-2 ml-1" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-56 p-2 rounded-xl shadow-lg border-slate-100">
@@ -286,16 +285,16 @@ export function BPMNFlowForgeApp() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="የሪፎርም ሂደቱን ዝርዝር እዚህ ይግለጹ..."
-                  className="flex-1 resize-none bg-slate-50 border-slate-100 rounded-xl p-4 text-xs font-medium leading-relaxed"
+                  className="flex-1 resize-none bg-slate-50 border-slate-100 rounded-lg p-3 text-xs font-medium leading-relaxed"
                 />
               </div>
 
-              <div className="flex gap-3">
-                <Button variant="outline" className="flex-1 h-11 rounded-xl text-slate-400 hover:text-red-500 transition-colors" onClick={() => { setInput(""); setTitle(""); }}>
-                  <Trash2 className="w-4 h-4 mr-2" /> አፅዳ
+              <div className="flex gap-2 shrink-0">
+                <Button variant="outline" className="flex-1 h-10 rounded-lg text-slate-400 hover:text-red-500 transition-colors" onClick={() => { setInput(""); setTitle(""); }}>
+                  <Trash2 className="w-3.5 h-3.5 mr-2" /> አፅዳ
                 </Button>
-                <Button className="flex-1 h-11 rounded-xl bg-[#1e3a8a] text-white shadow-md hover:shadow-lg transition-all" onClick={handleGenerate}>
-                  <ShieldCheck className="w-4 h-4 mr-2" /> ሪፎርሙን አጽድቅ
+                <Button className="flex-1 h-10 rounded-lg bg-[#1e3a8a] text-white shadow-md hover:shadow-lg transition-all" onClick={handleGenerate}>
+                  <ShieldCheck className="w-3.5 h-3.5 mr-2" /> ሪፎርሙን አጽድቅ
                 </Button>
               </div>
             </CardContent>
@@ -303,129 +302,104 @@ export function BPMNFlowForgeApp() {
         </div>
 
         <div className="flex-1 flex flex-col gap-4 min-h-0">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-            <div className="flex justify-between items-center bg-white px-5 py-2.5 rounded-2xl border border-slate-200 shadow-sm mb-4">
-              <TabsList className="bg-slate-50 h-10 p-1.5 rounded-xl border border-slate-100">
-                <TabsTrigger value="diagram" className="text-xs px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+            <div className="flex justify-between items-center bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm mb-2 shrink-0">
+              <TabsList className="bg-slate-50 h-9 p-1 rounded-lg border border-slate-100">
+                <TabsTrigger value="diagram" className="text-xs px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">
                   <Eye className="w-3.5 h-3.5 mr-2" /> ዲያግራም
                 </TabsTrigger>
-                <TabsTrigger value="vault" className="text-xs px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg">
-                  <Database className="w-3.5 h-3.5 mr-2" /> የቢሮ ቮልት (DMS)
+                <TabsTrigger value="vault" className="text-xs px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">
+                  <Database className="w-3.5 h-3.5 mr-2" /> የቢሮ ቮልት
                 </TabsTrigger>
-                <TabsTrigger value="dashboard" className="text-xs px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg">
-                  <BarChart3 className="w-3.5 h-3.5 mr-2" /> ዳሽቦርድ (KPI)
+                <TabsTrigger value="dashboard" className="text-xs px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">
+                  <BarChart3 className="w-3.5 h-3.5 mr-2" /> ዳሽቦርድ
                 </TabsTrigger>
               </TabsList>
               
               <div className="flex gap-2">
                 {activeTab === "diagram" && xmlResult && (
-                  <Button variant="default" size="sm" className="h-9 bg-green-600 hover:bg-green-700 text-white rounded-xl px-4 shadow-sm" onClick={() => viewerRef.current?.exportPNG()}>
-                    <CheckCircle2 className="w-3.5 h-3.5 mr-2" /> እንደ ጸደቀ ሰነድ አውርድ
+                  <Button variant="default" size="sm" className="h-8 bg-green-600 hover:bg-green-700 text-white rounded-lg px-3 shadow-sm text-[10px]" onClick={() => viewerRef.current?.exportPNG()}>
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-2" /> እንደ ጸደቀ አውርድ
                   </Button>
                 )}
               </div>
             </div>
 
-            <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden min-h-0 relative">
-              <TabsContent value="diagram" className="h-full m-0 p-0">
+            <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden min-h-0 relative">
+              <TabsContent value="diagram" className="h-full m-0 p-0 overflow-hidden">
                 {xmlResult ? (
                   <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
                 ) : (
-                  <div className="h-full flex flex-col items-center justify-center text-slate-300 gap-4">
-                    <Layout className="w-16 h-16 opacity-5" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-30">የጸደቀ ሪፎርም የለም</span>
+                  <div className="h-full flex flex-col items-center justify-center text-slate-300 gap-3">
+                    <Layout className="w-12 h-12 opacity-5" />
+                    <span className="text-[9px] font-bold uppercase tracking-widest opacity-30">የጸደቀ ሪፎርም የለም</span>
                   </div>
                 )}
               </TabsContent>
 
-              <TabsContent value="vault" className="h-full m-0 p-8">
+              <TabsContent value="vault" className="h-full m-0 p-6">
                 <ScrollArea className="h-full pr-4">
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-sm font-bold text-slate-700 uppercase tracking-widest flex items-center">
-                      <Database className="w-4 h-4 mr-2 text-primary" /> የቢሮው ሰነዶች መዝገብ
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center">
+                      <Database className="w-3.5 h-3.5 mr-2 text-primary" /> የቢሮው ሰነዶች መዝገብ
                     </h2>
-                    <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
+                    <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
                       ጠቅላላ ሰነዶች: {vault.length}
                     </span>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {vault.length > 0 ? vault.map((doc) => (
-                      <Card key={doc.id} className="border-slate-100 shadow-none hover:border-primary/20 hover:shadow-md transition-all cursor-pointer group rounded-xl">
-                        <CardHeader className="p-4 pb-2">
+                      <Card key={doc.id} className="border-slate-100 shadow-none hover:border-primary/20 hover:shadow-md transition-all cursor-pointer group rounded-lg">
+                        <CardHeader className="p-3 pb-1">
                           <div className="flex justify-between items-start">
-                            <span className="text-[9px] font-mono text-primary font-bold bg-primary/5 px-2 py-0.5 rounded">{doc.systemCode}</span>
-                            <span className="text-[9px] text-slate-400">{doc.date}</span>
+                            <span className="text-[8px] font-mono text-primary font-bold bg-primary/5 px-2 py-0.5 rounded">{doc.systemCode}</span>
+                            <span className="text-[8px] text-slate-400">{doc.date}</span>
                           </div>
-                          <CardTitle className="text-sm font-bold text-slate-700 mt-2 group-hover:text-primary transition-colors">{doc.title}</CardTitle>
+                          <CardTitle className="text-xs font-bold text-slate-700 mt-1.5 group-hover:text-primary transition-colors">{doc.title}</CardTitle>
                         </CardHeader>
-                        <CardContent className="p-4 pt-0">
-                          <p className="text-[10px] text-slate-500 line-clamp-2 mb-4 leading-relaxed">{doc.description}</p>
+                        <CardContent className="p-3 pt-0">
+                          <p className="text-[9px] text-slate-500 line-clamp-2 mb-3 leading-relaxed">{doc.description}</p>
                           <div className="flex gap-2">
-                            <Button variant="ghost" size="sm" className="h-8 text-[10px] px-3 text-primary bg-primary/5 hover:bg-primary/10 rounded-lg" onClick={() => { setXmlResult(doc.xml); setTitle(doc.title); setInput(doc.description); setActiveTab("diagram"); }}>
-                              <FileSearch className="w-3.5 h-3.5 mr-1.5" /> ክፈት
-                            </Button>
-                            <Button variant="ghost" size="sm" className="h-8 text-[10px] px-3 text-slate-400 hover:text-slate-600 rounded-lg">
-                              <FileText className="w-3.5 h-3.5 mr-1.5" /> ሪፖርት
+                            <Button variant="ghost" size="sm" className="h-7 text-[9px] px-2 text-primary bg-primary/5 hover:bg-primary/10 rounded" onClick={() => { setXmlResult(doc.xml); setTitle(doc.title); setInput(doc.description); setActiveTab("diagram"); }}>
+                              <FileSearch className="w-3 h-3 mr-1" /> ክፈት
                             </Button>
                           </div>
                         </CardContent>
                       </Card>
                     )) : (
-                      <div className="col-span-full h-64 flex flex-col items-center justify-center border-2 border-dashed border-slate-100 rounded-3xl bg-slate-50/50">
-                        <Archive className="w-12 h-12 text-slate-200 mb-3" />
-                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">በቮልት ውስጥ ምንም ሰነድ የለም</span>
+                      <div className="col-span-full h-48 flex flex-col items-center justify-center border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50/50">
+                        <Archive className="w-10 h-10 text-slate-200 mb-2" />
+                        <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">በቮልት ውስጥ ምንም ሰነድ የለም</span>
                       </div>
                     )}
                   </div>
                 </ScrollArea>
               </TabsContent>
 
-              <TabsContent value="dashboard" className="h-full m-0 p-10">
-                <div className="max-w-3xl mx-auto space-y-10">
-                  <div className="text-center space-y-2">
-                    <h3 className="text-sm font-bold text-slate-700 uppercase tracking-[0.2em]">የሪፎርም አፈጻጸም ደረጃ (KPI)</h3>
-                    <p className="text-[10px] text-slate-400 font-medium">ቢሮው ያከናወናቸው እና ያጸደቃቸው የሂደት ማሻሻያዎች መገለጫ</p>
+              <TabsContent value="dashboard" className="h-full m-0 p-8">
+                <div className="max-w-2xl mx-auto space-y-8">
+                  <div className="text-center space-y-1">
+                    <h3 className="text-xs font-bold text-slate-700 uppercase tracking-[0.2em]">የሪፎርም አፈጻጸም ደረጃ (KPI)</h3>
+                    <p className="text-[9px] text-slate-400 font-medium">ቢሮው ያጸደቃቸው የሂደት ማሻሻያዎች መገለጫ</p>
                   </div>
 
-                  <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 shadow-sm">
-                    <div className="flex justify-between items-end mb-6">
+                  <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 shadow-sm">
+                    <div className="flex justify-between items-end mb-4">
                       <div className="space-y-1">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">የጸደቁ ሂደቶች</span>
-                        <div className="text-3xl font-black text-[#1e3a8a]">{vault.length}</div>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase">የጸደቁ ሂደቶች</span>
+                        <div className="text-2xl font-black text-[#1e3a8a]">{vault.length}</div>
                       </div>
                       <div className="text-right">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">ጠቅላላ ውጤት</span>
-                        <div className="text-4xl font-black text-primary">{kpiValue}%</div>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase">ጠቅላላ ውጤት</span>
+                        <div className="text-3xl font-black text-primary">{kpiValue}%</div>
                       </div>
                     </div>
-                    <Progress value={kpiValue} className="h-4 bg-slate-200 rounded-full overflow-hidden" />
-                    <div className="mt-8 flex justify-between items-center text-[10px] font-bold uppercase text-slate-400">
+                    <Progress value={kpiValue} className="h-3 bg-slate-200 rounded-full overflow-hidden" />
+                    <div className="mt-4 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400">
                       <span>0% ጅማሮ</span>
-                      <span>50% ስኬት</span>
-                      <span>100% ሪፎርም ተጠናቋል</span>
+                      <span>100% ተጠናቋል</span>
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <Card className="bg-primary/5 border-none shadow-none p-6 rounded-2xl flex items-center gap-5">
-                      <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-white">
-                        <Archive className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-bold text-primary/60 uppercase block mb-0.5">ጠቅላላ ሪፎርሞች</span>
-                        <span className="text-2xl font-black text-primary">{vault.length}</span>
-                      </div>
-                    </Card>
-                    <Card className="bg-green-50 border-none shadow-none p-6 rounded-2xl flex items-center gap-5">
-                      <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center text-white">
-                        <ShieldCheck className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-bold text-green-600/60 uppercase block mb-0.5">ገባሪ ስራዎች</span>
-                        <span className="text-2xl font-black text-green-600">{vault.length > 0 ? Math.ceil(vault.length * 0.9) : 0}</span>
-                      </div>
-                    </Card>
                   </div>
                 </div>
               </TabsContent>
@@ -434,14 +408,13 @@ export function BPMNFlowForgeApp() {
         </div>
       </main>
       
-      <footer className="px-8 py-4 bg-white border-t border-slate-100 flex justify-between items-center text-[9px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
-        <div className="flex gap-8">
-          <span>ITDB DMS Portal v8.5</span>
+      <footer className="px-8 py-2 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
+        <div className="flex gap-6">
+          <span>ITDB Portal v9.0</span>
           <span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span>
         </div>
-        <div className="flex gap-6 items-center">
-          <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div> DMS System Live</span>
-          <span className="bg-slate-50 px-3 py-1 rounded-full border border-slate-100">Institutional Access Only</span>
+        <div className="flex gap-4 items-center">
+          <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div> System Live</span>
         </div>
       </footer>
     </div>
