@@ -49,11 +49,12 @@ const suggestStepsFlow = ai.defineFlow(
       TASK: Generate a professional Amharic workflow for a "${docTypeLabel}" titled "${input.title}".
       
       STRICT COMMAND MODELER RULES:
-      1. Always start with: "ወርቁ ነኝ ዝርዝሩን ላዘጋጅልህ [wrap] "
+      1. Always start with: "Start [wrap]"
       2. Use [wrap] after EVERY action step.
       3. Use "?" for decision points (e.g., "ተቀባይነት አግኝቷል? [wrap]").
       4. Ensure a logical horizontal sequence suitable for BPMN rendering.
       5. Use formal, technical Amharic terminology.
+      6. End strictly with: "[wrap] End"
       
       If the user's title is similar to any existing bureau services, maintain that institutional style.`,
     });
