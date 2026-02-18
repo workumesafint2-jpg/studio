@@ -192,16 +192,18 @@ export function BPMNFlowForgeApp() {
     <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-white">
       <div className="h-2 w-full bg-[#1e3a8a]" />
       
-      <header className="flex flex-col items-center justify-center py-4 px-8 bg-white border-b border-slate-100 shrink-0 z-10 relative text-center">
-        <h1 className="text-xl font-bold text-[#1e3a8a] mb-1" style={{ fontFamily: "'Noto Sans Ethiopic', sans-serif" }}>
+      <header className="flex flex-col items-center justify-center py-6 px-8 bg-white border-b border-slate-100 shrink-0 z-10 relative text-center">
+        <p className="text-sm font-bold text-[#1e3a8a]/80 mb-3 tracking-wide" style={{ fontFamily: "'Noto Sans Ethiopic', sans-serif" }}>
           ኢኖቬሽንና ቴክኖሎጂ ልማት ቢሮ
-        </h1>
-        <div className="flex items-center gap-2 mb-1">
-          <div className="w-8 h-8 bg-[#1e3a8a] rounded-full flex items-center justify-center shadow-sm">
-            <span className="text-white font-bold text-[8px] tracking-tighter">ITDB</span>
-          </div>
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Bureau Management System</span>
+        </p>
+
+        <div className="w-12 h-12 bg-[#1e3a8a] rounded-full flex items-center justify-center shadow-md mb-3 ring-4 ring-slate-50">
+          <span className="text-white font-black text-[12px] tracking-tighter">ITDB</span>
         </div>
+
+        <h1 className="text-lg font-bold text-slate-700 uppercase tracking-[0.2em] font-headline">
+          Document Management System
+        </h1>
 
         <div className="absolute right-8 top-1/2 -translate-y-1/2">
           <DropdownMenu>
@@ -404,7 +406,7 @@ export function BPMNFlowForgeApp() {
       
       <footer className="px-8 py-3 bg-white border-t border-slate-200 flex justify-between items-center text-[9px] font-bold uppercase text-slate-400 tracking-wider shrink-0">
         <div className="flex gap-6">
-          <span>ITDB Bureau Management System v7.0</span>
+          <span>ITDB Document Management System v7.0</span>
           <span className="text-[#1e3a8a]/60">© 2024 የኢኖቬሽንና ቴክኖሎጂ ልማት ቢሮ</span>
         </div>
         <div className="flex gap-4">
