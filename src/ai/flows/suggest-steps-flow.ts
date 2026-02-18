@@ -1,11 +1,12 @@
 'use server';
 /**
  * @fileOverview Smart Institutional Workflow & Document Generator
- * Optimized for (ወርቁ) Command-based Modeler Logic.
+ * Integrated with Bureau Service Registry for contextual recognition.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { findServiceInRegistry } from '@/lib/services-registry';
 
 const SuggestStepsInputSchema = z.object({
   title: z.string().describe('The title of the service or process.'),
@@ -26,6 +27,15 @@ const suggestStepsFlow = ai.defineFlow(
     outputSchema: SuggestStepsOutputSchema,
   },
   async (input) => {
+    // 1. Contextual Recognition: Check Knowledge Base first
+    if (input.docType === 'diagram') {
+      const predefinedWorkflow = findServiceInRegistry(input.title);
+      if (predefinedWorkflow) {
+        return { steps: predefinedWorkflow };
+      }
+    }
+
+    // 2. Fallback: AI Generation if not in registry
     const docTypeLabel = {
       reform: 'የሪፎርም ሰነድ (Reform Paper)',
       report: 'ቴክኒካዊ ሪፖርት (Technical Report)',
@@ -34,20 +44,18 @@ const suggestStepsFlow = ai.defineFlow(
     }[input.docType || 'reform'];
 
     const response = await ai.generate({
-      prompt: `You are 'ወርቁ' (Worku), a Senior Institutional Process Architect for the ITDB (Innovation and Technology Development Bureau).
+      prompt: `You are 'ወርቁ' (Worku), a Senior Institutional Process Architect.
       
       TASK: Generate a professional Amharic workflow for a "${docTypeLabel}" titled "${input.title}".
       
       STRICT COMMAND MODELER RULES:
-      1. Always start the response with exactly: "ወርቁ ነኝ ዝርዝሩን ላዘጋጅልህ/ልሽ [wrap] "
-      2. Use [wrap] at the end of every step to indicate a new line/row in the BPMN diagram. This is CRITICAL for the modeler to render properly.
-      3. For decision points or reviews, use a question mark "?" (e.g., "ሰነዱ ተሟልቷል? [wrap]").
-      4. Ensure the steps follow a logical, professional horizontal sequence.
-      5. Use high-level, technical Amharic terminology suitable for the Bureau.
-      6. For "diagram" type, focus purely on specific actionable commands that translate well to a flowchart (e.g. Start -> Task -> Decision -> End).
+      1. Always start with: "ወርቁ ነኝ ዝርዝሩን ላዘጋጅልህ [wrap] "
+      2. Use [wrap] after EVERY action step.
+      3. Use "?" for decision points (e.g., "ተቀባይነት አግኝቷል? [wrap]").
+      4. Ensure a logical horizontal sequence suitable for BPMN rendering.
+      5. Use formal, technical Amharic terminology.
       
-      FORMAT EXAMPLE:
-      ወርቁ ነኝ ዝርዝሩን ላዘጋጅልህ/ልሽ [wrap] ማመልከቻ መቀበል [wrap] ሰነዱ ተሟልቷል? [wrap] ክፍያ መፈጸም [wrap] ፈቃድ መስጠት [wrap] ማጠናቀቅ`,
+      If the user's title is similar to any existing bureau services, maintain that institutional style.`,
     });
 
     return {
