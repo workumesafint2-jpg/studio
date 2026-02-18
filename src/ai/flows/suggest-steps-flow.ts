@@ -28,11 +28,10 @@ const suggestStepsFlow = ai.defineFlow(
   },
   async (input) => {
     // 1. Contextual Recognition: Check Knowledge Base first
-    if (input.docType === 'diagram') {
-      const predefinedWorkflow = findServiceInRegistry(input.title);
-      if (predefinedWorkflow) {
-        return { steps: predefinedWorkflow };
-      }
+    // If it's a diagram request or general service name, check our local registry
+    const predefinedWorkflow = findServiceInRegistry(input.title);
+    if (predefinedWorkflow) {
+      return { steps: predefinedWorkflow };
     }
 
     // 2. Fallback: AI Generation if not in registry
@@ -44,7 +43,7 @@ const suggestStepsFlow = ai.defineFlow(
     }[input.docType || 'reform'];
 
     const response = await ai.generate({
-      prompt: `You are 'ወርቁ' (Worku), a Senior Institutional Process Architect.
+      prompt: `You are 'ወርቁ' (Worku), a Senior Institutional Process Architect for the Innovation and Technology Development Bureau.
       
       TASK: Generate a professional Amharic workflow for a "${docTypeLabel}" titled "${input.title}".
       
@@ -56,7 +55,7 @@ const suggestStepsFlow = ai.defineFlow(
       5. Use formal, technical Amharic terminology.
       6. End strictly with: "[wrap] End"
       
-      If the user's title is similar to any existing bureau services, maintain that institutional style.`,
+      If the user's title implies a bureau service, generate steps that follow a standard governmental institutional logic.`,
     });
 
     return {
