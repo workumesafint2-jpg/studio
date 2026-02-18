@@ -44,7 +44,7 @@ const suggestStepsFlow = ai.defineFlow(
       3. For decision points or reviews, use a question mark "?" (e.g., "ሰነዱ ተሟልቷል? [wrap]").
       4. Ensure the steps follow a logical, professional horizontal sequence.
       5. Use high-level, technical Amharic terminology suitable for the Bureau.
-      6. For "diagram" type, focus purely on specific actionable commands that translate well to a flowchart.
+      6. For "diagram" type, focus purely on specific actionable commands that translate well to a flowchart (e.g. Start -> Task -> Decision -> End).
       
       FORMAT EXAMPLE:
       ወርቁ ነኝ ዝርዝሩን ላዘጋጅልህ/ልሽ [wrap] ማመልከቻ መቀበል [wrap] ሰነዱ ተሟልቷል? [wrap] ክፍያ መፈጸም [wrap] ፈቃድ መስጠት [wrap] ማጠናቀቅ`,
