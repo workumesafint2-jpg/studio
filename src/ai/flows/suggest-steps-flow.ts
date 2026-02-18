@@ -1,6 +1,7 @@
 'use server';
 /**
  * @fileOverview Smart Institutional Workflow & Document Generator
+ * Optimized for (ወርቁ) Command-based Modeler Logic.
  */
 
 import { ai } from '@/ai/genkit';
@@ -8,7 +9,7 @@ import { z } from 'genkit';
 
 const SuggestStepsInputSchema = z.object({
   title: z.string().describe('The title of the service or process.'),
-  docType: z.enum(['reform', 'report', 'guideline']).optional().default('reform').describe('The type of document to generate.'),
+  docType: z.enum(['reform', 'report', 'guideline', 'diagram']).optional().default('reform').describe('The type of content to generate.'),
 });
 
 const SuggestStepsOutputSchema = z.object({
@@ -28,7 +29,8 @@ const suggestStepsFlow = ai.defineFlow(
     const docTypeLabel = {
       reform: 'የሪፎርም ሰነድ (Reform Paper)',
       report: 'ቴክኒካዊ ሪፖርት (Technical Report)',
-      guideline: 'የአሰራር መመሪያ (Operational Guideline)'
+      guideline: 'የአሰራር መመሪያ (Operational Guideline)',
+      diagram: 'የዲያግራም ዝርዝር ተግባር (Technical Diagram Workflow)'
     }[input.docType || 'reform'];
 
     const response = await ai.generate({
@@ -36,12 +38,13 @@ const suggestStepsFlow = ai.defineFlow(
       
       TASK: Generate a professional Amharic workflow for a "${docTypeLabel}" titled "${input.title}".
       
-      STRICT RULES:
+      STRICT COMMAND MODELER RULES:
       1. Always start the response with exactly: "ወርቁ ነኝ ዝርዝሩን ላዘጋጅልህ/ልሽ [wrap] "
-      2. Use [wrap] at the end of every step to indicate a new line/row in the BPMN diagram.
+      2. Use [wrap] at the end of every step to indicate a new line/row in the BPMN diagram. This is CRITICAL for the modeler to render properly.
       3. For decision points or reviews, use a question mark "?" (e.g., "ሰነዱ ተሟልቷል? [wrap]").
-      4. Ensure the steps follow a logical horizontal sequence suitable for a BPMN diagram.
-      5. Use high-level, professional Amharic terminology.
+      4. Ensure the steps follow a logical, professional horizontal sequence.
+      5. Use high-level, technical Amharic terminology suitable for the Bureau.
+      6. For "diagram" type, focus purely on specific actionable commands that translate well to a flowchart.
       
       FORMAT EXAMPLE:
       ወርቁ ነኝ ዝርዝሩን ላዘጋጅልህ/ልሽ [wrap] ማመልከቻ መቀበል [wrap] ሰነዱ ተሟልቷል? [wrap] ክፍያ መፈጸም [wrap] ፈቃድ መስጠት [wrap] ማጠናቀቅ`,
