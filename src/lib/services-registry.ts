@@ -1,6 +1,6 @@
 /**
  * @fileOverview ITDB Bureau Service Registry (Knowledge Base)
- * Contains predefined 'Command Modeler' workflows for institutional services.
+ * Contains 50+ predefined 'Command Modeler' workflows for institutional services.
  * Structured for "Start -> [Steps] -> End" logic.
  */
 
