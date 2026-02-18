@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -40,12 +39,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { suggestSteps } from "@/ai/flows/suggest-steps-flow";
 import JSZip from 'jszip';
 
@@ -77,7 +70,7 @@ export function BPMNFlowForgeApp() {
   if (!mounted) return null;
 
   const generateSystemCode = () => {
-    const year = new Date().getFullYear();
+    const year = 2026;
     const count = (vault.length + 1).toString().padStart(3, '0');
     return `ITDB-${year}-${count}`;
   };
@@ -96,7 +89,6 @@ export function BPMNFlowForgeApp() {
       setXmlResult(result);
       setActiveTab("diagram");
       
-      // Auto-Vault Logic
       const newDoc: VaultItem = {
         id: Math.random().toString(36).substr(2, 9),
         systemCode: generateSystemCode(),
@@ -105,11 +97,15 @@ export function BPMNFlowForgeApp() {
         date: new Date().toLocaleDateString('am-ET'),
         xml: result
       };
-      setVault(prev => [newDoc, ...prev]);
+      
+      setVault(prev => {
+        if (prev.some(item => item.title === newDoc.title && item.description === newDoc.description)) return prev;
+        return [newDoc, ...prev];
+      });
 
       toast({ 
         title: "ተሳክቷል", 
-        description: `BPMN ዲያግራም ተፈጥሯል እና በቮልት (Vault) ውስጥ በኮድ ${newDoc.systemCode} ተቀምጧል።` 
+        description: `ሪፎርሙ በቮልት (Vault) ውስጥ በኮድ ${newDoc.systemCode} ጸድቋል።` 
       });
     }
   };
@@ -129,13 +125,12 @@ export function BPMNFlowForgeApp() {
       const result = await suggestSteps({ title });
       if (result && result.steps) {
         setInput(result.steps);
-        toast({ title: "የሪፎርም ሪፖርት ተዘጋጅቷል", description: "ሂደቶቹ እና ቴክኒካዊ መግለጫው በራስ-ሰር ተፈጥረዋል።" });
+        toast({ title: "ወርቁ ነኝ ዝግጁ ነው", description: "ቴክኒካዊ መግለጫው በራስ-ሰር ተዘጋጅቷል።" });
       }
     } catch (error: any) {
-      console.error("AI Suggestion Error:", error);
       toast({ 
         title: "የ AI ስህተት", 
-        description: "ሂደቶቹን ማመንጨት አልተቻለም።", 
+        description: "ሂደቶቹን ማዘጋጀት አልተቻለም።", 
         variant: "destructive" 
       });
     } finally {
@@ -145,54 +140,50 @@ export function BPMNFlowForgeApp() {
 
   const handleDownloadProject = async () => {
     setIsDownloading(true);
-    toast({ title: "በዝግጅት ላይ...", description: "ሙሉ የሲስተም ፕሮጀክቱ እየተቀናበረ ነው..." });
-
     try {
       const zip = new JSZip();
-      const safeTitle = (title || "itdb-system-project").replace(/\s+/g, '-').toLowerCase();
+      const safeTitle = (title || "itdb-bureau-project").replace(/\s+/g, '-').toLowerCase();
 
-      // 1. Current Diagram Assets
-      const currentXml = await viewerRef.current?.getXML();
-      zip.file(`${safeTitle}.bpmn`, currentXml || xmlResult || '<!-- No diagram -->');
+      const currentXml = await viewerRef.current?.getXML() || xmlResult;
       const currentSvg = await viewerRef.current?.getSVG();
+      
+      if (currentXml) zip.file(`${safeTitle}.bpmn`, currentXml);
       if (currentSvg) zip.file(`${safeTitle}.svg`, currentSvg);
 
-      // 2. Full Source Code Emulation (Core Files)
       zip.file("package.json", JSON.stringify({
-        name: "itdb-bpm-system",
+        name: "itdb-management-system",
         version: "1.0.0",
         dependencies: { "bpmn-js": "^18.1.1", "jszip": "^3.10.1", "next": "15.5.9" }
       }, null, 2));
 
       zip.file("capacitor.config.json", JSON.stringify({
-        appId: "com.itdb.bpm",
-        appName: "ITDB BPM System",
+        appId: "com.itdb.bureau",
+        appName: "ITDB Bureau Management",
         webDir: "out"
       }, null, 2));
 
-      // 3. Vault Manifest
-      zip.file("bureau-vault-manifest.json", JSON.stringify(vault, null, 2));
-
-      // 4. README
-      zip.file("README.txt", `ITDB - Innovation and Technology Development Bureau\n\nይህ የ ZIP ፋይል ሙሉውን የቢሮ ሲስተም እና የሪፎርም ሰነዶች ይዟል።\nጠቅላላ ሰነዶች: ${vault.length}\nቀን: ${new Date().toLocaleString()}`);
+      zip.file("vault-manifest.json", JSON.stringify(vault, null, 2));
+      zip.file("README.txt", `ITDB Bureau Management System\n\nGenerated: ${new Date().toLocaleString()}\nApproved Documents: ${vault.length}`);
 
       const content = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(content);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${safeTitle}-full-source.zip`;
+      link.download = `${safeTitle}-full-system-export.zip`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      toast({ title: "ተሳክቷል", description: "ሙሉ ፕሮጀክቱ እና የቮልት ፋይሎች ወርደዋል።" });
+      toast({ title: "ተሳክቷል", description: "ሙሉ የቢሮው ፕሮጀክት ወርዷል።" });
     } catch (error) {
-      toast({ title: "የስርዓት ስህተት", description: "ZIP ማጠናቀር አልተቻለም።", variant: "destructive" });
+      toast({ title: "ስህተት", description: "ZIP ማጠናቀር አልተቻለም።", variant: "destructive" });
     } finally {
       setIsDownloading(false);
     }
   };
+
+  const kpiValue = Math.min(vault.length * 15, 100);
 
   return (
     <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-white">
@@ -238,7 +229,7 @@ export function BPMNFlowForgeApp() {
             <CardContent className="p-6 flex flex-col gap-6 h-full">
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">የአገልግሎት/የሪፎርም መለያ</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">የአገልግሎት ስም (Title)</label>
                   <span className="text-[9px] font-mono text-primary bg-primary/5 px-2 py-0.5 rounded border border-primary/10">
                     ID: {generateSystemCode()}
                   </span>
@@ -253,7 +244,7 @@ export function BPMNFlowForgeApp() {
 
               <div className="relative flex-1 flex flex-col">
                 <div className="flex justify-between items-end mb-2">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ቴክኒካዊ መግለጫ እና ሪፖርት</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ቴክኒካዊ መግለጫ (Technical Report)</label>
                   {title.trim() && (
                     <Button 
                       variant="ghost" 
@@ -305,7 +296,7 @@ export function BPMNFlowForgeApp() {
               <div className="flex gap-2">
                 {activeTab === "diagram" && xmlResult && (
                   <Button variant="default" size="sm" className="h-8 bg-green-600 hover:bg-green-700 text-white" onClick={() => viewerRef.current?.exportPNG()}>
-                    <CheckCircle2 className="w-3.5 h-3.5 mr-2" /> እንደ ጸደቀ ሰነድ አስቀምጥ
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-2" /> እንደ ጸደቀ ሰነድ አውርድ
                   </Button>
                 )}
               </div>
@@ -366,9 +357,9 @@ export function BPMNFlowForgeApp() {
                     <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
                       <div className="flex justify-between items-end mb-4">
                         <span className="text-xs font-bold text-slate-500">የጸደቁ ሂደቶች ብዛት: {vault.length}</span>
-                        <span className="text-2xl font-black text-primary">{Math.min(vault.length * 15, 100)}%</span>
+                        <span className="text-2xl font-black text-primary">{kpiValue}%</span>
                       </div>
-                      <Progress value={Math.min(vault.length * 15, 100)} className="h-3 bg-slate-200" />
+                      <Progress value={kpiValue} className="h-3 bg-slate-200" />
                       <p className="text-[10px] text-slate-400 mt-4 leading-relaxed italic">
                         * ይህ መረጃ በቢሮው የተመዘገቡ እና የጸደቁ የሪፎርም ሂደቶችን መሰረት በማድረግ የሚሰላ ነው።
                       </p>
@@ -382,7 +373,7 @@ export function BPMNFlowForgeApp() {
                     </Card>
                     <Card className="bg-green-50 border-none shadow-none p-4">
                       <span className="text-[10px] font-bold text-green-600/60 uppercase block mb-1">ገባሪ ሪፎርሞች</span>
-                      <span className="text-2xl font-black text-green-600">{Math.ceil(vault.length * 0.8)}</span>
+                      <span className="text-2xl font-black text-green-600">{vault.length > 0 ? Math.ceil(vault.length * 0.9) : 0}</span>
                     </Card>
                   </div>
                 </div>
@@ -399,7 +390,7 @@ export function BPMNFlowForgeApp() {
         </div>
         <div className="flex gap-4">
           <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-green-500"></div> DMS Active</span>
-          <span>Security Level: High</span>
+          <span>Security Level: Institutional</span>
         </div>
       </footer>
     </div>
