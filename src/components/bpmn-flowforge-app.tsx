@@ -25,7 +25,8 @@ import {
   FileText,
   ShieldCheck,
   CheckCircle2,
-  FileSearch
+  FileSearch,
+  ChevronDown
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -38,6 +39,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { suggestSteps } from "@/ai/flows/suggest-steps-flow";
 import JSZip from 'jszip';
@@ -110,7 +113,7 @@ export function BPMNFlowForgeApp() {
     }
   };
 
-  const handleAutoSuggest = async () => {
+  const handleAutoSuggest = async (docType: 'reform' | 'report' | 'guideline' = 'reform') => {
     if (!title.trim()) {
       toast({ 
         title: "መረጃ የለም", 
@@ -122,7 +125,7 @@ export function BPMNFlowForgeApp() {
 
     setIsSuggesting(true);
     try {
-      const result = await suggestSteps({ title });
+      const result = await suggestSteps({ title, docType });
       if (result && result.steps) {
         setInput(result.steps);
         toast({ title: "ወርቁ ነኝ ዝግጁ ነው", description: "ቴክኒካዊ መግለጫው በራስ-ሰር ተዘጋጅቷል።" });
@@ -246,16 +249,32 @@ export function BPMNFlowForgeApp() {
                 <div className="flex justify-between items-end mb-2">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ቴክኒካዊ መግለጫ (Technical Report)</label>
                   {title.trim() && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={handleAutoSuggest} 
-                      disabled={isSuggesting}
-                      className="h-6 px-2 text-[9px] text-[#1e3a8a] font-bold"
-                    >
-                      {isSuggesting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3 mr-1" />}
-                      ወርቁ ነኝ ዝርዝሩን ላዘጋጅልህ/ልሽ
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          disabled={isSuggesting}
+                          className="h-6 px-2 text-[9px] text-[#1e3a8a] font-bold border border-[#1e3a8a]/20"
+                        >
+                          {isSuggesting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3 mr-1" />}
+                          ወርቁ ነኝ ዝርዝሩን ላዘጋጅልህ? <ChevronDown className="w-2 h-2 ml-1" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56 p-2 rounded-xl">
+                        <DropdownMenuLabel className="text-[10px] uppercase text-slate-400">የሰነድ አይነት ይምረጡ</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleAutoSuggest('reform')} className="text-xs">
+                          <FileType className="w-3.5 h-3.5 mr-2 text-primary" /> የሪፎርም ሰነድ (Reform)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleAutoSuggest('report')} className="text-xs">
+                          <FileText className="w-3.5 h-3.5 mr-2 text-primary" /> ቴክኒካዊ ሪፖርት (Report)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleAutoSuggest('guideline')} className="text-xs">
+                          <ShieldCheck className="w-3.5 h-3.5 mr-2 text-primary" /> የአሰራር መመሪያ (Guideline)
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
                 </div>
                 <Textarea
