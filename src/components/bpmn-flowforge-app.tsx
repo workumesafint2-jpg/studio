@@ -142,12 +142,12 @@ export function BPMNFlowForgeApp() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   
-  // FIXED: Category state defaults to empty string to ensure the user must explicitly select an option.
+  // FIXED: Category state defaults to empty string to ensure reactivity
   const [uploadCategory, setUploadCategory] = useState<string>("");
   const [uploadPlanType, setUploadPlanType] = useState("Annual Plan");
   const [uploadReportType, setUploadReportType] = useState("Monthly Report");
   const [uploadTaxonomyService, setUploadTaxonomyService] = useState(BUREAU_SERVICES_REGISTRY[0].title);
-  const [uploadMetric, setUploadMetric] = useState("");
+  const [uploadMetric, setUploadMetric] = useState(""); // Kept for logic, removed from modal UI
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [vaultFilter, setVaultFilter] = useState<'all' | 'Plan' | 'Report' | 'Service Taxonomy' | 'Reform Documents'>('all');
@@ -507,11 +507,6 @@ export function BPMNFlowForgeApp() {
                             </Select>
                           </div>
                         )}
-
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-slate-400">ኢላማ/ውጤት (Metric Value)</label>
-                          <Input type="number" value={uploadMetric} onChange={(e) => setUploadMetric(e.target.value)} className="h-9 text-xs" />
-                        </div>
 
                         <div className="space-y-1.5">
                           <label className="text-[10px] font-bold text-slate-400">ፋይል ይምረጡ</label>
