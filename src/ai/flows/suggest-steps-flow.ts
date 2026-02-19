@@ -2,6 +2,7 @@
 /**
  * @fileOverview Smart Institutional Workflow & Document Intelligence Agent
  * Integrated with Bureau Service Registry and Vault (DMS) for contextual recognition.
+ * Updated to support vertical list formatting without [wrap] markers.
  */
 
 import { ai } from '@/ai/genkit';
@@ -53,8 +54,10 @@ const suggestStepsFlow = ai.defineFlow(
     if (input.docType === 'diagram') {
       const predefinedWorkflow = findServiceInRegistry(input.title);
       if (predefinedWorkflow) {
+        // Normalize predefined workflows to new vertical format (removing [wrap])
+        const verticalWorkflow = predefinedWorkflow.replace(/\[wrap\]/gi, '\n');
         return { 
-          steps: predefinedWorkflow,
+          steps: verticalWorkflow,
           relatedFiles: matchingFiles.map(f => f.name)
         };
       }
@@ -71,17 +74,23 @@ const suggestStepsFlow = ai.defineFlow(
 
       TASK: 
       1. If the user is searching for a file, summarize its status and metadata.
-      2. If the user asks for a diagram, generate professional Amharic BPMN steps using [wrap] for line breaks.
+      2. If the user asks for a diagram, generate professional Amharic BPMN steps as a VERTICAL NUMBERED LIST.
       3. If the user asks to compare (Cross-Analysis), highlight gaps between 'Plan' and 'Report' categories.
       4. If the query relates to a Bureau Service, reference its status in the 'Service Taxonomy'.
 
       STRICT COMMAND MODELER RULES (for diagrams):
-      1. Start with: "Start [wrap]"
-      2. End with: "[wrap] End"
-      3. Use [wrap] after every task.
+      1. DO NOT USE '[wrap]'. USE SIMPLE NEW LINES INSTEAD.
+      2. Start with: "መጀመሪያ (Start)" on its own line.
+      3. End with: "መጨረሻ (End)" on its own line.
+      4. Place exactly one task, decision, or gateway per line.
+      5. Example Format:
+         መጀመሪያ (Start)
+         የጥያቄ መቀበል
+         ማጽደቅ? (ውሳኔ)
+         መጨረሻ (End)
 
       INTERACTIVE GUIDANCE:
-      Always act as a helpful bureau assistant. If multiple files match, list them clearly.`,
+      Always act as a helpful bureau assistant. Always start with 'ወርቁ ነኝ ምን ልርዳዎት?' if it is a fresh interaction.`,
     });
 
     return {

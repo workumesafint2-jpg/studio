@@ -1,39 +1,32 @@
 /**
- * ወርቁ Pro - Industrial BPMN Engine v5.0
- * STABLE PRODUCTION BUILD: Logic Freeze & Scale Optimization
+ * ወርቁ Pro - Industrial BPMN Engine v6.0
+ * UPDATED: Vertical List Parsing & Auto-Wrap Logic
  */
 
 export function generateBPMN(input: string, title: string = "Process Diagram"): string {
   if (!input.trim()) return '';
 
-  // Pre-process: ensure [wrap] is treated as a clean line break for the layout logic
-  // This allows the AI to output a single string with [wrap] markers
-  const processedInput = input.replace(/\[wrap\]/gi, '\n[wrap]\n');
-  const rawLines = processedInput.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
+  // Pre-process: split by lines, remove empty lines, and strip numbering
+  const rawLines = input.split(/\n/)
+    .map(l => l.trim())
+    .filter(l => l.length > 0)
+    .map(l => l.replace(/^\d+[\.\)\s-]+/, '').trim()); // Strip numbers like "1.", "1)", "1-"
   
   const mappings = {
     start: ['መጀመሪያ', 'ጀምር', 'start', 'begin'],
     end: ['መጨረሻ', 'ጨርስ', 'ተጠናቀቀ', 'end', 'finish', 'success', 'done'],
     exclusiveGateway: ['ውሳኔ', 'ከሆነ', 'ወይስ', 'ቢሆን', 'decision', 'xor', 'if', 'gateway', 'ማጽደቅ?', 'ጥያቄ?', 'አዋጭ?'],
     serviceTask: ['ሲስተም', 'አውቶማቲክ', 'service task', 'system', 'auto', 'gear'],
-    dataKeywords: ['ሰነድ', 'ፎርም', 'ማስረጃ', 'document', 'form', 'file', 'ሪፖርት'],
-    wrap: ['[wrap]', '[next]']
+    dataKeywords: ['ሰነድ', 'ፎርም', 'ማስረጃ', 'document', 'form', 'file', 'ሪፖርት']
   };
 
   const nodeDefs: any[] = [];
-  let currentRow = 0;
-  let nodesInRow = 0;
   let startTextToMove = "";
+  const NODES_PER_ROW = 5;
 
   rawLines.forEach((line, index) => {
     const lowerLine = line.toLowerCase();
     
-    if (mappings.wrap.some(k => lowerLine.includes(k))) {
-      currentRow++;
-      nodesInRow = 0;
-      return;
-    }
-
     let type = 'userTask';
     let category = 'task';
     let hasDataAssociation = false;
@@ -47,7 +40,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     let pureName = line;
     const allKeywords = Object.values(mappings).flat();
     allKeywords.forEach(k => {
-      if (k && k.startsWith('[')) return;
       const regex = new RegExp(`\\b${escapeRegExp(k)}\\b`, 'gi');
       pureName = pureName.replace(regex, '');
     });
@@ -62,14 +54,19 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       startTextToMove = "";
     }
 
+    // AUTO-WRAP LOGIC: Wrap to new row every 5 nodes
+    const nodeIndex = nodeDefs.length;
+    const row = Math.floor(nodeIndex / NODES_PER_ROW);
+    const col = nodeIndex % NODES_PER_ROW;
+
     nodeDefs.push({
       id: `Node_${index}`,
       name: pureName,
       type,
       category,
       hasDataAssociation,
-      row: currentRow,
-      col: nodesInRow++
+      row,
+      col
     });
   });
 
@@ -83,7 +80,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const BOX_WIDTH = 120;
   const BOX_HEIGHT = 80;
   const X_OFFSET = 150;
-  const Y_OFFSET = 250;
+  const Y_OFFSET = 150;
 
   nodeDefs.forEach((node, i) => {
     const x = X_OFFSET + node.col * COL_SPACING;
