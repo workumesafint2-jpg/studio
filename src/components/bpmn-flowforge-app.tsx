@@ -142,7 +142,9 @@ export function BPMNFlowForgeApp() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadName, setUploadName] = useState("");
-  const [uploadCategory, setUploadCategory] = useState("Plan"); // Initial default is Plan, but it's now dynamic
+  
+  // FIXED: Category state defaults to empty string to force manual selection
+  const [uploadCategory, setUploadCategory] = useState<string>("");
   const [uploadPlanType, setUploadPlanType] = useState("Annual Plan");
   const [uploadReportType, setUploadReportType] = useState("Monthly Report");
   const [uploadTaxonomyService, setUploadTaxonomyService] = useState(BUREAU_SERVICES_REGISTRY[0].title);
@@ -264,8 +266,8 @@ export function BPMNFlowForgeApp() {
   };
 
   const processUpload = () => {
-    if (!selectedFile || !uploadName) {
-      toast({ title: "ስህተት", description: "እባክዎን ፋይል ይምረጡ እና ስም ያስገቡ።", variant: "destructive" });
+    if (!selectedFile || !uploadName || !uploadCategory) {
+      toast({ title: "ስህተት", description: "እባክዎን ፋይል ይምረጡ፣ ስም ያስገቡ እና ምድብ ይምረጡ።", variant: "destructive" });
       return;
     }
 
@@ -303,6 +305,7 @@ export function BPMNFlowForgeApp() {
             setSelectedFile(null);
             setUploadName("");
             setUploadMetric("");
+            setUploadCategory(""); // Reset for next use
             setUploadProgress(0);
             
             toast({ 
@@ -431,7 +434,7 @@ export function BPMNFlowForgeApp() {
                   </DialogTrigger>
                   <DialogContent className="z-[200]">
                     <DialogHeader>
-                      <DialogTitle className="text-sm font-bold uppercase tracking-widest text-[#1e3a8a]">አዲስ ፋይል አጽድቅ (DMS Registry)</DialogTitle>
+                      <DialogTitle className="text-sm font-bold uppercase tracking-widest text-[#1e3a8a]">አዲስ ፋይል አጽድቅ (DMS REGISTRY)</DialogTitle>
                       <DialogDescription className="text-xs">በቢሮው መዝገብ ቤት ውስጥ ለማስቀመጥ የፈለጉትን ፋይል እዚህ ይስቀሉ።</DialogDescription>
                     </DialogHeader>
                     {isUploading ? (
@@ -451,10 +454,11 @@ export function BPMNFlowForgeApp() {
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1.5">
                             <label className="text-[10px] font-bold text-slate-400">ምድብ (Category)</label>
+                            {/* FIXED: Unlocked selection logic with explicit state binding */}
                             <Select 
                               value={uploadCategory} 
                               onValueChange={(val) => {
-                                console.log("Category changed to:", val);
+                                console.log("Category explicitly changed to:", val);
                                 setUploadCategory(val);
                               }}
                             >
@@ -471,7 +475,7 @@ export function BPMNFlowForgeApp() {
                             </Select>
                           </div>
 
-                          {/* Dynamic Sub-Category Logic */}
+                          {/* Dynamic Sub-Category Logic based on uploadCategory */}
                           {uploadCategory === 'Plan' && (
                             <div className="space-y-1.5">
                               <label className="text-[10px] font-bold text-slate-400">የእቅድ ዓይነት</label>
@@ -506,7 +510,7 @@ export function BPMNFlowForgeApp() {
 
                           {uploadCategory === 'Service Taxonomy' && (
                             <div className="space-y-1.5">
-                              <label className="text-[10px] font-bold text-slate-400">Service Selection</label>
+                              <label className="text-[10px] font-bold text-slate-400">Service Taxonomy Index</label>
                               <Select value={uploadTaxonomyService} onValueChange={setUploadTaxonomyService}>
                                 <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                                 <SelectContent>
@@ -519,14 +523,14 @@ export function BPMNFlowForgeApp() {
                           )}
                         </div>
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-slate-400">ኢላማ/ውጤት (Metric)</label>
+                          <label className="text-[10px] font-bold text-slate-400">ኢላማ/ውጤት (Metric Value)</label>
                           <Input type="number" value={uploadMetric} onChange={(e) => setUploadMetric(e.target.value)} className="h-9 text-xs" />
                         </div>
                         <Input type="file" onChange={(e) => e.target.files && setSelectedFile(e.target.files[0])} className="text-[10px]" />
                       </div>
                     )}
                     <DialogFooter>
-                      <Button size="sm" className="bg-[#1e3a8a]" onClick={processUpload} disabled={isUploading || !selectedFile}>አጽድቅ</Button>
+                      <Button size="sm" className="bg-[#1e3a8a]" onClick={processUpload} disabled={isUploading || !selectedFile || !uploadCategory}>አጽድቅ</Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
@@ -560,7 +564,7 @@ export function BPMNFlowForgeApp() {
                     <Database className="w-3.5 h-3.5 mr-2" /> የቢሮ መዝገብ ቤት (DMS)
                   </h2>
                   <div className="flex items-center gap-3">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">ማጣሪያ (Filter):</span>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">ማጣሪያ (FILTER):</span>
                     <Select value={vaultFilter} onValueChange={(val: any) => setVaultFilter(val)}>
                       <SelectTrigger className="h-7 w-40 text-[9px] font-bold bg-white">
                         <SelectValue placeholder="ማጣሪያ (Filter)" />
@@ -580,10 +584,10 @@ export function BPMNFlowForgeApp() {
                   <Table>
                     <TableHeader className="bg-slate-50/50 sticky top-0 z-[5]">
                       <TableRow>
-                        <TableHead className="text-[9px] font-bold uppercase px-6">ስም (Title)</TableHead>
-                        <TableHead className="text-[9px] font-bold uppercase">ምድብ (Category)</TableHead>
-                        <TableHead className="text-[9px] font-bold uppercase">ሁኔታ (Status)</TableHead>
-                        <TableHead className="text-[9px] font-bold uppercase">ቀን (Date)</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase px-6">ስም (TITLE)</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase">ምድብ (CATEGORY)</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase">ሁኔታ (STATUS)</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase">ቀን (DATE)</TableHead>
                         <TableHead className="text-right pr-6">ተግባር</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -609,7 +613,7 @@ export function BPMNFlowForgeApp() {
                                   {file.category}
                                 </Badge>
                                 <span className="text-[7px] text-[#1e3a8a] font-bold ml-1 opacity-70 italic">
-                                  {file.planType || file.reportType || file.taxonomyService || "General"}
+                                  {file.planType || file.reportType || file.taxonomyService || "General Record"}
                                 </span>
                               </div>
                             </TableCell>
@@ -750,3 +754,4 @@ export function BPMNFlowForgeApp() {
     </div>
   );
 }
+
