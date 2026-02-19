@@ -139,7 +139,7 @@ export function BPMNFlowForgeApp() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadName, setUploadName] = useState("");
-  const [uploadCategory, setUploadCategory] = useState("Report");
+  const [uploadCategory, setUploadCategory] = useState("Plan");
   const [uploadPlanType, setUploadPlanType] = useState("Annual Plan");
   const [uploadReportType, setUploadReportType] = useState("Monthly Report");
   const [uploadMetric, setUploadMetric] = useState("");
@@ -263,7 +263,6 @@ export function BPMNFlowForgeApp() {
 
     setIsSuggesting(true);
     try {
-      // Logic: Pass vault filenames context to assistant implicitly via prompt
       const result = await suggestSteps({ title, docType });
       if (result && result.steps) {
         setInput(result.steps);
@@ -485,7 +484,7 @@ export function BPMNFlowForgeApp() {
           </Card>
         </div>
 
-        {/* Split View Workspace (60/40) */}
+        {/* 60/40 Split View Workspace */}
         <div className="flex-1 flex flex-col gap-3 h-full overflow-y-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col w-full h-full">
             <div className="flex justify-between items-center bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm z-[90] shrink-0 sticky top-0">
@@ -525,14 +524,16 @@ export function BPMNFlowForgeApp() {
                           <div className="space-y-1.5">
                               <label className="text-[10px] font-bold text-slate-400">ምድብ (Category)</label>
                               <Select value={uploadCategory} onValueChange={setUploadCategory}>
-                              <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="ምድብ" /></SelectTrigger>
-                              <SelectContent>
+                                <SelectTrigger className="h-9 text-xs">
+                                  <SelectValue placeholder="ምድብ" />
+                                </SelectTrigger>
+                                <SelectContent>
                                   <SelectItem value="Plan">እቅድ (Plan)</SelectItem>
                                   <SelectItem value="Report">ሪፖርት (Report)</SelectItem>
                                   <SelectItem value="Service Taxonomy">Service Taxonomy</SelectItem>
                                   <SelectItem value="Reform Documents">የሪፎርም ሰነዶች (Reform)</SelectItem>
-                                  <SelectItem value="Legal">Legal</SelectItem>
-                              </SelectContent>
+                                  <SelectItem value="Other">ሌሎች (Other)</SelectItem>
+                                </SelectContent>
                               </Select>
                           </div>
                           {uploadCategory === 'Plan' && (
@@ -598,14 +599,14 @@ export function BPMNFlowForgeApp() {
             <TabsContent value="diagram" className="flex-1 flex flex-col gap-3 m-0 p-0">
               
               {/* 1. Workflow Diagram Area (60%) */}
-              <div className="min-h-[450px] flex flex-col gap-2 relative z-5">
+              <div className="flex-[60] min-h-[400px] flex flex-col gap-2 relative z-5">
                 <div className="flex justify-between items-center px-1">
                   <h2 className="text-[11px] font-bold text-[#1e3a8a] uppercase tracking-widest flex items-center">
                     <Layout className="w-4 h-4 mr-2" /> የስራ ፍሰት ዲያግራም (Workflow Diagram)
                   </h2>
                   <Badge variant="outline" className="text-[8px] bg-white border-slate-200">Interactive Modeler Active</Badge>
                 </div>
-                <div className="flex-1 bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden relative min-h-[400px]">
+                <div className="flex-1 bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden relative min-h-[350px]">
                   {xmlResult ? (
                     <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
                   ) : (
@@ -620,7 +621,7 @@ export function BPMNFlowForgeApp() {
               <Separator className="bg-slate-300 h-0.5 my-2 shadow-sm shrink-0" />
 
               {/* 2. Bureau Vault (DMS) Area (40%) */}
-              <div className="min-h-[300px] flex flex-col gap-2 relative z-10 bg-slate-50/50 p-4 rounded-xl border border-slate-200">
+              <div className="flex-[40] min-h-[300px] flex flex-col gap-2 relative z-10 bg-slate-50/50 p-4 rounded-xl border border-slate-200">
                 <div className="flex justify-between items-center px-1">
                   <div className="flex items-center gap-4">
                       <h2 className="text-[11px] font-bold text-[#1e3a8a] uppercase tracking-widest flex items-center">
