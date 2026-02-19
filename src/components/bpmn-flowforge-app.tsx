@@ -9,14 +9,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { 
   Trash2, 
   MoreVertical, 
-  Eye, 
   FileType, 
   Sparkles, 
   Archive, 
   Database, 
-  BarChart3, 
-  FileText, 
-  ShieldCheck, 
   CheckCircle2, 
   FileSearch, 
   ChevronDown, 
@@ -27,9 +23,12 @@ import {
   FileJson,
   Upload,
   Download,
-  FileUp,
   CalendarDays,
-  Search
+  Target,
+  Trophy,
+  AlertTriangle,
+  TrendingUp,
+  BarChart
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -72,6 +71,17 @@ import {
 import { suggestSteps } from "@/ai/flows/suggest-steps-flow";
 import { Badge } from "@/components/ui/badge";
 import JSZip from 'jszip';
+import { 
+  Bar, 
+  BarChart as RechartsBarChart, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip as RechartsTooltip, 
+  ResponsiveContainer, 
+  Legend,
+  Cell
+} from 'recharts';
 
 interface VaultItem {
   id: string;
@@ -91,6 +101,16 @@ interface UploadedFile {
   uploadDate: string;
   dataUrl: string;
   type: string;
+  metricValue: number; // Planned for 'Plan', Actual for 'Report'
+}
+
+interface PerformanceMetric {
+  serviceName: string;
+  planned: number;
+  actual: number;
+  execution: number;
+  status: 'Excellent' | 'On track' | 'Needs attention';
+  color: string;
 }
 
 export function BPMNFlowForgeApp() {
@@ -108,6 +128,7 @@ export function BPMNFlowForgeApp() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadName, setUploadName] = useState("");
   const [uploadCategory, setUploadCategory] = useState("Report");
+  const [uploadMetric, setUploadMetric] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Filters
@@ -119,6 +140,47 @@ export function BPMNFlowForgeApp() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Performance Calculation Logic
+  const performanceData = useMemo(() => {
+    const metrics: Record<string, { planned: number; actual: number }> = {};
+    
+    uploadedFiles.forEach(file => {
+      const name = file.name.toLowerCase().trim();
+      if (!metrics[name]) metrics[name] = { planned: 0, actual: 0 };
+      
+      if (file.category === 'Plan') {
+        metrics[name].planned = file.metricValue;
+      } else if (file.category === 'Report') {
+        metrics[name].actual = file.metricValue;
+      }
+    });
+
+    return Object.entries(metrics)
+      .filter(([_, data]) => data.planned > 0)
+      .map(([name, data]) => {
+        const execution = data.planned > 0 ? (data.actual / data.planned) * 100 : 0;
+        let status: 'Excellent' | 'On track' | 'Needs attention' = 'Needs attention';
+        let color = '#ef4444'; // Red
+
+        if (execution >= 90) {
+          status = 'Excellent';
+          color = '#22c55e'; // Green
+        } else if (execution >= 50) {
+          status = 'On track';
+          color = '#eab308'; // Yellow
+        }
+
+        return {
+          serviceName: name.charAt(0).toUpperCase() + name.slice(1),
+          planned: data.planned,
+          actual: data.actual,
+          execution: Math.round(execution),
+          status,
+          color
+        } as PerformanceMetric;
+      });
+  }, [uploadedFiles]);
 
   const filteredVault = useMemo(() => {
     if (vaultFilter === 'plan') {
@@ -229,13 +291,15 @@ export function BPMNFlowForgeApp() {
         fileSize: (selectedFile.size / 1024).toFixed(1) + " KB",
         uploadDate: new Date().toLocaleString('am-ET'),
         dataUrl,
-        type: selectedFile.type
+        type: selectedFile.type,
+        metricValue: parseFloat(uploadMetric) || 0
       };
 
       setUploadedFiles(prev => [newFile, ...prev]);
       setIsUploadOpen(false);
       setSelectedFile(null);
       setUploadName("");
+      setUploadMetric("");
       toast({ title: "ተሳክቷል", description: "ፋይሉ በቢሮው መዝገብ ቤት ተቀምጧል።" });
     };
     reader.readAsDataURL(selectedFile);
@@ -265,7 +329,8 @@ export function BPMNFlowForgeApp() {
 
       zip.file("vault-manifest.json", JSON.stringify({
         diagrams: vault,
-        documents: uploadedFiles
+        documents: uploadedFiles,
+        performance: performanceData
       }, null, 2));
 
       const content = await zip.generateAsync({ type: "blob" });
@@ -286,7 +351,9 @@ export function BPMNFlowForgeApp() {
     }
   };
 
-  const kpiValue = Math.min((vault.length + uploadedFiles.length) * 10, 100);
+  const avgExecution = performanceData.length > 0 
+    ? Math.round(performanceData.reduce((acc, curr) => acc + curr.execution, 0) / performanceData.length)
+    : 0;
 
   return (
     <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-white">
@@ -296,7 +363,7 @@ export function BPMNFlowForgeApp() {
         <p className="text-[10px] font-bold text-[#1e3a8a] mb-0.5 tracking-widest uppercase" style={{ fontFamily: "'Noto Sans Ethiopic', sans-serif" }}>
           ኢኖቬሽንና ቴክኖሎጂ ልማት ቢሮ
         </p>
-        <h1 className="text-[7px] font-bold text-slate-400 uppercase tracking-[0.4em]">Document Management System</h1>
+        <h1 className="text-[7px] font-bold text-slate-400 uppercase tracking-[0.4em]">Performance & Document Management</h1>
 
         <div className="absolute right-8 top-1/2 -translate-y-1/2 flex items-center gap-2">
           <Button variant="outline" size="sm" className="h-8 rounded-lg text-[9px] font-bold border-slate-200" onClick={handleDownloadProject}>
@@ -389,7 +456,7 @@ export function BPMNFlowForgeApp() {
               <div className="flex justify-between items-center bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm shrink-0">
                 <TabsList className="bg-slate-50 h-8 p-1">
                   <TabsTrigger value="diagram" className="text-[10px] px-4">ዲያግራም</TabsTrigger>
-                  <TabsTrigger value="dashboard" className="text-[10px] px-4">ዳሽቦርድ</TabsTrigger>
+                  <TabsTrigger value="dashboard" className="text-[10px] px-4">አፈጻጸም (Performance)</TabsTrigger>
                 </TabsList>
                 
                 <div className="flex gap-2">
@@ -405,16 +472,26 @@ export function BPMNFlowForgeApp() {
                         <DialogDescription className="text-xs">በቢሮው መዝገብ ቤት (DMS) ውስጥ ለማስቀመጥ የፈለጉትን ፋይል እዚህ ይስቀሉ።</DialogDescription>
                       </DialogHeader>
                       <div className="grid gap-4 py-4">
-                        <Input value={uploadName} onChange={(e) => setUploadName(e.target.value)} placeholder="የፋይሉ ስም" className="h-9 text-xs" />
-                        <Select value={uploadCategory} onValueChange={setUploadCategory}>
-                          <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="ምድብ" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Plan">እቅድ (Plan)</SelectItem>
-                            <SelectItem value="Service Taxonomy">Service Taxonomy</SelectItem>
-                            <SelectItem value="Report">Report</SelectItem>
-                            <SelectItem value="Legal">Legal</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-slate-400">የአገልግሎት/ፋይል ስም</label>
+                          <Input value={uploadName} onChange={(e) => setUploadName(e.target.value)} placeholder="ለምሳሌ፡ ጥናትና ምርምር" className="h-9 text-xs" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-slate-400">ምድብ</label>
+                          <Select value={uploadCategory} onValueChange={setUploadCategory}>
+                            <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="ምድብ" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Plan">እቅድ (Annual Plan)</SelectItem>
+                              <SelectItem value="Report">ሪፖርት (Monthly/Quarterly Report)</SelectItem>
+                              <SelectItem value="Service Taxonomy">Service Taxonomy</SelectItem>
+                              <SelectItem value="Legal">Legal</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-slate-400">ኢላማ/ውጤት (Metric Value)</label>
+                          <Input type="number" value={uploadMetric} onChange={(e) => setUploadMetric(e.target.value)} placeholder="ለምሳሌ፡ 100" className="h-9 text-xs" />
+                        </div>
                         <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-200 rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100">
                           <div className="flex flex-col items-center justify-center text-[10px] text-slate-400">
                             {selectedFile ? selectedFile.name : "ፋይሉን እዚህ ይጎትቱ ወይም ይጫኑ"}
@@ -438,7 +515,6 @@ export function BPMNFlowForgeApp() {
 
               <div className="flex-1 flex flex-col gap-3 min-h-0 mt-3">
                 <TabsContent value="diagram" className="flex-1 flex flex-col gap-3 m-0 p-0 overflow-hidden">
-                  {/* Large Canvas Area (75% height) */}
                   <div className="flex-[3] bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden relative min-h-0">
                     {xmlResult ? (
                       <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
@@ -450,8 +526,43 @@ export function BPMNFlowForgeApp() {
                     )}
                   </div>
 
-                  {/* Minimized Vault Table (Bottom 25%) */}
-                  <div className="flex-[1] bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col min-h-[180px] overflow-hidden">
+                  {/* Performance Summary Table below Diagram */}
+                  {performanceData.length > 0 && (
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-3 shrink-0">
+                      <h3 className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center">
+                        <TrendingUp className="w-3 h-3 mr-2 text-primary" /> የሂደት አፈጻጸም ማጠቃለያ (Performance Summary)
+                      </h3>
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 h-7">
+                            <TableHead className="text-[8px] uppercase h-7">አገልግሎት (Service)</TableHead>
+                            <TableHead className="text-[8px] uppercase h-7">ኢላማ (Planned)</TableHead>
+                            <TableHead className="text-[8px] uppercase h-7">ውጤት (Actual)</TableHead>
+                            <TableHead className="text-[8px] uppercase h-7">ልዩነት (Variance)</TableHead>
+                            <TableHead className="text-[8px] uppercase h-7">ሁኔታ (Status)</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {performanceData.slice(0, 3).map((item, idx) => (
+                            <TableRow key={idx} className="h-7">
+                              <TableCell className="text-[9px] font-semibold py-1">{item.serviceName}</TableCell>
+                              <TableCell className="text-[9px] py-1">{item.planned}</TableCell>
+                              <TableCell className="text-[9px] py-1">{item.actual}</TableCell>
+                              <TableCell className="text-[9px] py-1">{item.actual - item.planned}</TableCell>
+                              <TableCell className="py-1">
+                                <div className="flex items-center gap-1.5">
+                                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></div>
+                                  <span className="text-[8px] font-bold uppercase" style={{ color: item.color }}>{item.status}</span>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+
+                  <div className="flex-[1] bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col min-h-[160px] overflow-hidden">
                     <div className="px-4 py-2 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
                       <div className="flex items-center gap-3">
                         <h2 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center">
@@ -466,11 +577,6 @@ export function BPMNFlowForgeApp() {
                           <CalendarDays className="w-3 h-3 mr-1" /> ዓመታዊ እቅድ
                         </Button>
                       </div>
-                      <div className="flex items-center gap-2 text-[8px] font-bold text-slate-400 uppercase">
-                        <span>ዲያግራም: {filteredVault.length}</span>
-                        <span className="w-1 h-1 rounded-full bg-slate-200"></span>
-                        <span>ሰነድ: {filteredDocuments.length}</span>
-                      </div>
                     </div>
                     <ScrollArea className="flex-1">
                       <Table>
@@ -478,18 +584,17 @@ export function BPMNFlowForgeApp() {
                           <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
                             <TableHead className="text-[9px] uppercase h-8 px-4">ስም (Title)</TableHead>
                             <TableHead className="text-[9px] uppercase h-8">ምድብ (Category)</TableHead>
-                            <TableHead className="text-[9px] uppercase h-8">ኮድ (System Code)</TableHead>
+                            <TableHead className="text-[9px] uppercase h-8">ኢላማ/ውጤት</TableHead>
                             <TableHead className="text-[9px] uppercase h-8">ቀን (Date)</TableHead>
                             <TableHead className="text-[9px] uppercase h-8 text-right">ተግባር</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {/* Render Diagrams */}
                           {filteredVault.map((doc) => (
                             <TableRow key={doc.id} className="group h-8">
                               <TableCell className="text-[10px] font-semibold py-1 px-4">{doc.title}</TableCell>
                               <TableCell className="py-1"><Badge variant="outline" className="text-[8px] h-4">ዲያግራም</Badge></TableCell>
-                              <TableCell className="text-[9px] font-mono text-slate-400 py-1">{doc.systemCode}</TableCell>
+                              <TableCell className="text-[9px] text-slate-400 py-1">-</TableCell>
                               <TableCell className="text-[9px] text-slate-400 py-1">{doc.date}</TableCell>
                               <TableCell className="text-right py-1">
                                 <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:text-primary" onClick={() => { setXmlResult(doc.xml); setTitle(doc.title); setInput(doc.description); }}>
@@ -498,14 +603,13 @@ export function BPMNFlowForgeApp() {
                               </TableCell>
                             </TableRow>
                           ))}
-                          {/* Render Uploaded Files */}
                           {filteredDocuments.map((file) => (
                             <TableRow key={file.id} className="group h-8">
                               <TableCell className="text-[10px] font-semibold py-1 px-4">{file.name}</TableCell>
                               <TableCell className="py-1">
                                 <Badge variant="secondary" className={`text-[8px] h-4 ${file.category === 'Plan' ? 'bg-[#1e3a8a] text-white' : ''}`}>{file.category}</Badge>
                               </TableCell>
-                              <TableCell className="text-[9px] font-mono text-slate-400 py-1">{file.fileSize}</TableCell>
+                              <TableCell className="text-[9px] font-mono text-slate-500 py-1">{file.metricValue}</TableCell>
                               <TableCell className="text-[9px] text-slate-400 py-1">{file.uploadDate}</TableCell>
                               <TableCell className="text-right py-1">
                                 <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:text-primary" onClick={() => handleDownloadFile(file)}>
@@ -514,36 +618,85 @@ export function BPMNFlowForgeApp() {
                               </TableCell>
                             </TableRow>
                           ))}
-                          {filteredVault.length === 0 && filteredDocuments.length === 0 && (
-                            <TableRow>
-                              <TableCell colSpan={5} className="text-center py-8 text-[9px] text-slate-300 font-bold uppercase tracking-widest">መረጃ የለም</TableCell>
-                            </TableRow>
-                          )}
                         </TableBody>
                       </Table>
                     </ScrollArea>
                   </div>
                 </TabsContent>
 
-                <TabsContent value="dashboard" className="h-full m-0 p-8 bg-white rounded-xl border border-slate-200">
-                  <div className="max-w-2xl mx-auto space-y-8">
-                    <div className="text-center space-y-1">
-                      <h3 className="text-xs font-bold text-slate-700 uppercase tracking-[0.2em]">የቢሮው አጠቃላይ አፈጻጸም (KPI)</h3>
-                      <p className="text-[9px] text-slate-400 font-medium">በቮልት ውስጥ የተመዘገቡ የሂደት ማሻሻያዎችና ሰነዶች መገለጫ</p>
-                    </div>
-                    <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 shadow-sm">
-                      <div className="flex justify-between items-end mb-4">
-                        <div className="space-y-1">
-                          <span className="text-[9px] font-bold text-slate-400 uppercase">ጠቅላላ የሪፎርም ደረጃ</span>
-                          <div className="text-3xl font-black text-[#1e3a8a]">{kpiValue}%</div>
+                <TabsContent value="dashboard" className="h-full m-0 p-6 bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0">
+                    <Card className="bg-slate-50/50 border-slate-100 shadow-none">
+                      <CardContent className="p-4 flex items-center gap-4">
+                        <div className="p-3 bg-[#1e3a8a]/10 rounded-xl"><Trophy className="w-5 h-5 text-[#1e3a8a]" /></div>
+                        <div>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">አማካይ አፈጻጸም (Avg Execution)</p>
+                          <h4 className="text-2xl font-black text-[#1e3a8a]">{avgExecution}%</h4>
                         </div>
-                        <div className="text-right text-[10px] font-bold text-slate-400">
-                          {vault.length + uploadedFiles.length} ተመዝግቧል
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-slate-50/50 border-slate-100 shadow-none">
+                      <CardContent className="p-4 flex items-center gap-4">
+                        <div className="p-3 bg-green-500/10 rounded-xl"><Target className="w-5 h-5 text-green-600" /></div>
+                        <div>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">ተጠናቀቁ አገልግሎቶች</p>
+                          <h4 className="text-2xl font-black text-green-600">{performanceData.filter(d => d.execution >= 90).length}</h4>
                         </div>
-                      </div>
-                      <Progress value={kpiValue} className="h-3 bg-slate-200 rounded-full overflow-hidden" />
-                    </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-slate-50/50 border-slate-100 shadow-none">
+                      <CardContent className="p-4 flex items-center gap-4">
+                        <div className="p-3 bg-red-500/10 rounded-xl"><AlertTriangle className="w-5 h-5 text-red-600" /></div>
+                        <div>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">ልዩ ክትትል የሚሹ</p>
+                          <h4 className="text-2xl font-black text-red-600">{performanceData.filter(d => d.execution < 50).length}</h4>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
+
+                  <Card className="flex-1 flex flex-col shadow-none border-slate-100 overflow-hidden">
+                    <CardContent className="p-4 flex-1 flex flex-col min-h-0">
+                      <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xs font-bold text-slate-700 uppercase tracking-[0.2em] flex items-center">
+                          <BarChart className="w-4 h-4 mr-2 text-primary" /> የቢሮው አጠቃላይ አፈጻጸም መግለጫ (Performance Overview)
+                        </h3>
+                      </div>
+                      <div className="flex-1 min-h-0">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RechartsBarChart data={performanceData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                            <XAxis 
+                              dataKey="serviceName" 
+                              fontSize={10} 
+                              fontWeight={600} 
+                              tick={{ fill: '#64748b' }} 
+                              axisLine={false} 
+                              tickLine={false}
+                            />
+                            <YAxis 
+                              fontSize={10} 
+                              fontWeight={600} 
+                              tick={{ fill: '#64748b' }} 
+                              axisLine={false} 
+                              tickLine={false}
+                            />
+                            <RechartsTooltip 
+                              cursor={{ fill: '#f8fafc' }}
+                              contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                            />
+                            <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }} />
+                            <Bar dataKey="planned" name="ኢላማ (Target)" fill="#e2e8f0" radius={[4, 4, 0, 0]} barSize={24} />
+                            <Bar dataKey="actual" name="ውጤት (Actual)" radius={[4, 4, 0, 0]} barSize={24}>
+                              {performanceData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Bar>
+                          </RechartsBarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </TabsContent>
               </div>
             </Tabs>
@@ -553,11 +706,11 @@ export function BPMNFlowForgeApp() {
       
       <footer className="px-8 py-1 bg-white border-t border-slate-100 flex justify-between items-center text-[7px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
         <div className="flex gap-6">
-          <span>ITDB Portal v1.0</span>
+          <span>ITDB Portal v1.2 - Performance Engine Active</span>
           <span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span>
         </div>
         <div className="flex gap-4 items-center">
-          <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-green-500"></div> System Live</span>
+          <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-green-500"></div> Analytics Engine Live</span>
         </div>
       </footer>
     </div>
