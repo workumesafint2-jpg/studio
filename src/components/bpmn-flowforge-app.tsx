@@ -34,7 +34,8 @@ import {
   Layers,
   Search,
   FileText,
-  Clock
+  Clock,
+  ShieldCheck
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -426,8 +427,8 @@ export function BPMNFlowForgeApp() {
         </div>
       </header>
 
-      {/* Main Content Area: 60/40 Split View */}
-      <main className="flex flex-col flex-1 p-3 gap-3 bg-slate-50/50 overflow-y-auto">
+      {/* Main Content Area: Locked Split View */}
+      <main className="flex flex-col flex-1 p-3 gap-3 bg-slate-50/50 overflow-hidden">
         
         {/* Top Control Section: Service Input */}
         <div className="w-full shrink-0 flex flex-col lg:flex-row gap-3">
@@ -489,9 +490,9 @@ export function BPMNFlowForgeApp() {
         </div>
 
         {/* 60/40 Split View Workspace */}
-        <div className="flex-1 flex flex-col gap-3 min-h-0">
+        <div className="flex-1 flex flex-col gap-3 min-h-0 relative">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col w-full h-full min-h-0">
-            <div className="flex justify-between items-center bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm shrink-0 sticky top-0 z-[90]">
+            <div className="flex justify-between items-center bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm shrink-0 sticky top-0 z-[50]">
               <TabsList className="bg-slate-50 h-8 p-1">
                 <TabsTrigger value="diagram" className="text-[10px] px-4">ዲያግራም</TabsTrigger>
                 <TabsTrigger value="dashboard" className="text-[10px] px-4">አፈጻጸም (Performance)</TabsTrigger>
@@ -600,10 +601,10 @@ export function BPMNFlowForgeApp() {
               </div>
             </div>
 
-            <TabsContent value="diagram" className="flex-1 flex flex-col gap-3 m-0 p-0 overflow-hidden">
+            <TabsContent value="diagram" className="flex-1 flex flex-col gap-3 m-0 p-0 overflow-hidden relative">
               
               {/* 1. Workflow Diagram Area (60%) */}
-              <div className="flex-[60] flex flex-col gap-2 relative z-5 min-h-[400px]">
+              <div className="flex-[60] flex flex-col gap-2 relative z-5 min-h-0">
                 <div className="flex justify-between items-center px-1">
                   <h2 className="text-[11px] font-bold text-[#1e3a8a] uppercase tracking-widest flex items-center">
                     <Layout className="w-4 h-4 mr-2" /> የስራ ፍሰት ዲያግራም (Workflow Diagram)
@@ -614,7 +615,7 @@ export function BPMNFlowForgeApp() {
                   {xmlResult ? (
                     <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
                   ) : (
-                    <div className="h-full flex flex-col items-center justify-center text-slate-300 gap-3 py-20">
+                    <div className="h-full flex flex-col items-center justify-center text-slate-300 gap-3">
                       <Layout className="w-16 h-16 opacity-10" />
                       <span className="text-[10px] font-bold uppercase tracking-widest opacity-30">የጸደቀ ሪፎርም የለም</span>
                     </div>
@@ -622,14 +623,14 @@ export function BPMNFlowForgeApp() {
                 </div>
               </div>
 
-              <Separator className="bg-slate-300 h-0.5 my-2 shadow-sm shrink-0" />
+              <Separator className="bg-slate-300 h-0.5 my-1 shadow-sm shrink-0" />
 
               {/* 2. Bureau Vault (DMS) Area (40%) */}
-              <div className="flex-[40] min-h-[300px] flex flex-col gap-2 relative z-10 bg-slate-50/50 p-4 rounded-xl border border-slate-200 overflow-hidden">
-                <div className="flex justify-between items-center px-1">
+              <div className="flex-[40] flex flex-col gap-2 relative z-10 bg-slate-50/50 p-4 rounded-xl border border-slate-200 overflow-hidden min-h-0">
+                <div className="flex justify-between items-center px-1 shrink-0">
                   <div className="flex items-center gap-4">
                       <h2 className="text-[11px] font-bold text-[#1e3a8a] uppercase tracking-widest flex items-center">
-                      <Database className="w-4 h-4 mr-2" /> የቢሮ መዝገብ ቤት (DMS) - የሰነዶች መዝገብ
+                        <Database className="w-4 h-4 mr-2" /> የቢሮ መዝገብ ቤት (DMS) - የሰነዶች መዝገብ
                       </h2>
                       <Badge variant="secondary" className="bg-[#1e3a8a]/10 text-[#1e3a8a] text-[9px] border-none">Active Institutional Registry</Badge>
                   </div>
@@ -682,7 +683,7 @@ export function BPMNFlowForgeApp() {
                               <TableRow key={doc.id} className="group hover:bg-slate-50/80 transition-all cursor-pointer" onClick={() => { setXmlResult(doc.xml); setTitle(doc.title); setInput(doc.description); setActiveTab("diagram"); }}>
                                 <TableCell className="text-[10px] font-bold py-3 px-6 text-[#1e3a8a]">{doc.title}</TableCell>
                                 <TableCell className="py-3"><Badge variant="outline" className="text-[8px] h-4 px-2 border-[#1e3a8a]/20 text-[#1e3a8a]">ዲያግራም</Badge></TableCell>
-                                <TableCell className="py-3"><div className="flex items-center gap-1.5 text-[8px] font-bold text-green-600"><CheckCircle2 className="w-2.5 h-2.5" /> Active & Filed</div></TableCell>
+                                <TableCell className="py-3"><div className="flex items-center gap-1.5 text-[8px] font-bold text-green-600"><ShieldCheck className="w-2.5 h-2.5" /> Active & Filed</div></TableCell>
                                 <TableCell className="text-[10px] text-slate-400 py-3">-</TableCell>
                                 <TableCell className="text-[10px] text-slate-400 py-3">{doc.date}</TableCell>
                                 <TableCell className="text-right py-3 pr-6">
