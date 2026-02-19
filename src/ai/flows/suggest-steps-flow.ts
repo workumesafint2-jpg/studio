@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Smart Institutional Workflow & Document Generator
@@ -35,7 +36,10 @@ const suggestStepsFlow = ai.defineFlow(
       }
     }
 
-    // 2. Fallback: AI Generation if not in registry or for other document types
+    // 2. Specific Report Logic
+    const isReport = input.docType === 'report' || input.title.toLowerCase().includes('ሪፖርት') || input.title.toLowerCase().includes('report');
+    
+    // 3. Fallback: AI Generation if not in registry or for other document types
     const docTypeLabel = {
       reform: 'የሪፎርም ሰነድ (Reform Paper)',
       report: 'ቴክኒካዊ ሪፖርት (Technical Report)',
@@ -48,6 +52,14 @@ const suggestStepsFlow = ai.defineFlow(
       
       TASK: Generate a professional Amharic workflow for a "${docTypeLabel}" titled "${input.title}".
       
+      ${isReport ? `
+      SPECIFIC REPORTING COMMANDS:
+      1. If the title mentions "ሳምንት" (Weekly), focus on daily tracking and quick summary.
+      2. If the title mentions "ወር" (Monthly), focus on goal achievement and variance analysis.
+      3. If the title mentions "ሩብ ዓመት" (Quarterly), focus on strategic KPI evaluation.
+      4. If the title mentions "ዓመት" (Annual), focus on comprehensive performance appraisal and next-year planning.
+      ` : ''}
+
       STRICT COMMAND MODELER RULES:
       1. Always start with: "Start [wrap]"
       2. Use [wrap] after EVERY action step.

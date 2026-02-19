@@ -32,7 +32,8 @@ import {
   SeparatorHorizontal,
   Filter,
   Layers,
-  Search
+  Search,
+  FileText
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -102,6 +103,7 @@ interface UploadedFile {
   name: string;
   category: string;
   planType?: string;
+  reportType?: string;
   fileName: string;
   fileSize: string;
   uploadDate: string;
@@ -112,6 +114,7 @@ interface UploadedFile {
 
 interface PerformanceMetric {
   serviceName: string;
+  period: string;
   planned: number;
   actual: number;
   execution: number;
@@ -134,6 +137,7 @@ export function BPMNFlowForgeApp() {
   const [uploadName, setUploadName] = useState("");
   const [uploadCategory, setUploadCategory] = useState("Report");
   const [uploadPlanType, setUploadPlanType] = useState("Annual Plan");
+  const [uploadReportType, setUploadReportType] = useState("Monthly Report");
   const [uploadMetric, setUploadMetric] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -147,22 +151,26 @@ export function BPMNFlowForgeApp() {
   }, []);
 
   const performanceData = useMemo(() => {
-    const metrics: Record<string, { planned: number; actual: number }> = {};
+    const metrics: Record<string, { planned: number; actual: number; period: string }> = {};
     
     uploadedFiles.forEach(file => {
       const name = file.name.toLowerCase().trim();
-      if (!metrics[name]) metrics[name] = { planned: 0, actual: 0 };
+      const period = file.planType || file.reportType || "General";
+      const key = `${name}-${period}`;
+
+      if (!metrics[key]) metrics[key] = { planned: 0, actual: 0, period };
       
       if (file.category === 'Plan') {
-        metrics[name].planned = file.metricValue;
+        metrics[key].planned = file.metricValue;
       } else if (file.category === 'Report') {
-        metrics[name].actual = file.metricValue;
+        metrics[key].actual = file.metricValue;
       }
     });
 
     return Object.entries(metrics)
       .filter(([_, data]) => data.planned > 0)
-      .map(([name, data]) => {
+      .map(([key, data]) => {
+        const name = key.split('-')[0];
         const execution = data.planned > 0 ? (data.actual / data.planned) * 100 : 0;
         let status: 'Excellent' | 'On track' | 'Needs attention' = 'Needs attention';
         let color = '#22c55e';
@@ -179,6 +187,7 @@ export function BPMNFlowForgeApp() {
 
         return {
           serviceName: name.charAt(0).toUpperCase() + name.slice(1),
+          period: data.period,
           planned: data.planned,
           actual: data.actual,
           execution: Math.round(execution),
@@ -190,9 +199,8 @@ export function BPMNFlowForgeApp() {
 
   const filteredVault = useMemo(() => {
     if (vaultFilter === 'all') return vault;
-    // Diagrams don't have types yet, so they only show in 'all' or if specifically coded
     return vault.filter(item => {
-        if (vaultFilter === 'Annual Plan' && item.title.includes('እቅድ')) return true;
+        if (vaultFilter === 'Annual Plan' && (item.title.includes('እቅድ') || item.title.includes('Plan'))) return true;
         return false;
     });
   }, [vault, vaultFilter]);
@@ -283,6 +291,7 @@ export function BPMNFlowForgeApp() {
         name: uploadName,
         category: uploadCategory,
         planType: uploadCategory === 'Plan' ? uploadPlanType : undefined,
+        reportType: uploadCategory === 'Report' ? uploadReportType : undefined,
         fileName: selectedFile.name,
         fileSize: (selectedFile.size / 1024).toFixed(1) + " KB",
         uploadDate: new Date().toLocaleString('am-ET'),
@@ -502,6 +511,21 @@ export function BPMNFlowForgeApp() {
                                 </Select>
                             </div>
                         )}
+                        {uploadCategory === 'Report' && (
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-slate-400">የሪፖርት ዓይነት (Report Index)</label>
+                                <Select value={uploadReportType} onValueChange={setUploadReportType}>
+                                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="የሪፖርት ዓይነት" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Weekly Report">የሳምንት ሪፖርት</SelectItem>
+                                    <SelectItem value="Monthly Report">የወር ሪፖርት</SelectItem>
+                                    <SelectItem value="Quarterly Report">የሩብ ዓመት ሪፖርት</SelectItem>
+                                    <SelectItem value="Annual Performance Report">የዓመት አፈጻጸም ሪፖርት</SelectItem>
+                                    <SelectItem value="Special/Ad-hoc Report">ልዩ/ድንገተኛ ሪፖርት</SelectItem>
+                                </SelectContent>
+                                </Select>
+                            </div>
+                        )}
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-[10px] font-bold text-slate-400">ኢላማ/ውጤት (Metric Value)</label>
@@ -626,7 +650,7 @@ export function BPMNFlowForgeApp() {
                               <TableCell className="py-3">
                                 <div className="flex flex-col gap-1">
                                     <Badge variant="secondary" className={`text-[8px] h-4 px-2 w-fit ${file.category === 'Plan' ? 'bg-[#1e3a8a] text-white' : 'bg-slate-100 text-slate-600'}`}>{file.category}</Badge>
-                                    {file.planType && <span className="text-[8px] font-bold text-slate-400 ml-1">↳ {file.planType}</span>}
+                                    {(file.planType || file.reportType) && <span className="text-[8px] font-bold text-slate-400 ml-1">↳ {file.planType || file.reportType}</span>}
                                 </div>
                               </TableCell>
                               <TableCell className="text-[10px] font-mono text-slate-500 py-3">{file.metricValue}</TableCell>
@@ -706,6 +730,7 @@ export function BPMNFlowForgeApp() {
                           <RechartsTooltip 
                             cursor={{ fill: '#f8fafc' }}
                             contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }}
+                            formatter={(value, name, props) => [value, `${name} (${props.payload.period})`]}
                           />
                           <Legend wrapperStyle={{ fontSize: '11px', fontWeight: 'bold', paddingTop: '20px' }} />
                           <Bar dataKey="planned" name="ኢላማ (Target)" fill="#e2e8f0" radius={[6, 6, 0, 0]} barSize={32} />
@@ -728,7 +753,7 @@ export function BPMNFlowForgeApp() {
       {/* Institutional Footer */}
       <footer className="px-8 py-3 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0 sticky bottom-0 z-[100]">
         <div className="flex gap-6">
-          <span>ITDB Portal v1.6 - Plan Index Indexing Active</span>
+          <span>ITDB Portal v1.7 - Institutional Reporting Registry Active</span>
           <span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span>
         </div>
         <div className="flex gap-4 items-center">
