@@ -523,9 +523,9 @@ export function BPMNFlowForgeApp() {
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1.5">
                               <label className="text-[10px] font-bold text-slate-400">ምድብ (Category)</label>
-                              <Select value={uploadCategory} onValueChange={setUploadCategory}>
+                              <Select value={uploadCategory} onValueChange={(val) => setUploadCategory(val)}>
                                 <SelectTrigger className="h-9 text-xs">
-                                  <SelectValue placeholder="ምድብ" />
+                                  <SelectValue placeholder="ምድብ ይምረጡ" />
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="Plan">እቅድ (Plan)</SelectItem>
