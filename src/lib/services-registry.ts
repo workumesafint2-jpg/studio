@@ -12,39 +12,43 @@ export interface BureauService {
 export const BUREAU_SERVICES_REGISTRY: BureauService[] = [
   {
     title: "የኢኖቬሽንና ቴክኖሎጂ ጥናትና ምርምር",
-    workflow: "Start [wrap] የጥናትና ምርምር ፍላጎት/ጥያቄ መቀበል [wrap] ፍላጎት/ጥያቄው መለየት [wrap] ጥያቄው በቢሮው ወስጥ ወይም በሌላ አካል የሚሰራ መሆኑን? [wrap] በጥናት ርዕስ መለየት [wrap] የጥናት ፕሮፖዛል ማዘጋጀት [wrap] ፕሮፖዛል ማጽደቅ [wrap] የጥናት ቡድን ማዋቀር [wrap] አስፈላጊ የመረጃ መሰብሰቢያ መጠይቆችና ቅጾች ማዘጋጀት [wrap] መረጃዎቹን መሰብሰብ [wrap] የተሰበሰቡ መረጃዎችን በጥራት ማረጋገጥ [wrap] መረጃዎችን በሶፍትዌር ረዳት ተጠቅሞ መተንተን [wrap] የጥናቱን ውጤት ለውይይት ማቅረብ [wrap] ከውይይት የተገኘውን ግብዓት በማካተት ሰነዱን ማጠናቀቅ [wrap] የጥናቱ ሰነድ ለሚመለከተው አካል ማስተላለፍ [wrap] End"
+    workflow: "Start [wrap] የቴክኖሎጂ ጥናትና ምርምር ፍላጎት መቀበል [wrap] ፍላጎት መለየት [wrap] የጥናት ፕሮፖዛል ማዘጋጀት [wrap] ፕሮፖዛል ማጸደቅ [wrap] መረጃ መሰብሰብ [wrap] መረጃዎችን መተንተን [wrap] የጥናት ውጤቱን ለውይይት ማቅረብ [wrap] ሰነዱን ማጠናቀቅ [wrap] End"
   },
   {
-    title: "የቴክኒክ ምክርና አገልግሎት",
-    workflow: "Start [wrap] የጥናትና ምርምር ፍላጎት/ጥያቄ መቀበል [wrap] ፍላጎት/ጥያቄው መለየት [wrap] በጥያቄው መሰረት የምክክር አገልግሎትና ላይ ምክክር ማካሄድ [wrap] የምክክር አገልግሎት ስራ መመሪያ ማዘጋጀት [wrap] በስራ መመሪያው ስራ መስራት ይቻላል? [wrap] በስራ መመሪያው ከሌላ ትብብር ጋር ስራ መስራት [wrap] የምክክር ውጤት በደብዳቤ ለባለድርሻው ጋር መላክ/ማድረስ [wrap] የምክክሩ ሰነድ ለባለድርሻው ማሳወቅ [wrap] End"
+    title: "የቴክኖሎጂ ማማከር አገልግሎት",
+    workflow: "Start [wrap] የቴክኖሎጂ ማማከር ጥያቄ መቀበል [wrap] ፍላጎት መለየት [wrap] ባለሙያ መመደብ [wrap] የማማከር ስራ መስራት [wrap] ሪፖርት ማቅረብ [wrap] End"
   },
   {
-    title: "የመረጃ ልማት",
-    workflow: "Start [wrap] የቴክኒክ ድጋፍ ጥያቄ መቀበል [wrap] የቴክኒክ ድጋፍ ዝርዝር መለየት [wrap] ብልሽቱን መመርመር [wrap] ጥገናው በቢሮ ወይም በውጪ ድርጅት የሚከናወን መሆኑን መለየት [wrap] ተጠቃሚዎችን ማሳወቅ [wrap] የጥገና ስራውን መስራት [wrap] ጥገናው ተጠናቋል? [wrap] ጥገናው ተጠናቋል የሚል ምላሽ መስጠት [wrap] የጥገናው ውጤት (መረጃ) ለተጠቃሚው ማሳወቅ [wrap] End"
+    title: "የቴክኖሎጂ ሽግግር ድጋፍ",
+    workflow: "Start [wrap] የቴክኖሎጂ ሽግግር ጥያቄ መቀበል [wrap] ፍላጎት መለየት [wrap] የቴክኖሎጂ አይነት መለየት [wrap] የድጋፍ አይነት መለየት [wrap] ድጋፍ መስጠት [wrap] End"
   },
   {
-    title: "አመቺ የቴክኖሎጂ ፍለጋ",
-    workflow: "Start [wrap] የአመቺ ቴክኖሎጂ ፍላጎት/ጥያቄ መቀበል [wrap] ፍላጎት/ጥያቄው መለየት [wrap] የአመቺ ቴክኖሎጂ ፍላጎት ጥያቄው በቢሮው ውስጥ? [wrap] ፍላጎቱን በሳይት ሰርቬይ ማረጋገጥ [wrap] የቴክኖሎጂ ፍላጎቱን በዝርዝር ማዘጋጀት [wrap] ተስማሚ ቴክኖሎጂ ፍለጋ ማካሄድ [wrap] ተስማሚ ቴክኖሎጂ መለየት [wrap] የቴክኖሎጂ ውጤት ለተጠቃሚው ማሳወቅ [wrap] End"
+    title: "የሶፍትዌር አቅም ግንባታ",
+    workflow: "Start [wrap] የጥያቄ መቀበል [wrap] ፍላጎት መለየት [wrap] የሥልጠና ሰነድ ማዘጋጀት [wrap] ሥልጠና መስጠት [wrap] ምዘና ማከናወን [wrap] End"
   },
   {
-    title: "የኢኖቬሽንና ቴክኖሎጂ ዕውቅና ማረጋገጫ",
-    workflow: "Start [wrap] የዕውቅና ማረጋገጫ ጥያቄ መቀበል [wrap] ጥያቄው መለየት [wrap] የዕውቅና ፍላጎት መለየት [wrap] የዕውቅና መስፈርት ማሟላቱን ማረጋገጥ [wrap] የዕውቅና የምስክር ወረቀት ማዘጋጀት [wrap] የዕውቅና የምስክር ወረቀት መስጠት [wrap] End"
+    title: "የከተማ አቀፍ የመረጃ ቋት ማልማት",
+    workflow: "Start [wrap] የደንበኛ ጥያቄ መቀበል [wrap] ፍላጎት መሰብሰብ [wrap] የንድፍ ዲዛይን ማዘጋጀት [wrap] መረጃ ቋቱን ማልማት [wrap] ፍተሻ ማከናወን [wrap] ሪክክብ ማድረግ [wrap] End"
   },
   {
-    title: "የኢኖቬሽን ድጋፍ",
-    workflow: "Start [wrap] የኢኖቬሽን ድጋፍ ጥያቄ መቀበል [wrap] ጥያቄው መለየት [wrap] የኢኖቬሽን ድጋፍ ፍላጎት መለየት [wrap] የኢኖቬሽን ድጋፍ መስፈርት ማሟላቱን ማረጋገጥ [wrap] የኢኖቬሽን ድጋፍ መስጠት [wrap] End"
+    title: "የሳይበር ደህንነት ክትትል",
+    workflow: "Start [wrap] ጥያቄ መቀበል [wrap] ስጋቶችን መለየት [wrap] ክትትል ማድረግ [wrap] ምላሽ መስጠት [wrap] ሪፖርት ማቅረብ [wrap] End"
   },
   {
-    title: "የቴክኖሎጂ ልውውጥ",
-    workflow: "Start [wrap] የቴክኖሎጂ ልውውጥ ጥያቄ መቀበል [wrap] ጥያቄው መለየት [wrap] የቴክኖሎጂ ልውውጥ ፍላጎት መለየት [wrap] የቴክኖሎጂ ልውውጥ መስፈርት ማሟላቱን ማረጋገጥ [wrap] የቴክኖሎጂ ልውውጥ መስጠት [wrap] End"
+    title: "የቴክኖሎጂ ሙያ ፈቃድ መስጠት",
+    workflow: "Start [wrap] ማመልከቻ መቀበል [wrap] መስፈርት ማረጋገጥ [wrap] ፈተና መስጠት [wrap] ፈቃድ ማዘጋጀት [wrap] ፈቃድ መስጠት [wrap] End"
   },
   {
-    title: "የአይቲ ስልጠና",
-    workflow: "Start [wrap] የስልጠና ፍላጎት መለየት [wrap] የስልጠና ሞጁል ማዘጋጀት [wrap] ስልጠና መስጠት [wrap] ምዘና ማካሄድ [wrap] የምስክር ወረቀት መስጠት [wrap] End"
+    title: "የኢንፎርሜሽን ቴክኖሎጂ ኦዲት",
+    workflow: "Start [wrap] የኦዲት እቅድ ማውጣት [wrap] መረጃ መሰብሰብ [wrap] ፍተሻ ማካሄድ [wrap] ግኝቶችን ማሳወቅ [wrap] ማጠቃለያ ሪፖርት [wrap] End"
   },
   {
-    title: "የዲጂታል ፊርማ አገልግሎት",
-    workflow: "Start [wrap] የፊርማ ጥያቄ መቀበል [wrap] ማንነት ማረጋገጥ [wrap] የዲጂታል ፊርማ ማመንጨት [wrap] ሰነድ ላይ መፈረም [wrap] ትክክለኛነት ማረጋገጥ [wrap] End"
+    title: "የሃርድዌር ጥገና ድጋፍ",
+    workflow: "Start [wrap] የጥገና ጥያቄ መቀበል [wrap] ብልሽት መለየት [wrap] ጥገና ማከናወን [wrap] ፍተሻ ማድረግ [wrap] ርክክብ [wrap] End"
+  },
+  {
+    title: "የኔትወርክ ዝርጋታ",
+    workflow: "Start [wrap] የሳይት ሰርቬይ ማድረግ [wrap] ዲዛይን ማዘጋጀት [wrap] ግብዓት ማቅረብ [wrap] ዝርጋታ ማከናወን [wrap] ኮንፊግሬሽን መስራት [wrap] End"
   }
 ];
 
