@@ -9,33 +9,23 @@ import {
   Trash2, 
   MoreVertical, 
   FileType, 
-  Sparkles, 
   Archive, 
   Database, 
-  CheckCircle2, 
-  FileSearch, 
   ChevronDown, 
   Zap, 
   Activity,
   Loader2,
   Layout,
-  FileJson,
   Upload,
   Download,
-  CalendarDays,
   Target,
   Trophy,
-  AlertTriangle,
-  TrendingUp,
   BarChart,
-  SeparatorHorizontal,
-  Filter,
-  Layers,
   Search,
   FileText,
-  Clock,
   ShieldCheck,
-  BrainCircuit
+  BrainCircuit,
+  TrendingUp
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -168,9 +158,9 @@ export function BPMNFlowForgeApp() {
       if (!metrics[key]) metrics[key] = { planned: 0, actual: 0, period };
       
       if (file.category === 'Plan') {
-        metrics[key].planned = file.metricValue || 100; // Mocking metric for demo
+        metrics[key].planned = file.metricValue || 100;
       } else if (file.category === 'Report') {
-        metrics[key].actual = file.metricValue || 85; // Mocking metric for demo
+        metrics[key].actual = file.metricValue || 85;
       }
     });
 
@@ -252,11 +242,9 @@ export function BPMNFlowForgeApp() {
         setInput(result.steps);
         if (result.relatedFiles && result.relatedFiles.length > 0) {
           toast({ 
-            title: "ወርቁ ነኝ - ፋይል ተገኝቷል", 
+            title: "ፋይል ተገኝቷል", 
             description: `ተዛማጅ ፋይሎች፡ ${result.relatedFiles.join(', ')}` 
           });
-        } else {
-          toast({ title: "ወርቁ ነኝ ዝግጁ ነው", description: "ቴክኒካዊ መግለጫው/ትንታኔው ተዘጋጅቷል።" });
         }
       }
     } catch (error: any) {
@@ -310,8 +298,7 @@ export function BPMNFlowForgeApp() {
             
             toast({ 
               title: "አግብቷል & ተመዝግቧል", 
-              description: `${newFile.name} በቢሮው መዝገብ ቤት በቋሚነት ተቀምጧል።`,
-              className: "bg-green-50 border-green-200"
+              description: `${newFile.name} በቢሮው መዝገብ ቤት ተቀምጧል።`,
             });
             return 100;
           }
@@ -377,7 +364,6 @@ export function BPMNFlowForgeApp() {
       </header>
 
       <main className="flex flex-col flex-1 p-3 gap-3 bg-slate-50/50 overflow-hidden">
-        {/* Input Area */}
         <div className="w-full shrink-0">
           <Card className="shadow-sm border border-slate-200 rounded-xl overflow-hidden bg-white">
             <CardContent className="p-4 space-y-4">
@@ -392,15 +378,12 @@ export function BPMNFlowForgeApp() {
                 
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-end mb-1">
-                    <div className="flex flex-col gap-0.5">
-                      <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">የሂደቱን ዝርዝር ተግባር እዚህ ያስገቡ</label>
-                      <span className="text-[8px] font-bold text-[#1e3a8a] animate-pulse italic">ወርቁ ነኝ ምን ልርዳዎት?</span>
-                    </div>
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">የሂደቱን ዝርዝር ተግባር እዚህ ያስገቡ</label>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="h-7 px-3 text-[9px] text-[#1e3a8a] font-bold border border-[#1e3a8a]/20 rounded-lg bg-blue-50/50">
                           {isSuggesting ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <BrainCircuit className="w-3.5 h-3.5 mr-2" />}
-                          ወርቁን ጠይቅ <ChevronDown className="w-2.5 h-2.5 ml-2" />
+                          ወርቁ ነኝ ምን ልርዳዎት? <ChevronDown className="w-2.5 h-2.5 ml-2" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-64">
@@ -422,7 +405,7 @@ export function BPMNFlowForgeApp() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
-                  <Textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder="የሂደቱን ዝርዝር ተግባር (Steps) እዚህ ያስገቡ ወይም በወርቁ ያመንጩ..." className="min-h-[120px] text-xs font-medium leading-relaxed" />
+                  <Textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder="ዝርዝርን እዚህ ያስገቡ" className="min-h-[120px] text-xs font-medium leading-relaxed" />
                 </div>
               </div>
               
@@ -438,7 +421,6 @@ export function BPMNFlowForgeApp() {
           </Card>
         </div>
 
-        {/* 60/40 Split View */}
         <div className="flex-1 flex flex-col gap-3 min-h-0 overflow-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col w-full h-full min-h-0">
             <div className="flex justify-between items-center bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm shrink-0">
