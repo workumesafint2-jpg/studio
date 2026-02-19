@@ -1,6 +1,6 @@
 /**
- * ወርቁ Pro - Industrial BPMN Engine v6.0
- * UPDATED: Vertical List Parsing & Auto-Wrap Logic
+ * ወርቁ Pro - Industrial BPMN Engine v6.1
+ * UPDATED: Enhanced Spacing & Orthogonal Routing for Professional Layout
  */
 
 export function generateBPMN(input: string, title: string = "Process Diagram"): string {
@@ -54,7 +54,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       startTextToMove = "";
     }
 
-    // AUTO-WRAP LOGIC: Wrap to new row every 5 nodes
+    // AUTO-WRAP LOGIC
     const nodeIndex = nodeDefs.length;
     const row = Math.floor(nodeIndex / NODES_PER_ROW);
     const col = nodeIndex % NODES_PER_ROW;
@@ -75,12 +75,13 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const diElements: string[] = [];
   const positions: Record<string, { x: number, y: number, w: number, h: number }> = {};
 
-  const COL_SPACING = 350; 
-  const ROW_SPACING = 300;
-  const BOX_WIDTH = 120;
+  // UPDATED: Increased spacing for professional breathing room and return paths
+  const COL_SPACING = 480; 
+  const ROW_SPACING = 380;
+  const BOX_WIDTH = 130;
   const BOX_HEIGHT = 80;
-  const X_OFFSET = 150;
-  const Y_OFFSET = 150;
+  const X_OFFSET = 180;
+  const Y_OFFSET = 180;
 
   nodeDefs.forEach((node, i) => {
     const x = X_OFFSET + node.col * COL_SPACING;
@@ -103,11 +104,11 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
     diElements.push(`<bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}"><dc:Bounds x="${x - w/2}" y="${y - h/2}" width="${w}" height="${h}" /></bpmndi:BPMNShape>`);
 
-    // SIDE DATA OBJECTS
+    // SIDE DATA OBJECTS (Positioned strategically to avoid line overlaps)
     if (node.hasDataAssociation) {
       const dataId = `Data_${node.id}`;
-      const dataX = x + 120; 
-      const dataY = y - 70;
+      const dataX = x + 150; 
+      const dataY = y - 80;
       elements.push(`<bpmn:dataObjectReference id="${dataId}" name="ሰነድ" dataObjectRef="DO_${node.id}" />`);
       elements.push(`<bpmn:dataObject id="DO_${node.id}" />`);
       elements.push(`<bpmn:association id="Assoc_${node.id}" sourceRef="${node.id}" targetRef="${dataId}" />`);
@@ -116,7 +117,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         <bpmndi:BPMNEdge id="Assoc_${node.id}_di" bpmnElement="Assoc_${node.id}"><di:waypoint x="${x + w/2}" y="${y}" /><di:waypoint x="${dataX - 18}" y="${dataY}" /></bpmndi:BPMNEdge>`);
     }
 
-    // CONNECT NODES
+    // CONNECT NODES WITH ORTHOGONAL ROUTING
     if (i > 0) {
       const prev = nodeDefs[i-1];
       const s = positions[prev.id];
@@ -130,10 +131,22 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
       flows.push(`<bpmn:sequenceFlow id="${flowId}" ${label ? `name="${label}"` : ''} sourceRef="${prev.id}" targetRef="${node.id}" />`);
       
+      // ORTHOGONAL ROUTING: Detect row change for cleaner routing
+      let waypoints = `<di:waypoint x="${s.x + s.w/2}" y="${s.y}" />`;
+      if (s.y === t.y) {
+        waypoints += `<di:waypoint x="${t.x - t.w/2}" y="${t.y}" />`;
+      } else {
+        const midX = (s.x + t.x) / 2;
+        waypoints += `<di:waypoint x="${s.x + s.w/2 + 40}" y="${s.y}" />`;
+        waypoints += `<di:waypoint x="${s.x + s.w/2 + 40}" y="${(s.y + t.y)/2}" />`;
+        waypoints += `<di:waypoint x="${t.x - t.w/2 - 40}" y="${(s.y + t.y)/2}" />`;
+        waypoints += `<di:waypoint x="${t.x - t.w/2 - 40}" y="${t.y}" />`;
+        waypoints += `<di:waypoint x="${t.x - t.w/2}" y="${t.y}" />`;
+      }
+
       diElements.push(`
         <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">
-          <di:waypoint x="${s.x + s.w/2}" y="${s.y}" />
-          <di:waypoint x="${t.x - t.w/2}" y="${t.y}" />
+          ${waypoints}
           ${label ? `<bpmndi:BPMNLabel><dc:Bounds x="${(s.x + t.x)/2 - 30}" y="${(s.y + t.y)/2 - 20}" width="60" height="14" /></bpmndi:BPMNLabel>` : ''}
         </bpmndi:BPMNEdge>`);
     }
