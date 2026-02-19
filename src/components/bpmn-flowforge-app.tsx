@@ -97,6 +97,7 @@ interface UploadedFile {
   category: string;
   planType?: string;
   reportType?: string;
+  reformType?: string;
   taxonomyService?: string;
   fileName: string;
   fileSize: string;
@@ -133,12 +134,13 @@ export function BPMNFlowForgeApp() {
   const [uploadProgress, setUploadProgress] = useState(0);
   
   const [uploadCategory, setUploadCategory] = useState<string>("");
-  const [uploadPlanType, setUploadPlanType] = useState("Annual Plan");
-  const [uploadReportType, setUploadReportType] = useState("Monthly Report");
+  const [uploadPlanType, setUploadPlanType] = useState("የዓመት እቅድ (Annual Plan)");
+  const [uploadReportType, setUploadReportType] = useState("የወር ሪፖርት (Monthly Report)");
+  const [uploadReformType, setUploadReformType] = useState("ካታሎግ (Catalogue)");
   const [uploadTaxonomyService, setUploadTaxonomyService] = useState(BUREAU_SERVICES_REGISTRY[0].title);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const [vaultFilter, setVaultFilter] = useState<'all' | 'Plan' | 'Report' | 'Service Taxonomy' | 'Reform Documents'>('all');
+  const [vaultFilter, setVaultFilter] = useState<'all' | 'እቅዶች (Plans)' | 'ሪፖርቶች (Reports)' | 'Service Taxonomy' | 'የሪፎርም ሰነዶች (Reform Docs)'>('all');
 
   const viewerRef = useRef<BPMNViewerRef>(null);
   const { toast } = useToast();
@@ -157,9 +159,9 @@ export function BPMNFlowForgeApp() {
 
       if (!metrics[key]) metrics[key] = { planned: 0, actual: 0, period };
       
-      if (file.category === 'Plan') {
+      if (file.category === 'እቅዶች (Plans)') {
         metrics[key].planned = file.metricValue || 100;
-      } else if (file.category === 'Report') {
+      } else if (file.category === 'ሪፖርቶች (Reports)') {
         metrics[key].actual = file.metricValue || 85;
       }
     });
@@ -277,8 +279,9 @@ export function BPMNFlowForgeApp() {
               id: Math.random().toString(36).substr(2, 9),
               name: displayName,
               category: uploadCategory,
-              planType: uploadCategory === 'Plan' ? uploadPlanType : undefined,
-              reportType: uploadCategory === 'Report' ? uploadReportType : undefined,
+              planType: uploadCategory === 'እቅዶች (Plans)' ? uploadPlanType : undefined,
+              reportType: uploadCategory === 'ሪፖርቶች (Reports)' ? uploadReportType : undefined,
+              reformType: uploadCategory === 'የሪፎርም ሰነዶች (Reform Docs)' ? uploadReformType : undefined,
               taxonomyService: uploadCategory === 'Service Taxonomy' ? uploadTaxonomyService : undefined,
               fileName: selectedFile.name,
               fileSize: (selectedFile.size / 1024).toFixed(1) + " KB",
@@ -456,56 +459,70 @@ export function BPMNFlowForgeApp() {
                           <Select value={uploadCategory} onValueChange={setUploadCategory}>
                             <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="ምድብ ይምረጡ..." /></SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Plan">እቅድ (Plan)</SelectItem>
-                              <SelectItem value="Report">ሪፖርት (Report)</SelectItem>
-                              <SelectItem value="Service Taxonomy">Service Taxonomy</SelectItem>
-                              <SelectItem value="Reform Documents">የሪፎርም ሰነዶች</SelectItem>
-                              <SelectItem value="Other">ሌሎች</SelectItem>
+                              <SelectItem value="እቅዶች (Plans)">1. እቅዶች (Plans)</SelectItem>
+                              <SelectItem value="ሪፖርቶች (Reports)">2. ሪፖርቶች (Reports)</SelectItem>
+                              <SelectItem value="የሪፎርም ሰነዶች (Reform Docs)">3. የሪፎርም ሰነዶች (Reform Docs)</SelectItem>
+                              <SelectItem value="Service Taxonomy">4. Service Taxonomy</SelectItem>
+                              <SelectItem value="ሌሎች">5. ሌሎች (Others)</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
 
-                        {uploadCategory === 'Plan' && (
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-slate-400">የእቅድ ዓይነት</label>
+                        {uploadCategory === 'እቅዶች (Plans)' && (
+                          <div className="space-y-1.5 animate-in slide-in-from-top-1">
+                            <label className="text-[10px] font-bold text-slate-400">የእቅድ ዓይነት (Plan Index)</label>
                             <Select value={uploadPlanType} onValueChange={setUploadPlanType}>
                               <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="Strategic Plan">ስትራቴጂካዊ እቅድ</SelectItem>
-                                <SelectItem value="Annual Plan">የዓመት እቅድ</SelectItem>
-                                <SelectItem value="Quarterly Plan">የሩብ ዓመት እቅድ</SelectItem>
-                                <SelectItem value="Monthly Plan">የወር እቅድ</SelectItem>
-                                <SelectItem value="Individual/Team Plan">የግል/የቡድን እቅድ</SelectItem>
+                                <SelectItem value="ስትራቴጂካዊ እቅድ">ስትራቴጂካዊ እቅድ</SelectItem>
+                                <SelectItem value="የዓመት እቅድ">የዓመት እቅድ</SelectItem>
+                                <SelectItem value="የሩብ ዓመት እቅድ">የሩብ ዓመት እቅድ</SelectItem>
+                                <SelectItem value="የወር እቅድ">የወር እቅድ</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
                         )}
 
-                        {uploadCategory === 'Report' && (
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-slate-400">የሪፖርት ዓይነት</label>
+                        {uploadCategory === 'ሪፖርቶች (Reports)' && (
+                          <div className="space-y-1.5 animate-in slide-in-from-top-1">
+                            <label className="text-[10px] font-bold text-slate-400">የሪፖርት ዓይነት (Report Index)</label>
                             <Select value={uploadReportType} onValueChange={setUploadReportType}>
                               <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="Weekly Report">የሳምንት ሪፖርት</SelectItem>
-                                <SelectItem value="Monthly Report">የወር ሪፖርት</SelectItem>
-                                <SelectItem value="Quarterly Report">የሩብ ዓመት ሪፖርት</SelectItem>
-                                <SelectItem value="Annual Performance Report">የዓመት አፈጻጸም ሪፖርት</SelectItem>
-                                <SelectItem value="Special/Ad-hoc Report">ልዩ/ድንገተኛ ሪፖርት</SelectItem>
+                                <SelectItem value="የወር ሪፖርት">የወር ሪፖርት</SelectItem>
+                                <SelectItem value="የሩብ ዓመት ሪፖርት">የሩብ ዓመት ሪፖርት</SelectItem>
+                                <SelectItem value="የዓመት አፈጻጸም ሪፖርት">የዓመት አፈጻጸም ሪፖርት</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+
+                        {uploadCategory === 'የሪፎርም ሰነዶች (Reform Docs)' && (
+                          <div className="space-y-1.5 animate-in slide-in-from-top-1">
+                            <label className="text-[10px] font-bold text-slate-400">የሪፎርም ሰነድ ዓይነት (Reform Index)</label>
+                            <Select value={uploadReformType} onValueChange={setUploadReformType}>
+                              <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="ካታሎግ (Catalogue)">ካታሎግ (Catalogue)</SelectItem>
+                                <SelectItem value="Mapping">Mapping</SelectItem>
+                                <SelectItem value="As-is">As-is</SelectItem>
+                                <SelectItem value="ነባራዊ ትንተና">ነባራዊ ትንተና (Contextual Analysis)</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
                         )}
 
                         {uploadCategory === 'Service Taxonomy' && (
-                          <div className="space-y-1.5">
+                          <div className="space-y-1.5 animate-in slide-in-from-top-1">
                             <label className="text-[10px] font-bold text-slate-400">Service Taxonomy Index</label>
                             <Select value={uploadTaxonomyService} onValueChange={setUploadTaxonomyService}>
                               <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                               <SelectContent>
-                                {BUREAU_SERVICES_REGISTRY.map(s => (
-                                  <SelectItem key={s.title} value={s.title}>{s.title}</SelectItem>
-                                ))}
+                                <ScrollArea className="h-48">
+                                  {BUREAU_SERVICES_REGISTRY.map(s => (
+                                    <SelectItem key={s.title} value={s.title}>{s.title}</SelectItem>
+                                  ))}
+                                </ScrollArea>
                               </SelectContent>
                             </Select>
                           </div>
@@ -518,7 +535,7 @@ export function BPMNFlowForgeApp() {
                       </div>
                     )}
                     <DialogFooter>
-                      <Button size="sm" className="bg-[#1e3a8a]" onClick={processUpload} disabled={isUploading || !selectedFile || !uploadCategory}>አጽድቅ</Button>
+                      <Button size="sm" className="bg-[#1e3a8a]" onClick={processUpload} disabled={isUploading || !selectedFile || !uploadCategory}>አጽድቅ (Confirm Selection)</Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
@@ -556,10 +573,10 @@ export function BPMNFlowForgeApp() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">ሁሉም (All)</SelectItem>
-                        <SelectItem value="Plan">እቅድ (Plans)</SelectItem>
-                        <SelectItem value="Report">ሪፖርቶች (Reports)</SelectItem>
+                        <SelectItem value="እቅዶች (Plans)">እቅዶች (Plans)</SelectItem>
+                        <SelectItem value="ሪፖርቶች (Reports)">ሪፖርቶች (Reports)</SelectItem>
+                        <SelectItem value="የሪፎርም ሰነዶች (Reform Docs)">የሪፎርም ሰነዶች</SelectItem>
                         <SelectItem value="Service Taxonomy">Service Taxonomy</SelectItem>
-                        <SelectItem value="Reform Documents">የሪፎርም ሰነዶች</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -598,7 +615,7 @@ export function BPMNFlowForgeApp() {
                                   {file.category}
                                 </Badge>
                                 <span className="text-[7px] text-[#1e3a8a] font-bold ml-1 opacity-70 italic">
-                                  {file.planType || file.reportType || file.taxonomyService || "General Record"}
+                                  {file.planType || file.reportType || file.reformType || file.taxonomyService || "General Record"}
                                 </span>
                               </div>
                             </TableCell>
@@ -643,7 +660,7 @@ export function BPMNFlowForgeApp() {
                   <div>
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">የተመዘገቡ እቅዶች</p>
                     <h4 className="text-2xl font-black text-[#1e3a8a]">
-                      {uploadedFiles.filter(f => f.category === 'Plan').length}
+                      {uploadedFiles.filter(f => f.category === 'እቅዶች (Plans)').length}
                     </h4>
                   </div>
                 </Card>
@@ -654,7 +671,7 @@ export function BPMNFlowForgeApp() {
                   <div>
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">የቀረቡ ሪፖርቶች</p>
                     <h4 className="text-2xl font-black text-[#1e3a8a]">
-                      {uploadedFiles.filter(f => f.category === 'Report').length}
+                      {uploadedFiles.filter(f => f.category === 'ሪፖርቶች (Reports)').length}
                     </h4>
                   </div>
                 </Card>
