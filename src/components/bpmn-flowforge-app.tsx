@@ -380,53 +380,59 @@ export function BPMNFlowForgeApp() {
         {/* Input Area */}
         <div className="w-full shrink-0">
           <Card className="shadow-sm border border-slate-200 rounded-xl overflow-hidden bg-white">
-            <CardContent className="p-4 flex flex-col lg:flex-row gap-4">
-              <div className="flex-1 space-y-3">
+            <CardContent className="p-4 space-y-4">
+              <div className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">የአገልግሎት ስም / ፍለጋ</label>
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">የአገልግሎት ስም (Service Name)</label>
                   <div className="relative">
-                    <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="የአገልግሎት ስም ወይም ፋይል እዚህ ይፈልጉ..." className="h-10 text-sm pl-9" />
+                    <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="የአገልግሎት ስም እዚህ ያስገቡ ወይም ይፈልጉ..." className="h-10 text-sm pl-9" />
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button className="flex-1 h-10 bg-[#1e3a8a]" onClick={handleGenerate}><Zap className="w-3.5 h-3.5 mr-2" /> አመንጭ</Button>
-                  <Button variant="outline" className="h-10 w-10 p-0 text-slate-400" onClick={() => { setInput(""); setTitle(""); }}><Trash2 className="w-4 h-4" /></Button>
+                
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-end mb-1">
+                    <div className="flex flex-col gap-0.5">
+                      <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">የሂደቱን ዝርዝር ተግባር እዚህ ያስገቡ</label>
+                      <span className="text-[8px] font-bold text-[#1e3a8a] animate-pulse italic">ወርቁ ነኝ ምን ልርዳዎት?</span>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-7 px-3 text-[9px] text-[#1e3a8a] font-bold border border-[#1e3a8a]/20 rounded-lg bg-blue-50/50">
+                          {isSuggesting ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <BrainCircuit className="w-3.5 h-3.5 mr-2" />}
+                          ወርቁን ጠይቅ <ChevronDown className="w-2.5 h-2.5 ml-2" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-64">
+                        <DropdownMenuLabel className="text-[10px] uppercase text-slate-400">Analysis & Intelligence</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleAutoSuggest('analysis')} className="text-xs font-semibold text-[#1e3a8a]">
+                          <FileType className="w-3 h-3 mr-2" /> የፋይል ፍለጋና ትንታኔ
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleAutoSuggest('report')} className="text-xs">
+                          <BarChart className="w-3 h-3 mr-2" /> የአፈጻጸም ንፅፅር (Plan vs Report)
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel className="text-[10px] uppercase text-slate-400">Workflow Generation</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleAutoSuggest('diagram')} className="text-xs">
+                          <Layout className="w-3 h-3 mr-2" /> የዲያግራም ዝርዝር ተግባር
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleAutoSuggest('reform')} className="text-xs">
+                          <FileType className="w-3 h-3 mr-2" /> የሪፎርም ሰነድ (Reform)
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  <Textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder="የሂደቱን ዝርዝር ተግባር (Steps) እዚህ ያስገቡ ወይም በወርቁ ያመንጩ..." className="min-h-[120px] text-xs font-medium leading-relaxed" />
                 </div>
               </div>
-              <div className="flex-[2] flex flex-col">
-                <div className="flex justify-between items-end mb-1.5">
-                  <div className="flex flex-col gap-0.5">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">ወርቁ (Worqu) - Document Intelligence</label>
-                    <span className="text-[8px] font-bold text-[#1e3a8a] animate-pulse italic">ከመዝገብ ቤት ፋይል መፈለግ ወይም መተንተን ትፈልጋለህ?</span>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-7 px-3 text-[9px] text-[#1e3a8a] font-bold border border-[#1e3a8a]/20 rounded-lg bg-blue-50/50">
-                        {isSuggesting ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <BrainCircuit className="w-3.5 h-3.5 mr-2" />}
-                        ወርቁን ጠይቅ <ChevronDown className="w-2.5 h-2.5 ml-2" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-64">
-                      <DropdownMenuLabel className="text-[10px] uppercase text-slate-400">Analysis & Intelligence</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => handleAutoSuggest('analysis')} className="text-xs font-semibold text-[#1e3a8a]">
-                        <FileType className="w-3 h-3 mr-2" /> የፋይል ፍለጋና ትንታኔ
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleAutoSuggest('report')} className="text-xs">
-                        <BarChart className="w-3 h-3 mr-2" /> የአፈጻጸም ንፅፅር (Plan vs Report)
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuLabel className="text-[10px] uppercase text-slate-400">Workflow Generation</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => handleAutoSuggest('diagram')} className="text-xs">
-                        <Layout className="w-3 h-3 mr-2" /> የዲያግራም ዝርዝር ተግባር
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleAutoSuggest('reform')} className="text-xs">
-                        <FileType className="w-3 h-3 mr-2" /> የሪፎርም ሰነድ (Reform)
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <Textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder="ወርቁ የፈለጉትን ፋይል ትፈልጋለች ወይም ሂደቱን ትተነትናለች..." className="flex-1 min-h-[100px] text-xs font-medium leading-relaxed" />
+              
+              <div className="flex gap-2 pt-2">
+                <Button className="flex-1 h-11 bg-[#1e3a8a] text-xs font-bold" onClick={handleGenerate}>
+                  <Zap className="w-4 h-4 mr-2" /> ዲያግራም አመንጭ (Generate BPMN)
+                </Button>
+                <Button variant="outline" className="h-11 w-11 p-0 text-slate-400 border-slate-200" onClick={() => { setInput(""); setTitle(""); }}>
+                  <Trash2 className="w-5 h-5" />
+                </Button>
               </div>
             </CardContent>
           </Card>
