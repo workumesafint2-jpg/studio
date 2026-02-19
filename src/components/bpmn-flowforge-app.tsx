@@ -359,7 +359,8 @@ export function BPMNFlowForgeApp() {
 
   return (
     <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-white">
-      <div className="h-1 w-full bg-[#1e3a8a]" />
+      {/* Institutional Top Bar */}
+      <div className="h-1 w-full bg-[#1e3a8a] shrink-0" />
       
       <header className="flex flex-col items-center justify-center py-2 px-8 bg-white border-b border-slate-100 shrink-0 z-10 relative text-center">
         <p className="text-[10px] font-bold text-[#1e3a8a] mb-0.5 tracking-widest uppercase" style={{ fontFamily: "'Noto Sans Ethiopic', sans-serif" }}>
@@ -392,11 +393,13 @@ export function BPMNFlowForgeApp() {
         </div>
       </header>
 
-      <main className="flex flex-col flex-1 overflow-hidden p-3 gap-3 bg-slate-50/50">
+      {/* Main Content Area */}
+      <main className="flex flex-col flex-1 overflow-hidden p-3 gap-3 bg-slate-50/50 min-h-0">
         <div className="flex flex-col lg:flex-row gap-3 h-full min-h-0">
-          {/* Sidebar Area */}
-          <div className="w-full lg:w-[320px] flex flex-col gap-3 shrink-0">
-            <Card className="flex-1 shadow-sm border border-slate-200 rounded-xl overflow-hidden bg-white">
+          
+          {/* Sidebar Area (Service Input) */}
+          <div className="w-full lg:w-[320px] flex flex-col gap-3 shrink-0 h-full">
+            <Card className="h-full shadow-sm border border-slate-200 rounded-xl overflow-hidden bg-white">
               <CardContent className="p-4 flex flex-col gap-4 h-full">
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center">
@@ -452,8 +455,8 @@ export function BPMNFlowForgeApp() {
             </Card>
           </div>
 
-          {/* Expanded Workspace Area */}
-          <div className="flex-1 flex flex-col gap-3 min-h-0">
+          {/* Workspace Area (Diagram + Vault) */}
+          <div className="flex-1 flex flex-col gap-3 min-h-0 overflow-hidden">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
               <div className="flex justify-between items-center bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm shrink-0">
                 <TabsList className="bg-slate-50 h-8 p-1">
@@ -468,7 +471,7 @@ export function BPMNFlowForgeApp() {
                         <Upload className="w-3 h-3 mr-2" /> ፋይል አስገባ
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="z-[100]">
                       <DialogHeader>
                         <DialogTitle className="text-sm font-bold uppercase tracking-widest text-[#1e3a8a]">አዲስ ፋይል አጽድቅ</DialogTitle>
                         <DialogDescription className="text-xs">በቢሮው መዝገብ ቤት (DMS) ውስጥ ለማስቀመጥ የፈለጉትን ፋይል እዚህ ይስቀሉ።</DialogDescription>
@@ -515,14 +518,16 @@ export function BPMNFlowForgeApp() {
                 </div>
               </div>
 
-              <div className="flex-1 flex flex-col gap-3 min-h-0 mt-3">
-                <TabsContent value="diagram" className="flex-1 flex flex-col gap-3 m-0 p-0 overflow-hidden">
-                  {/* Workflow Diagram Section */}
-                  <div className="flex-[65] flex flex-col gap-2 min-h-0">
-                    <h2 className="text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center px-1">
+              {/* Diagram Workspace Tabs Content */}
+              <div className="flex-1 flex flex-col min-h-0 overflow-hidden mt-3">
+                <TabsContent value="diagram" className="flex-1 flex flex-col gap-3 m-0 p-0 h-full overflow-hidden">
+                  
+                  {/* 1. Workflow Diagram Canvas (65% Height) */}
+                  <div className="flex-[65] flex flex-col gap-2 min-h-0 overflow-hidden">
+                    <h2 className="text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center px-1 shrink-0">
                       <Layout className="w-3.5 h-3.5 mr-2 text-primary" /> የስራ ፍሰት ዲያግራም (Workflow Diagram)
                     </h2>
-                    <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden relative min-h-0">
+                    <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden relative">
                       {xmlResult ? (
                         <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
                       ) : (
@@ -534,7 +539,7 @@ export function BPMNFlowForgeApp() {
                     </div>
                   </div>
 
-                  {/* Performance Summary (Small and integrated) */}
+                  {/* 2. Performance Summary Table (Small Integrated Strip) */}
                   {performanceData.length > 0 && (
                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-2 shrink-0">
                       <h3 className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center px-1">
@@ -568,10 +573,10 @@ export function BPMNFlowForgeApp() {
                     </div>
                   )}
 
-                  {/* Bureau Vault (DMS) Section */}
-                  <div className="flex-[35] flex flex-col gap-2 min-h-0">
+                  {/* 3. Bureau Vault (DMS) Registry (35% Height) */}
+                  <div className="flex-[35] flex flex-col gap-2 min-h-0 overflow-hidden">
                     <div className="bg-white/80 rounded-xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden backdrop-blur-sm">
-                      <div className="px-4 py-2 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                      <div className="px-4 py-2 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
                         <div className="flex items-center gap-3">
                           <h2 className="text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center">
                             <Database className="w-3.5 h-3.5 mr-2 text-primary" /> የቢሮ መዝገብ ቤት (DMS)
@@ -586,9 +591,11 @@ export function BPMNFlowForgeApp() {
                           </Button>
                         </div>
                       </div>
+                      
+                      {/* Scrollable Document Table */}
                       <ScrollArea className="flex-1 bg-white/30">
                         <Table>
-                          <TableHeader>
+                          <TableHeader className="sticky top-0 bg-white/95 z-10">
                             <TableRow className="bg-slate-50/30 hover:bg-slate-50/30">
                               <TableHead className="text-[8px] uppercase h-8 px-4">ስም (Title)</TableHead>
                               <TableHead className="text-[8px] uppercase h-8">ምድብ (Category)</TableHead>
@@ -598,6 +605,13 @@ export function BPMNFlowForgeApp() {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
+                            {filteredVault.length === 0 && filteredDocuments.length === 0 && (
+                              <TableRow>
+                                <TableCell colSpan={5} className="h-24 text-center text-[9px] text-slate-300 uppercase tracking-widest font-bold">
+                                  መዝገብ ባዶ ነው
+                                </TableCell>
+                              </TableRow>
+                            )}
                             {filteredVault.map((doc) => (
                               <TableRow key={doc.id} className="group h-8 hover:bg-slate-50/80 transition-colors">
                                 <TableCell className="text-[9px] font-semibold py-1 px-4">{doc.title}</TableCell>
@@ -633,6 +647,7 @@ export function BPMNFlowForgeApp() {
                   </div>
                 </TabsContent>
 
+                {/* Performance Dashboard View */}
                 <TabsContent value="dashboard" className="h-full m-0 p-6 bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col gap-6">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0">
                     <Card className="bg-slate-50/50 border-slate-100 shadow-none">
@@ -713,6 +728,7 @@ export function BPMNFlowForgeApp() {
         </div>
       </main>
       
+      {/* Institutional Footer */}
       <footer className="px-8 py-1 bg-white border-t border-slate-100 flex justify-between items-center text-[7px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
         <div className="flex gap-6">
           <span>ITDB Portal v1.2 - Performance Engine Active</span>
