@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -23,7 +24,11 @@ import {
   Activity,
   Loader2,
   Layout,
-  FileJson
+  FileJson,
+  Upload,
+  Download,
+  FileUp,
+  X
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +44,22 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { suggestSteps } from "@/ai/flows/suggest-steps-flow";
 import JSZip from 'jszip';
 
@@ -51,6 +72,17 @@ interface VaultItem {
   xml: string;
 }
 
+interface UploadedFile {
+  id: string;
+  name: string;
+  category: string;
+  fileName: string;
+  fileSize: string;
+  uploadDate: string;
+  dataUrl: string;
+  type: string;
+}
+
 export function BPMNFlowForgeApp() {
   const [mounted, setMounted] = useState(false);
   const [input, setInput] = useState("");
@@ -60,6 +92,14 @@ export function BPMNFlowForgeApp() {
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [vault, setVault] = useState<VaultItem[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  
+  // File Upload State
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [uploadName, setUploadName] = useState("");
+  const [uploadCategory, setUploadCategory] = useState("Report");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   const viewerRef = useRef<BPMNViewerRef>(null);
   const { toast } = useToast();
 
@@ -71,7 +111,7 @@ export function BPMNFlowForgeApp() {
 
   const generateSystemCode = () => {
     const year = 2026;
-    const count = (vault.length + 1).toString().padStart(3, '0');
+    const count = (vault.length + uploadedFiles.length + 1).toString().padStart(3, '0');
     return `ITDB-${year}-${count}`;
   };
 
@@ -94,7 +134,7 @@ export function BPMNFlowForgeApp() {
         systemCode: generateSystemCode(),
         title: title || "ያልተሰየመ ሂደት",
         description: input,
-        date: new Date().toLocaleDateString('am-ET'),
+        date: new Date().toLocaleString('am-ET'),
         xml: result
       };
       
@@ -138,6 +178,52 @@ export function BPMNFlowForgeApp() {
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+      if (!uploadName) setUploadName(e.target.files[0].name.split('.')[0]);
+    }
+  };
+
+  const processUpload = () => {
+    if (!selectedFile || !uploadName) {
+      toast({ title: "ስህተት", description: "እባክዎን ፋይል ይምረጡ እና ስም ያስገቡ።", variant: "destructive" });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      const newFile: UploadedFile = {
+        id: Math.random().toString(36).substr(2, 9),
+        name: uploadName,
+        category: uploadCategory,
+        fileName: selectedFile.name,
+        fileSize: (selectedFile.size / 1024).toFixed(1) + " KB",
+        uploadDate: new Date().toLocaleString('am-ET'),
+        dataUrl,
+        type: selectedFile.type
+      };
+
+      setUploadedFiles(prev => [newFile, ...prev]);
+      setIsUploadOpen(false);
+      setSelectedFile(null);
+      setUploadName("");
+      toast({ title: "ተሳክቷል", description: "ፋይሉ በቢሮው መዝገብ ቤት ተቀምጧል።" });
+    };
+    reader.readAsDataURL(selectedFile);
+  };
+
+  const handleDownloadFile = (file: UploadedFile) => {
+    const link = document.createElement('a');
+    link.href = file.dataUrl;
+    link.download = file.fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast({ title: "ማውረድ ተጀምሯል", description: `${file.fileName} በመውረድ ላይ ነው።` });
+  };
+
   const handleDownloadProject = async () => {
     setIsDownloading(true);
     try {
@@ -150,19 +236,10 @@ export function BPMNFlowForgeApp() {
       if (currentXml) zip.file(`${safeTitle}.bpmn`, currentXml);
       if (currentSvg) zip.file(`${safeTitle}.svg`, currentSvg);
 
-      zip.file("package.json", JSON.stringify({
-        name: "itdb-management-system",
-        version: "1.0.0",
-        dependencies: { "bpmn-js": "^18.1.1", "jszip": "^3.10.1", "next": "15.5.9" }
+      zip.file("vault-manifest.json", JSON.stringify({
+        diagrams: vault,
+        documents: uploadedFiles
       }, null, 2));
-
-      zip.file("capacitor.config.json", JSON.stringify({
-        appId: "com.itdb.bureau",
-        appName: "ITDB Bureau Management",
-        webDir: "out"
-      }, null, 2));
-
-      zip.file("vault-manifest.json", JSON.stringify(vault, null, 2));
 
       const content = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(content);
@@ -182,22 +259,18 @@ export function BPMNFlowForgeApp() {
     }
   };
 
-  const kpiValue = Math.min(vault.length * 15, 100);
+  const kpiValue = Math.min((vault.length + uploadedFiles.length) * 10, 100);
 
   return (
     <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-white">
       <div className="h-1 w-full bg-[#1e3a8a]" />
       
-      <header className="flex flex-col items-center justify-center py-4 px-8 bg-white border-b border-slate-100 shrink-0 z-10 relative text-center">
-        <p className="text-[12px] font-bold text-[#1e3a8a] mb-2 tracking-widest uppercase" style={{ fontFamily: "'Noto Sans Ethiopic', sans-serif" }}>
+      <header className="flex flex-col items-center justify-center py-3 px-8 bg-white border-b border-slate-100 shrink-0 z-10 relative text-center">
+        <p className="text-[12px] font-bold text-[#1e3a8a] mb-1 tracking-widest uppercase" style={{ fontFamily: "'Noto Sans Ethiopic', sans-serif" }}>
           ኢኖቬሽንና ቴክኖሎጂ ልማት ቢሮ
         </p>
 
-        <div className="w-10 h-10 bg-[#1e3a8a] rounded-full flex items-center justify-center shadow-md mb-2">
-          <span className="text-white font-black text-[10px] tracking-tighter">ITDB</span>
-        </div>
-
-        <h1 className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.4em] font-headline">
+        <h1 className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.4em] font-headline">
           Document Management System
         </h1>
 
@@ -309,7 +382,7 @@ export function BPMNFlowForgeApp() {
                     <Eye className="w-3.5 h-3.5 mr-2" /> ዲያግራም
                   </TabsTrigger>
                   <TabsTrigger value="vault" className="text-xs px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">
-                    <Database className="w-3.5 h-3.5 mr-2" /> የቢሮ ቮልት
+                    <Database className="w-3.5 h-3.5 mr-2" /> የቢሮ ቮልት (DMS)
                   </TabsTrigger>
                   <TabsTrigger value="dashboard" className="text-xs px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">
                     <BarChart3 className="w-3.5 h-3.5 mr-2" /> ዳሽቦርድ
@@ -321,6 +394,73 @@ export function BPMNFlowForgeApp() {
                     <Button variant="default" size="sm" className="h-8 bg-green-600 hover:bg-green-700 text-white rounded-lg px-3 shadow-sm text-[10px]" onClick={() => viewerRef.current?.exportPNG()}>
                       <CheckCircle2 className="w-3.5 h-3.5 mr-2" /> እንደ ጸደቀ አውርድ
                     </Button>
+                  )}
+                  {activeTab === "vault" && (
+                    <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="default" size="sm" className="h-8 bg-[#1e3a8a] hover:bg-primary/90 text-white rounded-lg px-3 shadow-sm text-[10px]">
+                          <Upload className="w-3.5 h-3.5 mr-2" /> ፋይል ወደ መዝገብ ቤት አስገባ
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                          <DialogTitle className="text-sm font-bold uppercase tracking-widest text-[#1e3a8a]">አዲስ ፋይል አጽድቅ</DialogTitle>
+                          <DialogDescription className="text-xs">
+                            በቢሮው መዝገብ ቤት (DMS) ውስጥ ለማስቀመጥ የፈለጉትን ፋይል እዚህ ይስቀሉ።
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">የፋይሉ ስም</label>
+                            <Input
+                              value={uploadName}
+                              onChange={(e) => setUploadName(e.target.value)}
+                              placeholder="ለምሳሌ፡ የሪፎርም ሰነድ 2016"
+                              className="h-9 text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">የፋይል ምድብ</label>
+                            <Select value={uploadCategory} onValueChange={setUploadCategory}>
+                              <SelectTrigger className="h-9 text-sm">
+                                <SelectValue placeholder="ምድብ ይምረጡ" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Service Taxonomy">Service Taxonomy (የአገልግሎት ዝርዝር)</SelectItem>
+                                <SelectItem value="Report">Report (ሪፖርት)</SelectItem>
+                                <SelectItem value="Legal">Legal (ህጋዊ)</SelectItem>
+                                <SelectItem value="Other">Other (ሌላ)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ፋይል ይምረጡ</label>
+                            <div className="flex items-center justify-center w-full">
+                              <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-200 rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
+                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                  {selectedFile ? (
+                                    <div className="flex items-center gap-2 text-primary font-semibold text-xs">
+                                      <FileUp className="w-4 h-4" />
+                                      {selectedFile.name}
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <Upload className="w-5 h-5 mb-2 text-slate-400" />
+                                      <p className="text-[10px] text-slate-500">ፋይሉን እዚህ ይጎትቱ ወይም ይጫኑ</p>
+                                    </>
+                                  )}
+                                </div>
+                                <input type="file" className="hidden" onChange={handleFileChange} />
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" size="sm" onClick={() => setIsUploadOpen(false)}>ሰርዝ</Button>
+                          <Button size="sm" className="bg-[#1e3a8a]" onClick={processUpload}>አጽድቅ</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   )}
                 </div>
               </div>
@@ -339,40 +479,91 @@ export function BPMNFlowForgeApp() {
 
                 <TabsContent value="vault" className="h-full m-0 p-6">
                   <ScrollArea className="h-full pr-4">
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center">
-                        <Database className="w-3.5 h-3.5 mr-2 text-primary" /> የቢሮው ሰነዶች መዝገብ
-                      </h2>
-                      <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
-                        ጠቅላላ ሰነዶች: {vault.length}
-                      </span>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {vault.length > 0 ? vault.map((doc) => (
-                        <Card key={doc.id} className="border-slate-100 shadow-none hover:border-primary/20 hover:shadow-md transition-all cursor-pointer group rounded-lg">
-                          <CardHeader className="p-3 pb-1">
-                            <div className="flex justify-between items-start">
-                              <span className="text-[8px] font-mono text-primary font-bold bg-primary/5 px-2 py-0.5 rounded">{doc.systemCode}</span>
-                              <span className="text-[8px] text-slate-400">{doc.date}</span>
-                            </div>
-                            <CardTitle className="text-xs font-bold text-slate-700 mt-1.5 group-hover:text-primary transition-colors">{doc.title}</CardTitle>
-                          </CardHeader>
-                          <CardContent className="p-3 pt-0">
-                            <p className="text-[9px] text-slate-500 line-clamp-2 mb-3 leading-relaxed">{doc.description}</p>
-                            <div className="flex gap-2">
-                              <Button variant="ghost" size="sm" className="h-7 text-[9px] px-2 text-primary bg-primary/5 hover:bg-primary/10 rounded" onClick={() => { setXmlResult(doc.xml); setTitle(doc.title); setInput(doc.description); setActiveTab("diagram"); }}>
-                                <FileSearch className="w-3 h-3 mr-1" /> ክፈት
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      )) : (
-                        <div className="col-span-full h-48 flex flex-col items-center justify-center border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50/50">
-                          <Archive className="w-10 h-10 text-slate-200 mb-2" />
-                          <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">በቮልት ውስጥ ምንም ሰነድ የለም</span>
+                    <div className="space-y-8">
+                      {/* Section 1: Generated Diagrams */}
+                      <div>
+                        <div className="flex justify-between items-center mb-4">
+                          <h2 className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center">
+                            <Activity className="w-3.5 h-3.5 mr-2 text-primary" /> የሂደት ዲያግራሞች
+                          </h2>
+                          <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
+                            ዲያግራሞች: {vault.length}
+                          </span>
                         </div>
-                      )}
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {vault.length > 0 ? vault.map((doc) => (
+                            <Card key={doc.id} className="border-slate-100 shadow-none hover:border-primary/20 hover:shadow-md transition-all cursor-pointer group rounded-lg">
+                              <CardHeader className="p-3 pb-1">
+                                <div className="flex justify-between items-start">
+                                  <span className="text-[8px] font-mono text-primary font-bold bg-primary/5 px-2 py-0.5 rounded">{doc.systemCode}</span>
+                                  <span className="text-[8px] text-slate-400">{doc.date}</span>
+                                </div>
+                                <CardTitle className="text-xs font-bold text-slate-700 mt-1.5 group-hover:text-primary transition-colors">{doc.title}</CardTitle>
+                              </CardHeader>
+                              <CardContent className="p-3 pt-0">
+                                <p className="text-[9px] text-slate-500 line-clamp-2 mb-3 leading-relaxed">{doc.description}</p>
+                                <div className="flex gap-2">
+                                  <Button variant="ghost" size="sm" className="h-7 text-[9px] px-2 text-primary bg-primary/5 hover:bg-primary/10 rounded" onClick={() => { setXmlResult(doc.xml); setTitle(doc.title); setInput(doc.description); setActiveTab("diagram"); }}>
+                                    <FileSearch className="w-3 h-3 mr-1" /> ክፈት
+                                  </Button>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )) : (
+                            <div className="col-span-full h-32 flex flex-col items-center justify-center border-2 border-dashed border-slate-100 rounded-xl bg-slate-50/50">
+                              <Archive className="w-8 h-8 text-slate-200 mb-2" />
+                              <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">የጸደቀ ዲያግራም የለም</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Section 2: Uploaded Documents */}
+                      <div>
+                        <div className="flex justify-between items-center mb-4">
+                          <h2 className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center">
+                            <Database className="w-3.5 h-3.5 mr-2 text-[#1e3a8a]" /> የሰነዶች መዝገብ (DMS)
+                          </h2>
+                          <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
+                            ሰነዶች: {uploadedFiles.length}
+                          </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {uploadedFiles.length > 0 ? uploadedFiles.map((file) => (
+                            <Card key={file.id} className="border-slate-100 shadow-none hover:border-primary/20 hover:shadow-md transition-all rounded-lg">
+                              <CardHeader className="p-3 pb-1">
+                                <div className="flex justify-between items-start">
+                                  <span className="text-[8px] font-mono text-primary font-bold bg-primary/5 px-2 py-0.5 rounded">{file.category}</span>
+                                  <span className="text-[8px] text-slate-400">{file.uploadDate}</span>
+                                </div>
+                                <CardTitle className="text-xs font-bold text-slate-700 mt-1.5">{file.name}</CardTitle>
+                              </CardHeader>
+                              <CardContent className="p-3 pt-0">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <FileType className="w-3.5 h-3.5 text-slate-400" />
+                                  <span className="text-[9px] text-slate-500 font-medium truncate max-w-[150px]">{file.fileName}</span>
+                                  <span className="text-[8px] text-slate-300 ml-auto">({file.fileSize})</span>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button variant="ghost" size="sm" className="h-7 text-[9px] px-2 text-primary bg-primary/5 hover:bg-primary/10 rounded" onClick={() => handleDownloadFile(file)}>
+                                    <Download className="w-3 h-3 mr-1" /> አውርድ
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="h-7 text-[9px] px-2 text-red-500 hover:bg-red-50 rounded ml-auto" onClick={() => setUploadedFiles(prev => prev.filter(f => f.id !== file.id))}>
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )) : (
+                            <div className="col-span-full h-32 flex flex-col items-center justify-center border-2 border-dashed border-slate-100 rounded-xl bg-slate-50/50">
+                              <Upload className="w-8 h-8 text-slate-200 mb-2" />
+                              <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">የተሰቀለ ፋይል የለም</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </ScrollArea>
                 </TabsContent>
@@ -380,19 +571,26 @@ export function BPMNFlowForgeApp() {
                 <TabsContent value="dashboard" className="h-full m-0 p-8">
                   <div className="max-w-2xl mx-auto space-y-8">
                     <div className="text-center space-y-1">
-                      <h3 className="text-xs font-bold text-slate-700 uppercase tracking-[0.2em]">የሪፎርም አፈጻጸም ደረጃ (KPI)</h3>
-                      <p className="text-[9px] text-slate-400 font-medium">ቢሮው ያጸደቃቸው የሂደት ማሻሻያዎች መገለጫ</p>
+                      <h3 className="text-xs font-bold text-slate-700 uppercase tracking-[0.2em]">የቢሮው አጠቃላይ አፈጻጸም (KPI)</h3>
+                      <p className="text-[9px] text-slate-400 font-medium">በቮልት ውስጥ የተመዘገቡ የሂደት ማሻሻያዎችና ሰነዶች መገለጫ</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mb-8">
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase">የጸደቁ ሂደቶች</span>
+                        <div className="text-xl font-black text-[#1e3a8a]">{vault.length}</div>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase">የተመዘገቡ ሰነዶች</span>
+                        <div className="text-xl font-black text-primary">{uploadedFiles.length}</div>
+                      </div>
                     </div>
 
                     <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 shadow-sm">
                       <div className="flex justify-between items-end mb-4">
                         <div className="space-y-1">
-                          <span className="text-[9px] font-bold text-slate-400 uppercase">የጸደቁ ሂደቶች</span>
-                          <div className="text-2xl font-black text-[#1e3a8a]">{vault.length}</div>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-[9px] font-bold text-slate-400 uppercase">ጠቅላላ ውጤት</span>
-                          <div className="text-3xl font-black text-primary">{kpiValue}%</div>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase">ጠቅላላ የሪፎርም ደረጃ</span>
+                          <div className="text-3xl font-black text-[#1e3a8a]">{kpiValue}%</div>
                         </div>
                       </div>
                       <Progress value={kpiValue} className="h-3 bg-slate-200 rounded-full overflow-hidden" />
@@ -411,7 +609,7 @@ export function BPMNFlowForgeApp() {
       
       <footer className="px-8 py-2 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
         <div className="flex gap-6">
-          <span>ITDB Portal v9.0</span>
+          <span>ITDB Portal v10.0</span>
           <span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span>
         </div>
         <div className="flex gap-4 items-center">
