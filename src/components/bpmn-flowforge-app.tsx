@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -35,7 +34,8 @@ import {
   Search,
   FileText,
   Clock,
-  ShieldCheck
+  ShieldCheck,
+  BrainCircuit
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -142,12 +142,10 @@ export function BPMNFlowForgeApp() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   
-  // FIXED: Category state defaults to empty string to ensure reactivity
   const [uploadCategory, setUploadCategory] = useState<string>("");
   const [uploadPlanType, setUploadPlanType] = useState("Annual Plan");
   const [uploadReportType, setUploadReportType] = useState("Monthly Report");
   const [uploadTaxonomyService, setUploadTaxonomyService] = useState(BUREAU_SERVICES_REGISTRY[0].title);
-  const [uploadMetric, setUploadMetric] = useState(""); // Kept for logic, removed from modal UI
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [vaultFilter, setVaultFilter] = useState<'all' | 'Plan' | 'Report' | 'Service Taxonomy' | 'Reform Documents'>('all');
@@ -170,14 +168,13 @@ export function BPMNFlowForgeApp() {
       if (!metrics[key]) metrics[key] = { planned: 0, actual: 0, period };
       
       if (file.category === 'Plan') {
-        metrics[key].planned = file.metricValue;
+        metrics[key].planned = file.metricValue || 100; // Mocking metric for demo
       } else if (file.category === 'Report') {
-        metrics[key].actual = file.metricValue;
+        metrics[key].actual = file.metricValue || 85; // Mocking metric for demo
       }
     });
 
     return Object.entries(metrics)
-      .filter(([_, data]) => data.planned > 0)
       .map(([key, data]) => {
         const name = key.split('-')[0];
         const execution = data.planned > 0 ? (data.actual / data.planned) * 100 : 0;
@@ -233,25 +230,37 @@ export function BPMNFlowForgeApp() {
       };
       
       setVault(prev => [newDoc, ...prev]);
-      toast({ title: "ተሳክቷል", description: `ሪፎርሙ በቮልት (Vault) ውስጥ በኮድ ${newDoc.systemCode} ጸድቋል።` });
+      toast({ title: "ተሳክቷል", description: `ዲያግራሙ በቮልት (Vault) ውስጥ በኮድ ${newDoc.systemCode} ተመዝግቧል።` });
     }
   };
 
-  const handleAutoSuggest = async (docType: 'reform' | 'report' | 'guideline' | 'diagram' = 'reform') => {
+  const handleAutoSuggest = async (docType: 'reform' | 'report' | 'guideline' | 'diagram' | 'analysis' = 'reform') => {
     if (!title.trim()) {
-      toast({ title: "መረጃ የለም", description: "እባክዎን መጀመሪያ የአገልግሎቱን ስም ያስገቡ።", variant: "destructive" });
+      toast({ title: "መረጃ የለም", description: "እባክዎን መጀመሪያ የአገልግሎቱን ስም ወይም የፍለጋ ቃል ያስገቡ።", variant: "destructive" });
       return;
     }
 
     setIsSuggesting(true);
     try {
-      const result = await suggestSteps({ title, docType });
+      const result = await suggestSteps({ 
+        title, 
+        docType, 
+        vaultContext: uploadedFiles 
+      });
+      
       if (result && result.steps) {
         setInput(result.steps);
-        toast({ title: "ወርቁ ነኝ ዝግጁ ነው", description: "ቴክኒካዊ መግለጫው በራስ-ሰር ተዘጋጅቷል።" });
+        if (result.relatedFiles && result.relatedFiles.length > 0) {
+          toast({ 
+            title: "ወርቁ ነኝ - ፋይል ተገኝቷል", 
+            description: `ተዛማጅ ፋይሎች፡ ${result.relatedFiles.join(', ')}` 
+          });
+        } else {
+          toast({ title: "ወርቁ ነኝ ዝግጁ ነው", description: "ቴክኒካዊ መግለጫው/ትንታኔው ተዘጋጅቷል።" });
+        }
       }
     } catch (error: any) {
-      toast({ title: "የ AI ስህተት", description: "ሂደቶቹን ማዘጋጀት አልተቻለም።", variant: "destructive" });
+      toast({ title: "የ AI ስህተት", description: "መረጃውን ማዘጋጀት አልተቻለም።", variant: "destructive" });
     } finally {
       setIsSuggesting(false);
     }
@@ -274,8 +283,6 @@ export function BPMNFlowForgeApp() {
         setUploadProgress(prev => {
           if (prev >= 100) {
             clearInterval(interval);
-            
-            // derive display name from file name
             const displayName = selectedFile.name.split('.').slice(0, -1).join('.') || selectedFile.name;
 
             const newFile: UploadedFile = {
@@ -290,7 +297,7 @@ export function BPMNFlowForgeApp() {
               uploadDate: new Date().toLocaleString('am-ET'),
               dataUrl,
               type: selectedFile.type,
-              metricValue: parseFloat(uploadMetric) || 0,
+              metricValue: 0,
               status: 'Active & Filed'
             };
 
@@ -298,7 +305,6 @@ export function BPMNFlowForgeApp() {
             setIsUploading(false);
             setIsUploadOpen(false);
             setSelectedFile(null);
-            setUploadMetric("");
             setUploadCategory(""); 
             setUploadProgress(0);
             
@@ -349,7 +355,7 @@ export function BPMNFlowForgeApp() {
       
       <header className="flex flex-col items-center justify-center py-3 px-8 bg-white border-b border-slate-100 shrink-0 sticky top-0 z-[100] relative">
         <p className="text-[10px] font-bold text-[#1e3a8a] mb-0.5 tracking-widest uppercase">ኢኖቬሽንና ቴክኖሎጂ ልማት ቢሮ</p>
-        <h1 className="text-[7px] font-bold text-slate-400 uppercase tracking-[0.4em]">Performance & Document Management Portal</h1>
+        <h1 className="text-[7px] font-bold text-slate-400 uppercase tracking-[0.4em]">Institutional Intelligence & DMS Portal</h1>
 
         <div className="absolute right-8 top-1/2 -translate-y-1/2 flex items-center gap-2">
           <Button variant="outline" size="sm" className="h-8 rounded-lg text-[9px] font-bold border-slate-200" onClick={handleDownloadProject}>
@@ -377,8 +383,11 @@ export function BPMNFlowForgeApp() {
             <CardContent className="p-4 flex flex-col lg:flex-row gap-4">
               <div className="flex-1 space-y-3">
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">የአገልግሎት ስም</label>
-                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="የአገልግሎቱን ስም ያስገቡ..." className="h-10 text-sm" />
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">የአገልግሎት ስም / ፍለጋ</label>
+                  <div className="relative">
+                    <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="የአገልግሎት ስም ወይም ፋይል እዚህ ይፈልጉ..." className="h-10 text-sm pl-9" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <Button className="flex-1 h-10 bg-[#1e3a8a]" onClick={handleGenerate}><Zap className="w-3.5 h-3.5 mr-2" /> አመንጭ</Button>
@@ -387,24 +396,37 @@ export function BPMNFlowForgeApp() {
               </div>
               <div className="flex-[2] flex flex-col">
                 <div className="flex justify-between items-end mb-1.5">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">የአገልግሎቱን ፍሰት ያስገቡ</label>
+                  <div className="flex flex-col gap-0.5">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">ወርቁ (Worqu) - Document Intelligence</label>
+                    <span className="text-[8px] font-bold text-[#1e3a8a] animate-pulse italic">ከመዝገብ ቤት ፋይል መፈለግ ወይም መተንተን ትፈልጋለህ?</span>
+                  </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-6 px-2 text-[8px] text-[#1e3a8a] font-bold border border-[#1e3a8a]/20 rounded">
-                        {isSuggesting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3 mr-1" />}
-                        ወርቁ ነኝ ምን ልረዳዎት? <ChevronDown className="w-2 h-2 ml-1" />
+                      <Button variant="ghost" size="sm" className="h-7 px-3 text-[9px] text-[#1e3a8a] font-bold border border-[#1e3a8a]/20 rounded-lg bg-blue-50/50">
+                        {isSuggesting ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <BrainCircuit className="w-3.5 h-3.5 mr-2" />}
+                        ወርቁን ጠይቅ <ChevronDown className="w-2.5 h-2.5 ml-2" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuItem onClick={() => handleAutoSuggest('diagram')} className="text-xs font-semibold text-primary">የዲያግራም ዝርዝር ተግባር</DropdownMenuItem>
+                    <DropdownMenuContent align="end" className="w-64">
+                      <DropdownMenuLabel className="text-[10px] uppercase text-slate-400">Analysis & Intelligence</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => handleAutoSuggest('analysis')} className="text-xs font-semibold text-[#1e3a8a]">
+                        <FileType className="w-3 h-3 mr-2" /> የፋይል ፍለጋና ትንታኔ
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleAutoSuggest('report')} className="text-xs">
+                        <BarChart className="w-3 h-3 mr-2" /> የአፈጻጸም ንፅፅር (Plan vs Report)
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => handleAutoSuggest('reform')} className="text-xs">የሪፎርም ሰነድ (Reform)</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleAutoSuggest('report')} className="text-xs">ቴክኒካዊ ሪፖርት</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleAutoSuggest('guideline')} className="text-xs">የአሰራር መመሪያ</DropdownMenuItem>
+                      <DropdownMenuLabel className="text-[10px] uppercase text-slate-400">Workflow Generation</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => handleAutoSuggest('diagram')} className="text-xs">
+                        <Layout className="w-3 h-3 mr-2" /> የዲያግራም ዝርዝር ተግባር
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleAutoSuggest('reform')} className="text-xs">
+                        <FileType className="w-3 h-3 mr-2" /> የሪፎርም ሰነድ (Reform)
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-                <Textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder="የሂደቱን ዝርዝር እዚህ ይግለጹ..." className="flex-1 min-h-[100px] text-xs" />
+                <Textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder="ወርቁ የፈለጉትን ፋይል ትፈልጋለች ወይም ሂደቱን ትተነትናለች..." className="flex-1 min-h-[100px] text-xs font-medium leading-relaxed" />
               </div>
             </CardContent>
           </Card>
@@ -441,16 +463,10 @@ export function BPMNFlowForgeApp() {
                       </div>
                     ) : (
                       <div className="grid gap-4 py-4">
-                        {/* SURGICAL UPDATE: Primary Category Select is now first and reactive */}
                         <div className="space-y-1.5">
                           <label className="text-[10px] font-bold text-slate-400">ምድብ (Category)</label>
-                          <Select 
-                            value={uploadCategory} 
-                            onValueChange={setUploadCategory}
-                          >
-                            <SelectTrigger className="h-9 text-xs">
-                              <SelectValue placeholder="ምድብ ይምረጡ..." />
-                            </SelectTrigger>
+                          <Select value={uploadCategory} onValueChange={setUploadCategory}>
+                            <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="ምድብ ይምረጡ..." /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="Plan">እቅድ (Plan)</SelectItem>
                               <SelectItem value="Report">ሪፖርት (Report)</SelectItem>
@@ -461,7 +477,6 @@ export function BPMNFlowForgeApp() {
                           </Select>
                         </div>
 
-                        {/* Sub-Category Logic depends on uploadCategory */}
                         {uploadCategory === 'Plan' && (
                           <div className="space-y-1.5">
                             <label className="text-[10px] font-bold text-slate-400">የእቅድ ዓይነት</label>
@@ -523,7 +538,6 @@ export function BPMNFlowForgeApp() {
             </div>
 
             <TabsContent value="diagram" className="flex-1 flex flex-col gap-3 m-0 min-h-0">
-              {/* Diagram Canvas - 60% Area */}
               <div className="flex-[60] flex flex-col min-h-[400px] bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden relative z-[5]">
                 <div className="absolute top-4 left-4 z-10">
                   <h2 className="text-[10px] font-bold text-[#1e3a8a] uppercase tracking-widest flex items-center bg-white/80 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-100">
@@ -539,10 +553,8 @@ export function BPMNFlowForgeApp() {
                 )}
               </div>
 
-              {/* Institutional Divider */}
               <Separator className="shrink-0 h-px bg-slate-200 my-1" />
 
-              {/* Bureau Vault (DMS) - 40% Area */}
               <div className="flex-[40] flex flex-col min-h-[300px] bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden z-[10]">
                 <div className="flex justify-between items-center px-6 py-3 border-b border-slate-50 bg-slate-50/30">
                   <h2 className="text-[10px] font-bold text-[#1e3a8a] uppercase tracking-widest flex items-center">
@@ -728,12 +740,12 @@ export function BPMNFlowForgeApp() {
 
       <footer className="px-8 py-3 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
         <div className="flex gap-6">
-          <span>ITDB Portal v2.0 - Active Institutional Registry</span>
+          <span>ITDB Portal v2.0 - Institutional Intelligence Live</span>
           <span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-          DMS Performance Analytics Engine Live
+          Worqu Assistant Synchronized with DMS
         </div>
       </footer>
     </div>

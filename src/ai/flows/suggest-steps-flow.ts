@@ -1,8 +1,7 @@
-
 'use server';
 /**
- * @fileOverview Smart Institutional Workflow & Document Generator
- * Integrated with Bureau Service Registry for contextual recognition.
+ * @fileOverview Smart Institutional Workflow & Document Intelligence Agent
+ * Integrated with Bureau Service Registry and Vault (DMS) for contextual recognition.
  */
 
 import { ai } from '@/ai/genkit';
@@ -10,12 +9,14 @@ import { z } from 'genkit';
 import { findServiceInRegistry } from '@/lib/services-registry';
 
 const SuggestStepsInputSchema = z.object({
-  title: z.string().describe('The title of the service or process.'),
-  docType: z.enum(['reform', 'report', 'guideline', 'diagram']).optional().default('reform').describe('The type of content to generate.'),
+  title: z.string().describe('The title of the service, process, or search query.'),
+  docType: z.enum(['reform', 'report', 'guideline', 'diagram', 'analysis']).optional().default('reform').describe('The type of content to generate or analysis to perform.'),
+  vaultContext: z.array(z.any()).optional().describe('The current state of the Bureau Vault (DMS) registry.'),
 });
 
 const SuggestStepsOutputSchema = z.object({
-  steps: z.string().describe('The formatted workflow steps with technical context.'),
+  steps: z.string().describe('The formatted workflow steps or analytical summary.'),
+  relatedFiles: z.array(z.string()).optional().describe('List of related files found in the vault.'),
 });
 
 export type SuggestStepsInput = z.infer<typeof SuggestStepsInputSchema>;
@@ -28,51 +29,64 @@ const suggestStepsFlow = ai.defineFlow(
     outputSchema: SuggestStepsOutputSchema,
   },
   async (input) => {
-    // 1. Contextual Recognition: Check Knowledge Base first
+    const vault = input.vaultContext || [];
+    
+    // 1. Contextual Search: Check if the user is asking about a specific file in the Vault
+    const query = input.title.toLowerCase();
+    const matchingFiles = vault.filter(f => 
+      f.name.toLowerCase().includes(query) || 
+      (f.planType && f.planType.toLowerCase().includes(query)) ||
+      (f.reportType && f.reportType.toLowerCase().includes(query))
+    );
+
+    // 2. Cross-Analysis Logic: Compare Reports and Plans if requested
+    const isComparisonRequested = query.includes('ይጣጣማል') || query.includes('compare') || query.includes('አፈጻጸም');
+    let analysisNote = "";
+
+    if (isComparisonRequested) {
+      const plans = vault.filter(f => f.category === 'Plan');
+      const reports = vault.filter(f => f.category === 'Report');
+      analysisNote = `[SYSTEM NOTE: Analyzing ${plans.length} plans and ${reports.length} reports for variance...]`;
+    }
+
+    // 3. Service Registry Recognition
     if (input.docType === 'diagram') {
       const predefinedWorkflow = findServiceInRegistry(input.title);
       if (predefinedWorkflow) {
-        return { steps: predefinedWorkflow };
+        return { 
+          steps: predefinedWorkflow,
+          relatedFiles: matchingFiles.map(f => f.name)
+        };
       }
     }
 
-    // 2. Specific Report Logic
-    const isReport = input.docType === 'report' || input.title.toLowerCase().includes('ሪፖርት') || input.title.toLowerCase().includes('report');
-    
-    // 3. Fallback: AI Generation if not in registry or for other document types
-    const docTypeLabel = {
-      reform: 'የሪፎርም ሰነድ (Reform Paper)',
-      report: 'ቴክኒካዊ ሪፖርት (Technical Report)',
-      guideline: 'የአሰራር መመሪያ (Operational Guideline)',
-      diagram: 'የዲያግራም ዝርዝር ተግባር (Technical Diagram Workflow)'
-    }[input.docType || 'reform'];
-
+    // 4. AI Generation with Vault Intelligence
     const response = await ai.generate({
-      prompt: `You are 'ወርቁ' (Worku), a Senior Institutional Process Architect for the Innovation and Technology Development Bureau.
+      prompt: `You are 'ወርቁ' (Worku), the Senior Institutional Intelligence Agent for the ITDB.
       
-      TASK: Generate a professional Amharic workflow for a "${docTypeLabel}" titled "${input.title}".
-      
-      ${isReport ? `
-      SPECIFIC REPORTING COMMANDS:
-      1. If the title mentions "ሳምንት" (Weekly), focus on daily tracking and quick summary.
-      2. If the title mentions "ወር" (Monthly), focus on goal achievement and variance analysis.
-      3. If the title mentions "ሩብ ዓመት" (Quarterly), focus on strategic KPI evaluation.
-      4. If the title mentions "ዓመት" (Annual), focus on comprehensive performance appraisal and next-year planning.
-      ` : ''}
+      CONTEXT:
+      - Current Vault Registry: ${JSON.stringify(vault.map(f => ({ name: f.name, category: f.category, type: f.planType || f.reportType })))}
+      - User Query: "${input.title}"
+      - Analysis Note: ${analysisNote}
 
-      STRICT COMMAND MODELER RULES:
-      1. Always start with: "Start [wrap]"
-      2. Use [wrap] after EVERY action step.
-      3. Use "?" for decision points (e.g., "ተቀባይነት አግኝቷል? [wrap]").
-      4. Ensure a logical horizontal sequence suitable for BPMN rendering.
-      5. Use formal, technical Amharic terminology.
-      6. End strictly with: "[wrap] End"
-      
-      If the user's title implies a bureau service, generate steps that follow a standard governmental institutional logic.`,
+      TASK: 
+      1. If the user is searching for a file, summarize its status and metadata.
+      2. If the user asks for a diagram, generate professional Amharic BPMN steps using [wrap] for line breaks.
+      3. If the user asks to compare (Cross-Analysis), highlight gaps between 'Plan' and 'Report' categories.
+      4. If the query relates to a Bureau Service, reference its status in the 'Service Taxonomy'.
+
+      STRICT COMMAND MODELER RULES (for diagrams):
+      1. Start with: "Start [wrap]"
+      2. End with: "[wrap] End"
+      3. Use [wrap] after every task.
+
+      INTERACTIVE GUIDANCE:
+      Always act as a helpful bureau assistant. If multiple files match, list them clearly.`,
     });
 
     return {
       steps: response.text,
+      relatedFiles: matchingFiles.map(f => f.name)
     };
   }
 );
