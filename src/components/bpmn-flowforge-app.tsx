@@ -215,6 +215,8 @@ export function BPMNFlowForgeApp() {
         if (item.category === vaultFilter) return true;
         if (item.planType === vaultFilter) return true;
         if (vaultFilter === 'Report' && item.category === 'Report') return true;
+        if (vaultFilter === 'Service Taxonomy' && item.category === 'Service Taxonomy') return true;
+        if (vaultFilter === 'Reform Documents' && item.category === 'Reform Documents') return true;
         return false;
     });
   }, [uploadedFiles, vaultFilter]);
@@ -277,8 +279,9 @@ export function BPMNFlowForgeApp() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
-      if (!uploadName) setUploadName(e.target.files[0].name.split('.')[0]);
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      if (!uploadName) setUploadName(file.name.split('.')[0]);
     }
   };
 
@@ -289,7 +292,7 @@ export function BPMNFlowForgeApp() {
     }
 
     setIsUploading(true);
-    setUploadProgress(10);
+    setUploadProgress(0);
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -330,9 +333,9 @@ export function BPMNFlowForgeApp() {
             });
             return 100;
           }
-          return prev + 15;
+          return prev + 20;
         });
-      }, 300);
+      }, 200);
     };
     reader.readAsDataURL(selectedFile);
   };
@@ -423,27 +426,37 @@ export function BPMNFlowForgeApp() {
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <main className="flex flex-col lg:flex-row flex-1 p-3 gap-3 bg-slate-50/50 overflow-hidden">
+      {/* Main Content Area: 60/40 Split View */}
+      <main className="flex flex-col flex-1 p-3 gap-3 bg-slate-50/50 overflow-y-auto">
         
-        {/* Sidebar Area (Service Input) */}
-        <div className="w-full lg:w-[320px] flex flex-col gap-3 shrink-0">
-          <Card className="shadow-sm border border-slate-200 rounded-xl overflow-hidden bg-white">
-            <CardContent className="p-4 flex flex-col gap-4">
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">የአገልግሎት ስም</label>
-                  <span className="text-[8px] font-mono text-primary bg-primary/5 px-2 py-0.5 rounded border border-primary/10">ID: {generateSystemCode()}</span>
+        {/* Top Control Section: Service Input */}
+        <div className="w-full shrink-0 flex flex-col lg:flex-row gap-3">
+          <Card className="flex-1 shadow-sm border border-slate-200 rounded-xl overflow-hidden bg-white">
+            <CardContent className="p-4 flex flex-col lg:flex-row gap-4">
+              <div className="flex-1 space-y-3">
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">የአገልግሎት ስም</label>
+                    <span className="text-[8px] font-mono text-primary bg-primary/5 px-2 py-0.5 rounded border border-primary/10">ID: {generateSystemCode()}</span>
+                  </div>
+                  <Input
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="የአገልግሎቱን ስም ያስገቡ..."
+                    className="h-10 rounded-lg bg-slate-50 border-slate-100 text-sm font-medium"
+                  />
                 </div>
-                <Input
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="የአገልግሎቱን ስም ያስገቡ..."
-                  className="h-10 rounded-lg bg-slate-50 border-slate-100 text-sm font-medium"
-                />
+                <div className="flex gap-2">
+                  <Button className="flex-1 h-10 rounded-lg bg-[#1e3a8a] text-white" onClick={handleGenerate}>
+                    <Zap className="w-3.5 h-3.5 mr-2" /> አመንጭ
+                  </Button>
+                  <Button variant="outline" className="h-10 w-10 p-0 rounded-lg text-slate-400" onClick={() => { setInput(""); setTitle(""); }}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
 
-              <div className="relative flex flex-col min-h-[300px]">
+              <div className="flex-[2] relative flex flex-col">
                 <div className="flex justify-between items-end mb-1.5">
                   <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">የአገልግሎቱን ፍሰት ያስገቡ</label>
                   <DropdownMenu>
@@ -468,26 +481,17 @@ export function BPMNFlowForgeApp() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="የሂደቱን ዝርዝር እዚህ ይግለጹ..."
-                  className="flex-1 resize-none bg-slate-50 border-slate-100 rounded-lg text-xs min-h-[250px]"
+                  className="flex-1 resize-none bg-slate-50 border-slate-100 rounded-lg text-xs min-h-[100px]"
                 />
-              </div>
-
-              <div className="flex gap-2 shrink-0">
-                <Button variant="outline" className="flex-1 h-10 rounded-lg text-slate-400" onClick={() => { setInput(""); setTitle(""); }}>
-                  <Trash2 className="w-3.5 h-3.5 mr-2" /> አፅዳ
-                </Button>
-                <Button className="flex-1 h-10 rounded-lg bg-[#1e3a8a] text-white" onClick={handleGenerate}>
-                  <Zap className="w-3.5 h-3.5 mr-2" /> አመንጭ
-                </Button>
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* 60/40 Split View Workspace */}
-        <div className="flex-1 flex flex-col gap-3 h-full overflow-y-auto">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col w-full h-full">
-            <div className="flex justify-between items-center bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm z-[90] shrink-0 sticky top-0">
+        <div className="flex-1 flex flex-col gap-3 min-h-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col w-full h-full min-h-0">
+            <div className="flex justify-between items-center bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm shrink-0 sticky top-0 z-[90]">
               <TabsList className="bg-slate-50 h-8 p-1">
                 <TabsTrigger value="diagram" className="text-[10px] px-4">ዲያግራም</TabsTrigger>
                 <TabsTrigger value="dashboard" className="text-[10px] px-4">አፈጻጸም (Performance)</TabsTrigger>
@@ -596,17 +600,17 @@ export function BPMNFlowForgeApp() {
               </div>
             </div>
 
-            <TabsContent value="diagram" className="flex-1 flex flex-col gap-3 m-0 p-0">
+            <TabsContent value="diagram" className="flex-1 flex flex-col gap-3 m-0 p-0 overflow-hidden">
               
               {/* 1. Workflow Diagram Area (60%) */}
-              <div className="flex-[60] min-h-[400px] flex flex-col gap-2 relative z-5">
+              <div className="flex-[60] flex flex-col gap-2 relative z-5 min-h-[400px]">
                 <div className="flex justify-between items-center px-1">
                   <h2 className="text-[11px] font-bold text-[#1e3a8a] uppercase tracking-widest flex items-center">
                     <Layout className="w-4 h-4 mr-2" /> የስራ ፍሰት ዲያግራም (Workflow Diagram)
                   </h2>
                   <Badge variant="outline" className="text-[8px] bg-white border-slate-200">Interactive Modeler Active</Badge>
                 </div>
-                <div className="flex-1 bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden relative min-h-[350px]">
+                <div className="flex-1 bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden relative">
                   {xmlResult ? (
                     <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
                   ) : (
@@ -621,7 +625,7 @@ export function BPMNFlowForgeApp() {
               <Separator className="bg-slate-300 h-0.5 my-2 shadow-sm shrink-0" />
 
               {/* 2. Bureau Vault (DMS) Area (40%) */}
-              <div className="flex-[40] min-h-[300px] flex flex-col gap-2 relative z-10 bg-slate-50/50 p-4 rounded-xl border border-slate-200">
+              <div className="flex-[40] min-h-[300px] flex flex-col gap-2 relative z-10 bg-slate-50/50 p-4 rounded-xl border border-slate-200 overflow-hidden">
                 <div className="flex justify-between items-center px-1">
                   <div className="flex items-center gap-4">
                       <h2 className="text-[11px] font-bold text-[#1e3a8a] uppercase tracking-widest flex items-center">
@@ -665,47 +669,50 @@ export function BPMNFlowForgeApp() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredVault.length === 0 && filteredDocuments.length === 0 && (
+                        {(filteredVault.length === 0 && filteredDocuments.length === 0) ? (
                           <TableRow>
                             <TableCell colSpan={6} className="h-40 text-center text-[10px] text-slate-300 uppercase tracking-widest font-black">
                               <Archive className="w-12 h-12 mx-auto mb-2 opacity-10" />
                               መዝገብ ባዶ ነው
                             </TableCell>
                           </TableRow>
+                        ) : (
+                          <>
+                            {filteredVault.map((doc) => (
+                              <TableRow key={doc.id} className="group hover:bg-slate-50/80 transition-all cursor-pointer" onClick={() => { setXmlResult(doc.xml); setTitle(doc.title); setInput(doc.description); setActiveTab("diagram"); }}>
+                                <TableCell className="text-[10px] font-bold py-3 px-6 text-[#1e3a8a]">{doc.title}</TableCell>
+                                <TableCell className="py-3"><Badge variant="outline" className="text-[8px] h-4 px-2 border-[#1e3a8a]/20 text-[#1e3a8a]">ዲያግራም</Badge></TableCell>
+                                <TableCell className="py-3"><div className="flex items-center gap-1.5 text-[8px] font-bold text-green-600"><CheckCircle2 className="w-2.5 h-2.5" /> Active & Filed</div></TableCell>
+                                <TableCell className="text-[10px] text-slate-400 py-3">-</TableCell>
+                                <TableCell className="text-[10px] text-slate-400 py-3">{doc.date}</TableCell>
+                                <TableCell className="text-right py-3 pr-6">
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 group-hover:text-[#1e3a8a]">
+                                    <FileSearch className="w-4 h-4" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                            {filteredDocuments.map((file) => (
+                              <TableRow key={file.id} className="group hover:bg-slate-50/80 transition-all">
+                                <TableCell className="text-[10px] font-bold py-3 px-6 text-slate-700">{file.name}</TableCell>
+                                <TableCell className="py-3">
+                                  <div className="flex flex-col gap-1">
+                                      <Badge variant="secondary" className={`text-[8px] h-4 px-2 w-fit ${file.category === 'Plan' ? 'bg-[#1e3a8a] text-white' : 'bg-slate-100 text-slate-600'}`}>{file.category}</Badge>
+                                      {(file.planType || file.reportType) && <span className="text-[8px] font-bold text-slate-400 ml-1">↳ {file.planType || file.reportType}</span>}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="py-3"><div className="flex items-center gap-1.5 text-[8px] font-bold text-blue-600"><Clock className="w-2.5 h-2.5" /> {file.status}</div></TableCell>
+                                <TableCell className="text-[10px] font-mono text-slate-500 py-3">{file.metricValue}</TableCell>
+                                <TableCell className="text-[10px] text-slate-400 py-3">{file.uploadDate}</TableCell>
+                                <TableCell className="text-right py-3 pr-6">
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 group-hover:text-primary" onClick={() => handleDownloadFile(file)}>
+                                    <Download className="w-4 h-4" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </>
                         )}
-                        {filteredVault.map((doc) => (
-                          <TableRow key={doc.id} className="group hover:bg-slate-50/80 transition-all cursor-pointer" onClick={() => { setXmlResult(doc.xml); setTitle(doc.title); setInput(doc.description); setActiveTab("diagram"); }}>
-                            <TableCell className="text-[10px] font-bold py-3 px-6 text-[#1e3a8a]">{doc.title}</TableCell>
-                            <TableCell className="py-3"><Badge variant="outline" className="text-[8px] h-4 px-2 border-[#1e3a8a]/20 text-[#1e3a8a]">ዲያግራም</Badge></TableCell>
-                            <TableCell className="py-3"><div className="flex items-center gap-1.5 text-[8px] font-bold text-green-600"><CheckCircle2 className="w-2.5 h-2.5" /> Active & Filed</div></TableCell>
-                            <TableCell className="text-[10px] text-slate-400 py-3">-</TableCell>
-                            <TableCell className="text-[10px] text-slate-400 py-3">{doc.date}</TableCell>
-                            <TableCell className="text-right py-3 pr-6">
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 group-hover:text-[#1e3a8a]">
-                                <FileSearch className="w-4 h-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                        {filteredDocuments.map((file) => (
-                          <TableRow key={file.id} className="group hover:bg-slate-50/80 transition-all">
-                            <TableCell className="text-[10px] font-bold py-3 px-6 text-slate-700">{file.name}</TableCell>
-                            <TableCell className="py-3">
-                              <div className="flex flex-col gap-1">
-                                  <Badge variant="secondary" className={`text-[8px] h-4 px-2 w-fit ${file.category === 'Plan' ? 'bg-[#1e3a8a] text-white' : 'bg-slate-100 text-slate-600'}`}>{file.category}</Badge>
-                                  {(file.planType || file.reportType) && <span className="text-[8px] font-bold text-slate-400 ml-1">↳ {file.planType || file.reportType}</span>}
-                              </div>
-                            </TableCell>
-                            <TableCell className="py-3"><div className="flex items-center gap-1.5 text-[8px] font-bold text-blue-600"><Clock className="w-2.5 h-2.5" /> {file.status}</div></TableCell>
-                            <TableCell className="text-[10px] font-mono text-slate-500 py-3">{file.metricValue}</TableCell>
-                            <TableCell className="text-[10px] text-slate-400 py-3">{file.uploadDate}</TableCell>
-                            <TableCell className="text-right py-3 pr-6">
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 group-hover:text-primary" onClick={() => handleDownloadFile(file)}>
-                                <Download className="w-4 h-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
                       </TableBody>
                     </Table>
                   </ScrollArea>
@@ -796,7 +803,7 @@ export function BPMNFlowForgeApp() {
       {/* Institutional Footer */}
       <footer className="px-8 py-3 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0 sticky bottom-0 z-[100]">
         <div className="flex gap-6">
-          <span>ITDB Portal v1.7 - Institutional Reporting Registry Active</span>
+          <span>ITDB Portal v2.0 - Active Institutional Registry</span>
           <span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span>
         </div>
         <div className="flex gap-4 items-center">
