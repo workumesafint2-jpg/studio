@@ -28,7 +28,8 @@ import {
   Trophy,
   AlertTriangle,
   TrendingUp,
-  BarChart
+  BarChart,
+  SeparatorHorizontal
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -70,6 +71,7 @@ import {
 } from "@/components/ui/table";
 import { suggestSteps } from "@/ai/flows/suggest-steps-flow";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import JSZip from 'jszip';
 import { 
   Bar, 
@@ -101,7 +103,7 @@ interface UploadedFile {
   uploadDate: string;
   dataUrl: string;
   type: string;
-  metricValue: number; // Planned for 'Plan', Actual for 'Report'
+  metricValue: number;
 }
 
 interface PerformanceMetric {
@@ -124,14 +126,12 @@ export function BPMNFlowForgeApp() {
   const [vault, setVault] = useState<VaultItem[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   
-  // File Upload State
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadName, setUploadName] = useState("");
   const [uploadCategory, setUploadCategory] = useState("Report");
   const [uploadMetric, setUploadMetric] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  // Filters
   const [vaultFilter, setVaultFilter] = useState<'all' | 'plan'>('all');
 
   const viewerRef = useRef<BPMNViewerRef>(null);
@@ -141,7 +141,6 @@ export function BPMNFlowForgeApp() {
     setMounted(true);
   }, []);
 
-  // Performance Calculation Logic
   const performanceData = useMemo(() => {
     const metrics: Record<string, { planned: number; actual: number }> = {};
     
@@ -161,16 +160,16 @@ export function BPMNFlowForgeApp() {
       .map(([name, data]) => {
         const execution = data.planned > 0 ? (data.actual / data.planned) * 100 : 0;
         let status: 'Excellent' | 'On track' | 'Needs attention' = 'Needs attention';
-        let color = '#22c55e'; // Green
+        let color = '#22c55e';
 
         if (execution >= 90) {
           status = 'Excellent';
           color = '#22c55e';
         } else if (execution >= 50) {
           status = 'On track';
-          color = '#eab308'; // Yellow
+          color = '#eab308';
         } else {
-          color = '#ef4444'; // Red
+          color = '#ef4444';
         }
 
         return {
@@ -208,11 +207,7 @@ export function BPMNFlowForgeApp() {
 
   const handleGenerate = () => {
     if (!input.trim()) {
-      toast({ 
-        title: "መረጃ የለም", 
-        description: "እባክዎን የሂደቱን ዝርዝር መግለጫ ያስገቡ።", 
-        variant: "destructive" 
-      });
+      toast({ title: "መረጃ የለም", description: "እባክዎን የሂደቱን ዝርዝር መግለጫ ያስገቡ።", variant: "destructive" });
       return;
     }
     const result = generateBPMN(input, title || "የሂደት ዲያግራም");
@@ -234,20 +229,13 @@ export function BPMNFlowForgeApp() {
         return [newDoc, ...prev];
       });
 
-      toast({ 
-        title: "ተሳክቷል", 
-        description: `ሪፎርሙ በቮልት (Vault) ውስጥ በኮድ ${newDoc.systemCode} ጸድቋል።` 
-      });
+      toast({ title: "ተሳክቷል", description: `ሪፎርሙ በቮልት (Vault) ውስጥ በኮድ ${newDoc.systemCode} ጸድቋል።` });
     }
   };
 
   const handleAutoSuggest = async (docType: 'reform' | 'report' | 'guideline' | 'diagram' = 'reform') => {
     if (!title.trim()) {
-      toast({ 
-        title: "መረጃ የለም", 
-        description: "እባክዎን መጀመሪያ የአገልግሎቱን ስም ያስገቡ።", 
-        variant: "destructive" 
-      });
+      toast({ title: "መረጃ የለም", description: "እባክዎን መጀመሪያ የአገልግሎቱን ስም ያስገቡ።", variant: "destructive" });
       return;
     }
 
@@ -259,11 +247,7 @@ export function BPMNFlowForgeApp() {
         toast({ title: "ወርቁ ነኝ ዝግጁ ነው", description: "ቴክኒካዊ መግለጫው በራስ-ሰር ተዘጋጅቷል።" });
       }
     } catch (error: any) {
-      toast({ 
-        title: "የ AI ስህተት", 
-        description: "ሂደቶቹን ማዘጋጀት አልተቻለም።", 
-        variant: "destructive" 
-      });
+      toast({ title: "የ AI ስህተት", description: "ሂደቶቹን ማዘጋጀት አልተቻለም።", variant: "destructive" });
     } finally {
       setIsSuggesting(false);
     }
@@ -358,11 +342,11 @@ export function BPMNFlowForgeApp() {
     : 0;
 
   return (
-    <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-white">
+    <div className="flex flex-col h-screen min-h-screen bg-white overflow-y-auto">
       {/* Institutional Top Bar */}
-      <div className="h-1 w-full bg-[#1e3a8a] shrink-0" />
+      <div className="h-1 w-full bg-[#1e3a8a] shrink-0 sticky top-0 z-[100]" />
       
-      <header className="flex flex-col items-center justify-center py-2 px-8 bg-white border-b border-slate-100 shrink-0 z-10 relative text-center">
+      <header className="flex flex-col items-center justify-center py-3 px-8 bg-white border-b border-slate-100 shrink-0 sticky top-1 z-[99] relative text-center">
         <p className="text-[10px] font-bold text-[#1e3a8a] mb-0.5 tracking-widest uppercase" style={{ fontFamily: "'Noto Sans Ethiopic', sans-serif" }}>
           ኢኖቬሽንና ቴክኖሎጂ ልማት ቢሮ
         </p>
@@ -394,348 +378,317 @@ export function BPMNFlowForgeApp() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex flex-col flex-1 overflow-hidden p-3 gap-3 bg-slate-50/50 min-h-0">
-        <div className="flex flex-col lg:flex-row gap-3 h-full min-h-0">
-          
-          {/* Sidebar Area (Service Input) */}
-          <div className="w-full lg:w-[320px] flex flex-col gap-3 shrink-0 h-full">
-            <Card className="h-full shadow-sm border border-slate-200 rounded-xl overflow-hidden bg-white">
-              <CardContent className="p-4 flex flex-col gap-4 h-full">
-                <div className="space-y-1.5">
-                  <div className="flex justify-between items-center">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">የአገልግሎት ስም</label>
-                    <span className="text-[8px] font-mono text-primary bg-primary/5 px-2 py-0.5 rounded border border-primary/10">ID: {generateSystemCode()}</span>
-                  </div>
-                  <Input
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="የአገልግሎቱን ስም ያስገቡ..."
-                    className="h-10 rounded-lg bg-slate-50 border-slate-100 text-sm font-medium"
-                  />
+      <main className="flex flex-col lg:flex-row flex-1 p-3 gap-3 bg-slate-50/50">
+        
+        {/* Sidebar Area (Service Input) */}
+        <div className="w-full lg:w-[320px] flex flex-col gap-3 shrink-0">
+          <Card className="shadow-sm border border-slate-200 rounded-xl overflow-hidden bg-white sticky top-[60px]">
+            <CardContent className="p-4 flex flex-col gap-4">
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">የአገልግሎት ስም</label>
+                  <span className="text-[8px] font-mono text-primary bg-primary/5 px-2 py-0.5 rounded border border-primary/10">ID: {generateSystemCode()}</span>
                 </div>
-
-                <div className="relative flex-1 flex flex-col min-h-0">
-                  <div className="flex justify-between items-end mb-1.5">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">የአገልግሎቱን ፍሰት ያስገቡ</label>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" disabled={isSuggesting} className="h-6 px-2 text-[8px] text-[#1e3a8a] font-bold border border-[#1e3a8a]/20 rounded">
-                          {isSuggesting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3 mr-1" />}
-                          ወርቁ ነኝ ምን ልረዳዎት? <ChevronDown className="w-2 h-2 ml-1" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuItem onClick={() => handleAutoSuggest('diagram')} className="text-xs font-semibold text-primary">
-                          <Activity className="w-3.5 h-3.5 mr-2" /> የዲያግራም ዝርዝር ተግባር
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleAutoSuggest('reform')} className="text-xs">የሪፎርም ሰነድ</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleAutoSuggest('report')} className="text-xs">ቴክኒካዊ ሪፖርት</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleAutoSuggest('guideline')} className="text-xs">የአሰራር መመሪያ</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                  <Textarea
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder="የሂደቱን ዝርዝር እዚህ ይግለጹ..."
-                    className="flex-1 resize-none bg-slate-50 border-slate-100 rounded-lg text-xs"
-                  />
-                </div>
-
-                <div className="flex gap-2 shrink-0">
-                  <Button variant="outline" className="flex-1 h-10 rounded-lg text-slate-400" onClick={() => { setInput(""); setTitle(""); }}>
-                    <Trash2 className="w-3.5 h-3.5 mr-2" /> አፅዳ
-                  </Button>
-                  <Button className="flex-1 h-10 rounded-lg bg-[#1e3a8a] text-white" onClick={handleGenerate}>
-                    <Zap className="w-3.5 h-3.5 mr-2" /> አመንጭ
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Workspace Area (Diagram + Vault) */}
-          <div className="flex-1 flex flex-col gap-3 min-h-0 overflow-hidden">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-              <div className="flex justify-between items-center bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm shrink-0">
-                <TabsList className="bg-slate-50 h-8 p-1">
-                  <TabsTrigger value="diagram" className="text-[10px] px-4">ዲያግራም</TabsTrigger>
-                  <TabsTrigger value="dashboard" className="text-[10px] px-4">አፈጻጸም (Performance)</TabsTrigger>
-                </TabsList>
-                
-                <div className="flex gap-2">
-                  <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-                    <DialogTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 text-[9px] text-slate-500 border border-slate-100 rounded-lg">
-                        <Upload className="w-3 h-3 mr-2" /> ፋይል አስገባ
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="z-[100]">
-                      <DialogHeader>
-                        <DialogTitle className="text-sm font-bold uppercase tracking-widest text-[#1e3a8a]">አዲስ ፋይል አጽድቅ</DialogTitle>
-                        <DialogDescription className="text-xs">በቢሮው መዝገብ ቤት (DMS) ውስጥ ለማስቀመጥ የፈለጉትን ፋይል እዚህ ይስቀሉ።</DialogDescription>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-slate-400">የአገልግሎት/ፋይል ስም</label>
-                          <Input value={uploadName} onChange={(e) => setUploadName(e.target.value)} placeholder="ለምሳሌ፡ ጥናትና ምርምር" className="h-9 text-xs" />
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-slate-400">ምድብ</label>
-                          <Select value={uploadCategory} onValueChange={setUploadCategory}>
-                            <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="ምድብ" /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Plan">እቅድ (Annual Plan)</SelectItem>
-                              <SelectItem value="Report">ሪፖርት (Monthly/Quarterly Report)</SelectItem>
-                              <SelectItem value="Service Taxonomy">Service Taxonomy</SelectItem>
-                              <SelectItem value="Legal">Legal</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-slate-400">ኢላማ/ውጤት (Metric Value)</label>
-                          <Input type="number" value={uploadMetric} onChange={(e) => setUploadMetric(e.target.value)} placeholder="ለምሳሌ፡ 100" className="h-9 text-xs" />
-                        </div>
-                        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-200 rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100">
-                          <div className="flex flex-col items-center justify-center text-[10px] text-slate-400">
-                            {selectedFile ? selectedFile.name : "ፋይሉን እዚህ ይጎትቱ ወይም ይጫኑ"}
-                          </div>
-                          <input type="file" className="hidden" onChange={handleFileChange} />
-                        </label>
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" size="sm" onClick={() => setIsUploadOpen(false)}>ሰርዝ</Button>
-                        <Button size="sm" className="bg-[#1e3a8a]" onClick={processUpload}>አጽድቅ</Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                  {xmlResult && (
-                    <Button size="sm" className="h-8 bg-green-600 hover:bg-green-700 text-white text-[10px] px-4" onClick={() => viewerRef.current?.exportPNG()}>
-                      <CheckCircle2 className="w-3 h-3 mr-2" /> እንደ ጸደቀ አውርድ
-                    </Button>
-                  )}
-                </div>
+                <Input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="የአገልግሎቱን ስም ያስገቡ..."
+                  className="h-10 rounded-lg bg-slate-50 border-slate-100 text-sm font-medium"
+                />
               </div>
 
-              {/* Diagram Workspace Tabs Content */}
-              <div className="flex-1 flex flex-col min-h-0 overflow-hidden mt-3">
-                <TabsContent value="diagram" className="flex-1 flex flex-col gap-3 m-0 p-0 h-full overflow-hidden">
-                  
-                  {/* 1. Workflow Diagram Canvas (65% Height) */}
-                  <div className="flex-[65] flex flex-col gap-2 min-h-0 overflow-hidden">
-                    <h2 className="text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center px-1 shrink-0">
-                      <Layout className="w-3.5 h-3.5 mr-2 text-primary" /> የስራ ፍሰት ዲያግራም (Workflow Diagram)
-                    </h2>
-                    <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden relative">
-                      {xmlResult ? (
-                        <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
-                      ) : (
-                        <div className="h-full flex flex-col items-center justify-center text-slate-300 gap-3">
-                          <Layout className="w-12 h-12 opacity-10" />
-                          <span className="text-[9px] font-bold uppercase tracking-widest opacity-30">የጸደቀ ሪፎርም የለም</span>
+              <div className="relative flex flex-col min-h-[300px]">
+                <div className="flex justify-between items-end mb-1.5">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">የአገልግሎቱን ፍሰት ያስገቡ</label>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" disabled={isSuggesting} className="h-6 px-2 text-[8px] text-[#1e3a8a] font-bold border border-[#1e3a8a]/20 rounded">
+                        {isSuggesting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3 mr-1" />}
+                        ወርቁ ነኝ ምን ልረዳዎት? <ChevronDown className="w-2 h-2 ml-1" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuItem onClick={() => handleAutoSuggest('diagram')} className="text-xs font-semibold text-primary">
+                        <Activity className="w-3.5 h-3.5 mr-2" /> የዲያግራም ዝርዝር ተግባር
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => handleAutoSuggest('reform')} className="text-xs">የሪፎርም ሰነድ</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleAutoSuggest('report')} className="text-xs">ቴክኒካዊ ሪፖርት</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleAutoSuggest('guideline')} className="text-xs">የአሰራር መመሪያ</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                <Textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="የሂደቱን ዝርዝር እዚህ ይግለጹ..."
+                  className="flex-1 resize-none bg-slate-50 border-slate-100 rounded-lg text-xs min-h-[250px]"
+                />
+              </div>
+
+              <div className="flex gap-2 shrink-0">
+                <Button variant="outline" className="flex-1 h-10 rounded-lg text-slate-400" onClick={() => { setInput(""); setTitle(""); }}>
+                  <Trash2 className="w-3.5 h-3.5 mr-2" /> አፅዳ
+                </Button>
+                <Button className="flex-1 h-10 rounded-lg bg-[#1e3a8a] text-white" onClick={handleGenerate}>
+                  <Zap className="w-3.5 h-3.5 mr-2" /> አመንጭ
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Workspace Area (Diagram + Vault) */}
+        <div className="flex-1 flex flex-col gap-3">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col h-full">
+            <div className="flex justify-between items-center bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm sticky top-[60px] z-[90]">
+              <TabsList className="bg-slate-50 h-8 p-1">
+                <TabsTrigger value="diagram" className="text-[10px] px-4">ዲያግራም</TabsTrigger>
+                <TabsTrigger value="dashboard" className="text-[10px] px-4">አፈጻጸም (Performance)</TabsTrigger>
+              </TabsList>
+              
+              <div className="flex gap-2">
+                <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 text-[9px] text-slate-500 border border-slate-100 rounded-lg">
+                      <Upload className="w-3 h-3 mr-2" /> ፋይል አስገባ
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="z-[200]">
+                    <DialogHeader>
+                      <DialogTitle className="text-sm font-bold uppercase tracking-widest text-[#1e3a8a]">አዲስ ፋይል አጽድቅ</DialogTitle>
+                      <DialogDescription className="text-xs">በቢሮው መዝገብ ቤት (DMS) ውስጥ ለማስቀመጥ የፈለጉትን ፋይል እዚህ ይስቀሉ።</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-400">የአገልግሎት/ፋይል ስም</label>
+                        <Input value={uploadName} onChange={(e) => setUploadName(e.target.value)} placeholder="ለምሳሌ፡ ጥናትና ምርምር" className="h-9 text-xs" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-400">ምድብ</label>
+                        <Select value={uploadCategory} onValueChange={setUploadCategory}>
+                          <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="ምድብ" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Plan">እቅድ (Annual Plan)</SelectItem>
+                            <SelectItem value="Report">ሪፖርት (Monthly/Quarterly Report)</SelectItem>
+                            <SelectItem value="Service Taxonomy">Service Taxonomy</SelectItem>
+                            <SelectItem value="Legal">Legal</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-400">ኢላማ/ውጤት (Metric Value)</label>
+                        <Input type="number" value={uploadMetric} onChange={(e) => setUploadMetric(e.target.value)} placeholder="ለምሳሌ፡ 100" className="h-9 text-xs" />
+                      </div>
+                      <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-200 rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100">
+                        <div className="flex flex-col items-center justify-center text-[10px] text-slate-400">
+                          {selectedFile ? selectedFile.name : "ፋይሉን እዚህ ይጎትቱ ወይም ይጫኑ"}
                         </div>
-                      )}
+                        <input type="file" className="hidden" onChange={handleFileChange} />
+                      </label>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" size="sm" onClick={() => setIsUploadOpen(false)}>ሰርዝ</Button>
+                      <Button size="sm" className="bg-[#1e3a8a]" onClick={processUpload}>አጽድቅ</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+                {xmlResult && (
+                  <Button size="sm" className="h-8 bg-green-600 hover:bg-green-700 text-white text-[10px] px-4" onClick={() => viewerRef.current?.exportPNG()}>
+                    <CheckCircle2 className="w-3 h-3 mr-2" /> እንደ ጸደቀ አውርድ
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Diagram Split View Workspace */}
+            <div className="flex-1 flex flex-col gap-3 mt-3">
+              <TabsContent value="diagram" className="flex-1 flex flex-col gap-3 m-0 p-0">
+                
+                {/* 1. Workflow Diagram Area (Top 60%) */}
+                <div className="flex-[60] flex flex-col gap-2 min-h-[60vh] z-[5] relative">
+                  <div className="flex justify-between items-center px-1">
+                    <h2 className="text-[11px] font-bold text-[#1e3a8a] uppercase tracking-widest flex items-center">
+                      <Layout className="w-4 h-4 mr-2" /> የስራ ፍሰት ዲያግራም (Workflow Diagram)
+                    </h2>
+                    <Badge variant="outline" className="text-[8px] bg-white border-slate-200">Interactive Modeler Active</Badge>
+                  </div>
+                  <div className="flex-1 bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden relative">
+                    {xmlResult ? (
+                      <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
+                    ) : (
+                      <div className="h-full flex flex-col items-center justify-center text-slate-300 gap-3 py-20">
+                        <Layout className="w-16 h-16 opacity-10" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest opacity-30">የጸደቀ ሪፎርም የለም</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <Separator className="bg-slate-200 h-1 rounded-full my-2 shadow-sm" />
+
+                {/* 2. Bureau Vault (DMS) Area (Bottom 40%) */}
+                <div className="flex-[40] flex flex-col gap-2 min-h-[40vh] z-[10] relative">
+                  <div className="flex justify-between items-center px-1">
+                    <h2 className="text-[11px] font-bold text-[#1e3a8a] uppercase tracking-widest flex items-center">
+                      <Database className="w-4 h-4 mr-2" /> የቢሮ መዝገብ ቤት (DMS) - የሰነዶች መዝገብ
+                    </h2>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className={`h-7 text-[9px] font-bold rounded-lg border border-slate-200 ${vaultFilter === 'plan' ? 'bg-[#1e3a8a] text-white' : 'bg-white text-slate-400'}`}
+                        onClick={() => setVaultFilter(vaultFilter === 'plan' ? 'all' : 'plan')}
+                      >
+                        <CalendarDays className="w-3 h-3 mr-1" /> ዓመታዊ እቅድ
+                      </Button>
                     </div>
                   </div>
 
-                  {/* 2. Performance Summary Table (Small Integrated Strip) */}
-                  {performanceData.length > 0 && (
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-2 shrink-0">
-                      <h3 className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center px-1">
-                        <TrendingUp className="w-3 h-3 mr-2 text-primary" /> የሂደት አፈጻጸም ማጠቃለያ (Summary)
-                      </h3>
+                  <Card className="flex-1 shadow-md border border-slate-200 rounded-xl overflow-hidden bg-white/80 backdrop-blur-sm">
+                    <ScrollArea className="h-full min-h-[300px]">
                       <Table>
-                        <TableHeader>
-                          <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 h-6">
-                            <TableHead className="text-[7px] uppercase h-6 py-0">አገልግሎት (Service)</TableHead>
-                            <TableHead className="text-[7px] uppercase h-6 py-0">ኢላማ (Target)</TableHead>
-                            <TableHead className="text-[7px] uppercase h-6 py-0">ውጤት (Actual)</TableHead>
-                            <TableHead className="text-[7px] uppercase h-6 py-0">ሁኔታ (Status)</TableHead>
+                        <TableHeader className="sticky top-0 bg-white/95 z-[20] shadow-sm">
+                          <TableRow className="bg-slate-50/50">
+                            <TableHead className="text-[9px] uppercase h-10 px-6 font-bold text-slate-500">ስም (Title)</TableHead>
+                            <TableHead className="text-[9px] uppercase h-10 font-bold text-slate-500">ምድብ (Category)</TableHead>
+                            <TableHead className="text-[9px] uppercase h-10 font-bold text-slate-500">ኢላማ/ውጤት</TableHead>
+                            <TableHead className="text-[9px] uppercase h-10 font-bold text-slate-500">ቀን (Date)</TableHead>
+                            <TableHead className="text-[9px] uppercase h-10 text-right pr-6 font-bold text-slate-500">ተግባር</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {performanceData.slice(0, 2).map((item, idx) => (
-                            <TableRow key={idx} className="h-6">
-                              <TableCell className="text-[8px] font-semibold py-0">{item.serviceName}</TableCell>
-                              <TableCell className="text-[8px] py-0">{item.planned}</TableCell>
-                              <TableCell className="text-[8px] py-0">{item.actual}</TableCell>
-                              <TableCell className="py-0">
-                                <div className="flex items-center gap-1">
-                                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.color }}></div>
-                                  <span className="text-[7px] font-bold uppercase" style={{ color: item.color }}>{item.status}</span>
-                                </div>
+                          {filteredVault.length === 0 && filteredDocuments.length === 0 && (
+                            <TableRow>
+                              <TableCell colSpan={5} className="h-40 text-center text-[10px] text-slate-300 uppercase tracking-widest font-black">
+                                <Archive className="w-12 h-12 mx-auto mb-2 opacity-10" />
+                                መዝገብ ባዶ ነው
+                              </TableCell>
+                            </TableRow>
+                          )}
+                          {filteredVault.map((doc) => (
+                            <TableRow key={doc.id} className="group hover:bg-slate-50/80 transition-all cursor-pointer" onClick={() => { setXmlResult(doc.xml); setTitle(doc.title); setInput(doc.description); }}>
+                              <TableCell className="text-[10px] font-bold py-3 px-6 text-[#1e3a8a]">{doc.title}</TableCell>
+                              <TableCell className="py-3"><Badge variant="outline" className="text-[8px] h-4 px-2 border-[#1e3a8a]/20 text-[#1e3a8a]">ዲያግራም</Badge></TableCell>
+                              <TableCell className="text-[10px] text-slate-400 py-3">-</TableCell>
+                              <TableCell className="text-[10px] text-slate-400 py-3">{doc.date}</TableCell>
+                              <TableCell className="text-right py-3 pr-6">
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 group-hover:text-[#1e3a8a]">
+                                  <FileSearch className="w-4 h-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                          {filteredDocuments.map((file) => (
+                            <TableRow key={file.id} className="group hover:bg-slate-50/80 transition-all">
+                              <TableCell className="text-[10px] font-bold py-3 px-6 text-slate-700">{file.name}</TableCell>
+                              <TableCell className="py-3">
+                                <Badge variant="secondary" className={`text-[8px] h-4 px-2 ${file.category === 'Plan' ? 'bg-[#1e3a8a] text-white' : 'bg-slate-100 text-slate-600'}`}>{file.category}</Badge>
+                              </TableCell>
+                              <TableCell className="text-[10px] font-mono text-slate-500 py-3">{file.metricValue}</TableCell>
+                              <TableCell className="text-[10px] text-slate-400 py-3">{file.uploadDate}</TableCell>
+                              <TableCell className="text-right py-3 pr-6">
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 group-hover:text-primary" onClick={() => handleDownloadFile(file)}>
+                                  <Download className="w-4 h-4" />
+                                </Button>
                               </TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
                       </Table>
-                    </div>
-                  )}
+                    </ScrollArea>
+                  </Card>
+                </div>
+              </TabsContent>
 
-                  {/* 3. Bureau Vault (DMS) Registry (35% Height) */}
-                  <div className="flex-[35] flex flex-col gap-2 min-h-0 overflow-hidden">
-                    <div className="bg-white/80 rounded-xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden backdrop-blur-sm">
-                      <div className="px-4 py-2 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
-                        <div className="flex items-center gap-3">
-                          <h2 className="text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center">
-                            <Database className="w-3.5 h-3.5 mr-2 text-primary" /> የቢሮ መዝገብ ቤት (DMS)
-                          </h2>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className={`h-6 text-[8px] font-bold rounded ${vaultFilter === 'plan' ? 'bg-[#1e3a8a] text-white hover:bg-[#1e3a8a]' : 'text-slate-400 hover:bg-slate-100'}`}
-                            onClick={() => setVaultFilter(vaultFilter === 'plan' ? 'all' : 'plan')}
-                          >
-                            <CalendarDays className="w-3 h-3 mr-1" /> ዓመታዊ እቅድ
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      {/* Scrollable Document Table */}
-                      <ScrollArea className="flex-1 bg-white/30">
-                        <Table>
-                          <TableHeader className="sticky top-0 bg-white/95 z-10">
-                            <TableRow className="bg-slate-50/30 hover:bg-slate-50/30">
-                              <TableHead className="text-[8px] uppercase h-8 px-4">ስም (Title)</TableHead>
-                              <TableHead className="text-[8px] uppercase h-8">ምድብ (Category)</TableHead>
-                              <TableHead className="text-[8px] uppercase h-8">ኢላማ/ውጤት</TableHead>
-                              <TableHead className="text-[8px] uppercase h-8">ቀን (Date)</TableHead>
-                              <TableHead className="text-[8px] uppercase h-8 text-right pr-4">ተግባር</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {filteredVault.length === 0 && filteredDocuments.length === 0 && (
-                              <TableRow>
-                                <TableCell colSpan={5} className="h-24 text-center text-[9px] text-slate-300 uppercase tracking-widest font-bold">
-                                  መዝገብ ባዶ ነው
-                                </TableCell>
-                              </TableRow>
-                            )}
-                            {filteredVault.map((doc) => (
-                              <TableRow key={doc.id} className="group h-8 hover:bg-slate-50/80 transition-colors">
-                                <TableCell className="text-[9px] font-semibold py-1 px-4">{doc.title}</TableCell>
-                                <TableCell className="py-1"><Badge variant="outline" className="text-[7px] h-3.5 px-1.5">ዲያግራም</Badge></TableCell>
-                                <TableCell className="text-[8px] text-slate-400 py-1">-</TableCell>
-                                <TableCell className="text-[8px] text-slate-400 py-1">{doc.date}</TableCell>
-                                <TableCell className="text-right py-1 pr-4">
-                                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:text-primary transition-transform group-hover:scale-110" onClick={() => { setXmlResult(doc.xml); setTitle(doc.title); setInput(doc.description); }}>
-                                    <FileSearch className="w-3 h-3" />
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                            {filteredDocuments.map((file) => (
-                              <TableRow key={file.id} className="group h-8 hover:bg-slate-50/80 transition-colors">
-                                <TableCell className="text-[9px] font-semibold py-1 px-4">{file.name}</TableCell>
-                                <TableCell className="py-1">
-                                  <Badge variant="secondary" className={`text-[7px] h-3.5 px-1.5 ${file.category === 'Plan' ? 'bg-[#1e3a8a] text-white' : ''}`}>{file.category}</Badge>
-                                </TableCell>
-                                <TableCell className="text-[8px] font-mono text-slate-500 py-1">{file.metricValue}</TableCell>
-                                <TableCell className="text-[8px] text-slate-400 py-1">{file.uploadDate}</TableCell>
-                                <TableCell className="text-right py-1 pr-4">
-                                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:text-primary transition-transform group-hover:scale-110" onClick={() => handleDownloadFile(file)}>
-                                    <Download className="w-3 h-3" />
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </ScrollArea>
-                    </div>
-                  </div>
-                </TabsContent>
-
-                {/* Performance Dashboard View */}
-                <TabsContent value="dashboard" className="h-full m-0 p-6 bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col gap-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0">
-                    <Card className="bg-slate-50/50 border-slate-100 shadow-none">
-                      <CardContent className="p-4 flex items-center gap-4">
-                        <div className="p-3 bg-[#1e3a8a]/10 rounded-xl"><Trophy className="w-5 h-5 text-[#1e3a8a]" /></div>
-                        <div>
-                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">አማካይ አፈጻጸም (Avg Execution)</p>
-                          <h4 className="text-2xl font-black text-[#1e3a8a]">{avgExecution}%</h4>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card className="bg-slate-50/50 border-slate-100 shadow-none">
-                      <CardContent className="p-4 flex items-center gap-4">
-                        <div className="p-3 bg-green-500/10 rounded-xl"><Target className="w-5 h-5 text-green-600" /></div>
-                        <div>
-                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">ተጠናቀቁ አገልግሎቶች</p>
-                          <h4 className="text-2xl font-black text-green-600">{performanceData.filter(d => d.execution >= 90).length}</h4>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card className="bg-slate-50/50 border-slate-100 shadow-none">
-                      <CardContent className="p-4 flex items-center gap-4">
-                        <div className="p-3 bg-red-500/10 rounded-xl"><AlertTriangle className="w-5 h-5 text-red-600" /></div>
-                        <div>
-                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">ልዩ ክትትል የሚሹ</p>
-                          <h4 className="text-2xl font-black text-red-600">{performanceData.filter(d => d.execution < 50).length}</h4>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  <Card className="flex-1 flex flex-col shadow-none border-slate-100 overflow-hidden">
-                    <CardContent className="p-4 flex-1 flex flex-col min-h-0">
-                      <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xs font-bold text-slate-700 uppercase tracking-[0.2em] flex items-center">
-                          <BarChart className="w-4 h-4 mr-2 text-primary" /> የቢሮው አጠቃላይ አፈጻጸም መግለጫ (Performance Overview)
-                        </h3>
-                      </div>
-                      <div className="flex-1 min-h-0">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <RechartsBarChart data={performanceData}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                            <XAxis 
-                              dataKey="serviceName" 
-                              fontSize={10} 
-                              fontWeight={600} 
-                              tick={{ fill: '#64748b' }} 
-                              axisLine={false} 
-                              tickLine={false}
-                            />
-                            <YAxis 
-                              fontSize={10} 
-                              fontWeight={600} 
-                              tick={{ fill: '#64748b' }} 
-                              axisLine={false} 
-                              tickLine={false}
-                            />
-                            <RechartsTooltip 
-                              cursor={{ fill: '#f8fafc' }}
-                              contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                            />
-                            <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }} />
-                            <Bar dataKey="planned" name="ኢላማ (Target)" fill="#e2e8f0" radius={[4, 4, 0, 0]} barSize={24} />
-                            <Bar dataKey="actual" name="ውጤት (Actual)" radius={[4, 4, 0, 0]} barSize={24}>
-                              {performanceData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} />
-                              ))}
-                            </Bar>
-                          </RechartsBarChart>
-                        </ResponsiveContainer>
+              {/* Performance Dashboard View */}
+              <TabsContent value="dashboard" className="h-full min-h-[800px] m-0 p-6 bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card className="bg-slate-50/50 border-slate-100 shadow-none">
+                    <CardContent className="p-4 flex items-center gap-4">
+                      <div className="p-3 bg-[#1e3a8a]/10 rounded-xl"><Trophy className="w-6 h-6 text-[#1e3a8a]" /></div>
+                      <div>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">አማካይ አፈጻጸም (Avg Execution)</p>
+                        <h4 className="text-2xl font-black text-[#1e3a8a]">{avgExecution}%</h4>
                       </div>
                     </CardContent>
                   </Card>
-                </TabsContent>
-              </div>
-            </Tabs>
-          </div>
+                  <Card className="bg-slate-50/50 border-slate-100 shadow-none">
+                    <CardContent className="p-4 flex items-center gap-4">
+                      <div className="p-3 bg-green-500/10 rounded-xl"><Target className="w-6 h-6 text-green-600" /></div>
+                      <div>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">ተጠናቀቁ አገልግሎቶች</p>
+                        <h4 className="text-2xl font-black text-green-600">{performanceData.filter(d => d.execution >= 90).length}</h4>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-slate-50/50 border-slate-100 shadow-none">
+                    <CardContent className="p-4 flex items-center gap-4">
+                      <div className="p-3 bg-red-500/10 rounded-xl"><AlertTriangle className="w-6 h-6 text-red-600" /></div>
+                      <div>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">ልዩ ክትትል የሚሹ</p>
+                        <h4 className="text-2xl font-black text-red-600">{performanceData.filter(d => d.execution < 50).length}</h4>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Card className="flex-1 shadow-none border-slate-100 overflow-hidden min-h-[500px]">
+                  <CardContent className="p-4 h-full flex flex-col">
+                    <div className="flex justify-between items-center mb-8">
+                      <h3 className="text-sm font-bold text-slate-700 uppercase tracking-[0.2em] flex items-center">
+                        <BarChart className="w-5 h-5 mr-2 text-primary" /> የቢሮው አጠቃላይ አፈጻጸም መግለጫ (Performance Overview)
+                      </h3>
+                    </div>
+                    <div className="flex-1 min-h-[400px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RechartsBarChart data={performanceData}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                          <XAxis 
+                            dataKey="serviceName" 
+                            fontSize={11} 
+                            fontWeight={700} 
+                            tick={{ fill: '#64748b' }} 
+                            axisLine={false} 
+                            tickLine={false}
+                          />
+                          <YAxis 
+                            fontSize={11} 
+                            fontWeight={700} 
+                            tick={{ fill: '#64748b' }} 
+                            axisLine={false} 
+                            tickLine={false}
+                          />
+                          <RechartsTooltip 
+                            cursor={{ fill: '#f8fafc' }}
+                            contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }}
+                          />
+                          <Legend wrapperStyle={{ fontSize: '11px', fontWeight: 'bold', paddingTop: '20px' }} />
+                          <Bar dataKey="planned" name="ኢላማ (Target)" fill="#e2e8f0" radius={[6, 6, 0, 0]} barSize={32} />
+                          <Bar dataKey="actual" name="ውጤት (Actual)" radius={[6, 6, 0, 0]} barSize={32}>
+                            {performanceData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Bar>
+                        </RechartsBarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </div>
+          </Tabs>
         </div>
       </main>
       
       {/* Institutional Footer */}
-      <footer className="px-8 py-1 bg-white border-t border-slate-100 flex justify-between items-center text-[7px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
+      <footer className="px-8 py-3 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0 sticky bottom-0 z-[100]">
         <div className="flex gap-6">
-          <span>ITDB Portal v1.2 - Performance Engine Active</span>
+          <span>ITDB Portal v1.5 - Secure Split View Active</span>
           <span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span>
         </div>
         <div className="flex gap-4 items-center">
-          <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-green-500"></div> Analytics Engine Live</span>
+          <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div> Analytics Engine Live</span>
         </div>
       </footer>
     </div>
