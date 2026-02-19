@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -28,7 +28,9 @@ import {
   Upload,
   Download,
   FileUp,
-  X
+  X,
+  CalendarDays,
+  Filter
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -61,6 +63,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { suggestSteps } from "@/ai/flows/suggest-steps-flow";
+import { Badge } from "@/components/ui/badge";
 import JSZip from 'jszip';
 
 interface VaultItem {
@@ -100,12 +103,29 @@ export function BPMNFlowForgeApp() {
   const [uploadCategory, setUploadCategory] = useState("Report");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+  // Filters
+  const [vaultFilter, setVaultFilter] = useState<'all' | 'plan'>('all');
+
   const viewerRef = useRef<BPMNViewerRef>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const filteredVault = useMemo(() => {
+    if (vaultFilter === 'plan') {
+      return vault.filter(item => item.title.toLowerCase().includes('እቅድ') || item.description.toLowerCase().includes('እቅድ'));
+    }
+    return vault;
+  }, [vault, vaultFilter]);
+
+  const filteredDocuments = useMemo(() => {
+    if (vaultFilter === 'plan') {
+      return uploadedFiles.filter(item => item.category === 'Plan' || item.name.toLowerCase().includes('እቅድ'));
+    }
+    return uploadedFiles;
+  }, [uploadedFiles, vaultFilter]);
 
   if (!mounted) return null;
 
@@ -396,71 +416,83 @@ export function BPMNFlowForgeApp() {
                     </Button>
                   )}
                   {activeTab === "vault" && (
-                    <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-                      <DialogTrigger asChild>
-                        <Button variant="default" size="sm" className="h-8 bg-[#1e3a8a] hover:bg-primary/90 text-white rounded-lg px-3 shadow-sm text-[10px]">
-                          <Upload className="w-3.5 h-3.5 mr-2" /> ፋይል ወደ መዝገብ ቤት አስገባ
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-[425px]">
-                        <DialogHeader>
-                          <DialogTitle className="text-sm font-bold uppercase tracking-widest text-[#1e3a8a]">አዲስ ፋይል አጽድቅ</DialogTitle>
-                          <DialogDescription className="text-xs">
-                            በቢሮው መዝገብ ቤት (DMS) ውስጥ ለማስቀመጥ የፈለጉትን ፋይል እዚህ ይስቀሉ።
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">የፋይሉ ስም</label>
-                            <Input
-                              value={uploadName}
-                              onChange={(e) => setUploadName(e.target.value)}
-                              placeholder="ለምሳሌ፡ የሪፎርም ሰነድ 2016"
-                              className="h-9 text-sm"
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">የፋይል ምድብ</label>
-                            <Select value={uploadCategory} onValueChange={setUploadCategory}>
-                              <SelectTrigger className="h-9 text-sm">
-                                <SelectValue placeholder="ምድብ ይምረጡ" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Service Taxonomy">Service Taxonomy (የአገልግሎት ዝርዝር)</SelectItem>
-                                <SelectItem value="Report">Report (ሪፖርት)</SelectItem>
-                                <SelectItem value="Legal">Legal (ህጋዊ)</SelectItem>
-                                <SelectItem value="Other">Other (ሌላ)</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ፋይል ይምረጡ</label>
-                            <div className="flex items-center justify-center w-full">
-                              <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-200 rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
-                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                  {selectedFile ? (
-                                    <div className="flex items-center gap-2 text-primary font-semibold text-xs">
-                                      <FileUp className="w-4 h-4" />
-                                      {selectedFile.name}
-                                    </div>
-                                  ) : (
-                                    <>
-                                      <Upload className="w-5 h-5 mb-2 text-slate-400" />
-                                      <p className="text-[10px] text-slate-500">ፋይሉን እዚህ ይጎትቱ ወይም ይጫኑ</p>
-                                    </>
-                                  )}
-                                </div>
-                                <input type="file" className="hidden" onChange={handleFileChange} />
-                              </label>
+                    <div className="flex gap-2 items-center">
+                       <Button 
+                        variant={vaultFilter === 'plan' ? 'default' : 'outline'} 
+                        size="sm" 
+                        className={`h-8 rounded-lg px-3 text-[10px] ${vaultFilter === 'plan' ? 'bg-[#1e3a8a]' : 'text-slate-500'}`}
+                        onClick={() => setVaultFilter(vaultFilter === 'plan' ? 'all' : 'plan')}
+                      >
+                        <CalendarDays className="w-3.5 h-3.5 mr-2" /> ዓመታዊ እቅድ
+                      </Button>
+
+                      <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+                        <DialogTrigger asChild>
+                          <Button variant="default" size="sm" className="h-8 bg-[#1e3a8a] hover:bg-primary/90 text-white rounded-lg px-3 shadow-sm text-[10px]">
+                            <Upload className="w-3.5 h-3.5 mr-2" /> ፋይል ወደ መዝገብ ቤት አስገባ
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[425px]">
+                          <DialogHeader>
+                            <DialogTitle className="text-sm font-bold uppercase tracking-widest text-[#1e3a8a]">አዲስ ፋይል አጽድቅ</DialogTitle>
+                            <DialogDescription className="text-xs">
+                              በቢሮው መዝገብ ቤት (DMS) ውስጥ ለማስቀመጥ የፈለጉትን ፋይል እዚህ ይስቀሉ።
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="grid gap-4 py-4">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">የፋይሉ ስም</label>
+                              <Input
+                                value={uploadName}
+                                onChange={(e) => setUploadName(e.target.value)}
+                                placeholder="ለምሳሌ፡ የሪፎርም ሰነድ 2016"
+                                className="h-9 text-sm"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">የፋይል ምድብ</label>
+                              <Select value={uploadCategory} onValueChange={setUploadCategory}>
+                                <SelectTrigger className="h-9 text-sm">
+                                  <SelectValue placeholder="ምድብ ይምረጡ" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Plan">እቅድ (Plan)</SelectItem>
+                                  <SelectItem value="Service Taxonomy">Service Taxonomy (የአገልግሎት ዝርዝር)</SelectItem>
+                                  <SelectItem value="Report">Report (ሪፖርት)</SelectItem>
+                                  <SelectItem value="Legal">Legal (ህጋዊ)</SelectItem>
+                                  <SelectItem value="Other">Other (ሌላ)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ፋይል ይምረጡ</label>
+                              <div className="flex items-center justify-center w-full">
+                                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-200 rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
+                                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                    {selectedFile ? (
+                                      <div className="flex items-center gap-2 text-primary font-semibold text-xs">
+                                        <FileUp className="w-4 h-4" />
+                                        {selectedFile.name}
+                                      </div>
+                                    ) : (
+                                      <>
+                                        <Upload className="w-5 h-5 mb-2 text-slate-400" />
+                                        <p className="text-[10px] text-slate-500">ፋይሉን እዚህ ይጎትቱ ወይም ይጫኑ</p>
+                                      </>
+                                    )}
+                                  </div>
+                                  <input type="file" className="hidden" onChange={handleFileChange} />
+                                </label>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <DialogFooter>
-                          <Button variant="outline" size="sm" onClick={() => setIsUploadOpen(false)}>ሰርዝ</Button>
-                          <Button size="sm" className="bg-[#1e3a8a]" onClick={processUpload}>አጽድቅ</Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
+                          <DialogFooter>
+                            <Button variant="outline" size="sm" onClick={() => setIsUploadOpen(false)}>ሰርዝ</Button>
+                            <Button size="sm" className="bg-[#1e3a8a]" onClick={processUpload}>አጽድቅ</Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
                   )}
                 </div>
               </div>
@@ -485,14 +517,15 @@ export function BPMNFlowForgeApp() {
                         <div className="flex justify-between items-center mb-4">
                           <h2 className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center">
                             <Activity className="w-3.5 h-3.5 mr-2 text-primary" /> የሂደት ዲያግራሞች
+                            {vaultFilter === 'plan' && <Badge variant="secondary" className="ml-2 text-[8px] bg-[#1e3a8a]/10 text-[#1e3a8a]">እቅዶች ብቻ</Badge>}
                           </h2>
                           <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
-                            ዲያግራሞች: {vault.length}
+                            ዲያግራሞች: {filteredVault.length}
                           </span>
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {vault.length > 0 ? vault.map((doc) => (
+                          {filteredVault.length > 0 ? filteredVault.map((doc) => (
                             <Card key={doc.id} className="border-slate-100 shadow-none hover:border-primary/20 hover:shadow-md transition-all cursor-pointer group rounded-lg">
                               <CardHeader className="p-3 pb-1">
                                 <div className="flex justify-between items-start">
@@ -507,6 +540,7 @@ export function BPMNFlowForgeApp() {
                                   <Button variant="ghost" size="sm" className="h-7 text-[9px] px-2 text-primary bg-primary/5 hover:bg-primary/10 rounded" onClick={() => { setXmlResult(doc.xml); setTitle(doc.title); setInput(doc.description); setActiveTab("diagram"); }}>
                                     <FileSearch className="w-3 h-3 mr-1" /> ክፈት
                                   </Button>
+                                  {doc.title.toLowerCase().includes('እቅድ') && <Badge variant="outline" className="text-[8px] border-primary/20 text-primary ml-auto">እቅድ</Badge>}
                                 </div>
                               </CardContent>
                             </Card>
@@ -524,18 +558,19 @@ export function BPMNFlowForgeApp() {
                         <div className="flex justify-between items-center mb-4">
                           <h2 className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center">
                             <Database className="w-3.5 h-3.5 mr-2 text-[#1e3a8a]" /> የሰነዶች መዝገብ (DMS)
+                            {vaultFilter === 'plan' && <Badge variant="secondary" className="ml-2 text-[8px] bg-[#1e3a8a]/10 text-[#1e3a8a]">እቅዶች ብቻ</Badge>}
                           </h2>
                           <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
-                            ሰነዶች: {uploadedFiles.length}
+                            ሰነዶች: {filteredDocuments.length}
                           </span>
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {uploadedFiles.length > 0 ? uploadedFiles.map((file) => (
+                          {filteredDocuments.length > 0 ? filteredDocuments.map((file) => (
                             <Card key={file.id} className="border-slate-100 shadow-none hover:border-primary/20 hover:shadow-md transition-all rounded-lg">
                               <CardHeader className="p-3 pb-1">
                                 <div className="flex justify-between items-start">
-                                  <span className="text-[8px] font-mono text-primary font-bold bg-primary/5 px-2 py-0.5 rounded">{file.category}</span>
+                                  <span className={`text-[8px] font-mono font-bold px-2 py-0.5 rounded ${file.category === 'Plan' ? 'bg-[#1e3a8a] text-white' : 'bg-primary/5 text-primary'}`}>{file.category}</span>
                                   <span className="text-[8px] text-slate-400">{file.uploadDate}</span>
                                 </div>
                                 <CardTitle className="text-xs font-bold text-slate-700 mt-1.5">{file.name}</CardTitle>
