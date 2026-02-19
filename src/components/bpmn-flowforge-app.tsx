@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -133,7 +134,7 @@ export function BPMNFlowForgeApp() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   
-  // FIXED CATEGORY STATE MANAGEMENT
+  // HIERARCHICAL STATE MANAGEMENT
   const [uploadCategory, setUploadCategory] = useState<string>("");
   const [uploadPlanType, setUploadPlanType] = useState("");
   const [uploadReportType, setUploadReportType] = useState("");
@@ -455,12 +456,10 @@ export function BPMNFlowForgeApp() {
                       </div>
                     ) : (
                       <div className="grid gap-4 py-4">
-                        {/* REBUILT CATEGORY SELECTION LOGIC */}
                         <div className="space-y-1.5">
                           <label className="text-[10px] font-bold text-slate-400">ምድብ (Category)</label>
                           <Select value={uploadCategory} onValueChange={(val) => {
                             setUploadCategory(val);
-                            // Reset sub-types when category changes
                             setUploadPlanType("");
                             setUploadReportType("");
                             setUploadReformType("");
