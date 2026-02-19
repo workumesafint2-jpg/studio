@@ -141,9 +141,8 @@ export function BPMNFlowForgeApp() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadName, setUploadName] = useState("");
   
-  // FIXED: Category state defaults to empty string to force manual selection
+  // FIXED: Category state defaults to empty string to ensure the user must explicitly select an option.
   const [uploadCategory, setUploadCategory] = useState<string>("");
   const [uploadPlanType, setUploadPlanType] = useState("Annual Plan");
   const [uploadReportType, setUploadReportType] = useState("Monthly Report");
@@ -214,12 +213,6 @@ export function BPMNFlowForgeApp() {
 
   if (!mounted) return null;
 
-  const generateSystemCode = () => {
-    const year = 2024;
-    const count = (vault.length + uploadedFiles.length + 1).toString().padStart(3, '0');
-    return `ITDB-${year}-${count}`;
-  };
-
   const handleGenerate = () => {
     if (!input.trim()) {
       toast({ title: "መረጃ የለም", description: "እባክዎን የሂደቱን ዝርዝር መግለጫ ያስገቡ።", variant: "destructive" });
@@ -232,7 +225,7 @@ export function BPMNFlowForgeApp() {
       
       const newDoc: VaultItem = {
         id: Math.random().toString(36).substr(2, 9),
-        systemCode: generateSystemCode(),
+        systemCode: `ITDB-2024-${(vault.length + 1).toString().padStart(3, '0')}`,
         title: title || "ያልተሰየመ ሂደት",
         description: input,
         date: new Date().toLocaleString('am-ET'),
@@ -240,7 +233,6 @@ export function BPMNFlowForgeApp() {
       };
       
       setVault(prev => [newDoc, ...prev]);
-
       toast({ title: "ተሳክቷል", description: `ሪፎርሙ በቮልት (Vault) ውስጥ በኮድ ${newDoc.systemCode} ጸድቋል።` });
     }
   };
@@ -256,7 +248,7 @@ export function BPMNFlowForgeApp() {
       const result = await suggestSteps({ title, docType });
       if (result && result.steps) {
         setInput(result.steps);
-        toast({ title: "ወርቁ ነኝ ዝግጁ ነው", description: "ቴክኒካዊ መግለጫው በራስ-ሰር ተዘጋጅቷል (Vault Aware)." });
+        toast({ title: "ወርቁ ነኝ ዝግጁ ነው", description: "ቴክኒካዊ መግለጫው በራስ-ሰር ተዘጋጅቷል።" });
       }
     } catch (error: any) {
       toast({ title: "የ AI ስህተት", description: "ሂደቶቹን ማዘጋጀት አልተቻለም።", variant: "destructive" });
@@ -266,8 +258,8 @@ export function BPMNFlowForgeApp() {
   };
 
   const processUpload = () => {
-    if (!selectedFile || !uploadName || !uploadCategory) {
-      toast({ title: "ስህተት", description: "እባክዎን ፋይል ይምረጡ፣ ስም ያስገቡ እና ምድብ ይምረጡ።", variant: "destructive" });
+    if (!selectedFile || !uploadCategory) {
+      toast({ title: "ስህተት", description: "እባክዎን ፋይል ይምረጡ እና ምድብ ይምረጡ።", variant: "destructive" });
       return;
     }
 
@@ -283,9 +275,12 @@ export function BPMNFlowForgeApp() {
           if (prev >= 100) {
             clearInterval(interval);
             
+            // derive display name from file name
+            const displayName = selectedFile.name.split('.').slice(0, -1).join('.') || selectedFile.name;
+
             const newFile: UploadedFile = {
               id: Math.random().toString(36).substr(2, 9),
-              name: uploadName,
+              name: displayName,
               category: uploadCategory,
               planType: uploadCategory === 'Plan' ? uploadPlanType : undefined,
               reportType: uploadCategory === 'Report' ? uploadReportType : undefined,
@@ -303,14 +298,13 @@ export function BPMNFlowForgeApp() {
             setIsUploading(false);
             setIsUploadOpen(false);
             setSelectedFile(null);
-            setUploadName("");
             setUploadMetric("");
-            setUploadCategory(""); // Reset for next use
+            setUploadCategory(""); 
             setUploadProgress(0);
             
             toast({ 
               title: "አግብቷል & ተመዝግቧል", 
-              description: `${newFile.name} በቢሮው መዝገብ ቤት (DMS) በቋሚነት ተቀምጧል።`,
+              description: `${newFile.name} በቢሮው መዝገብ ቤት በቋሚነት ተቀምጧል።`,
               className: "bg-green-50 border-green-200"
             });
             return 100;
@@ -447,86 +441,82 @@ export function BPMNFlowForgeApp() {
                       </div>
                     ) : (
                       <div className="grid gap-4 py-4">
+                        {/* SURGICAL UPDATE: Primary Category Select is now first and reactive */}
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-slate-400">የአገልግሎት/ፋይል ስም</label>
-                          <Input value={uploadName} onChange={(e) => setUploadName(e.target.value)} placeholder="ለምሳሌ፡ ጥናትና ምርምር" className="h-9 text-xs" />
+                          <label className="text-[10px] font-bold text-slate-400">ምድብ (Category)</label>
+                          <Select 
+                            value={uploadCategory} 
+                            onValueChange={setUploadCategory}
+                          >
+                            <SelectTrigger className="h-9 text-xs">
+                              <SelectValue placeholder="ምድብ ይምረጡ..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Plan">እቅድ (Plan)</SelectItem>
+                              <SelectItem value="Report">ሪፖርት (Report)</SelectItem>
+                              <SelectItem value="Service Taxonomy">Service Taxonomy</SelectItem>
+                              <SelectItem value="Reform Documents">የሪፎርም ሰነዶች</SelectItem>
+                              <SelectItem value="Other">ሌሎች</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+
+                        {/* Sub-Category Logic depends on uploadCategory */}
+                        {uploadCategory === 'Plan' && (
                           <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-slate-400">ምድብ (Category)</label>
-                            {/* FIXED: Unlocked selection logic with explicit state binding */}
-                            <Select 
-                              value={uploadCategory} 
-                              onValueChange={(val) => {
-                                console.log("Category explicitly changed to:", val);
-                                setUploadCategory(val);
-                              }}
-                            >
-                              <SelectTrigger className="h-9 text-xs">
-                                <SelectValue placeholder="ምድብ ይምረጡ..." />
-                              </SelectTrigger>
+                            <label className="text-[10px] font-bold text-slate-400">የእቅድ ዓይነት</label>
+                            <Select value={uploadPlanType} onValueChange={setUploadPlanType}>
+                              <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="Plan">እቅድ (Plan)</SelectItem>
-                                <SelectItem value="Report">ሪፖርት (Report)</SelectItem>
-                                <SelectItem value="Service Taxonomy">Service Taxonomy</SelectItem>
-                                <SelectItem value="Reform Documents">የሪፎርም ሰነዶች</SelectItem>
-                                <SelectItem value="Other">ሌሎች</SelectItem>
+                                <SelectItem value="Strategic Plan">ስትራቴጂካዊ እቅድ</SelectItem>
+                                <SelectItem value="Annual Plan">የዓመት እቅድ</SelectItem>
+                                <SelectItem value="Quarterly Plan">የሩብ ዓመት እቅድ</SelectItem>
+                                <SelectItem value="Monthly Plan">የወር እቅድ</SelectItem>
+                                <SelectItem value="Individual/Team Plan">የግል/የቡድን እቅድ</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
+                        )}
 
-                          {/* Dynamic Sub-Category Logic based on uploadCategory */}
-                          {uploadCategory === 'Plan' && (
-                            <div className="space-y-1.5">
-                              <label className="text-[10px] font-bold text-slate-400">የእቅድ ዓይነት</label>
-                              <Select value={uploadPlanType} onValueChange={setUploadPlanType}>
-                                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="Strategic Plan">ስትራቴጂካዊ እቅድ</SelectItem>
-                                  <SelectItem value="Annual Plan">የዓመት እቅድ</SelectItem>
-                                  <SelectItem value="Quarterly Plan">የሩብ ዓመት እቅድ</SelectItem>
-                                  <SelectItem value="Monthly Plan">የወር እቅድ</SelectItem>
-                                  <SelectItem value="Individual/Team Plan">የግል/የቡድን እቅድ</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          )}
+                        {uploadCategory === 'Report' && (
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-400">የሪፖርት ዓይነት</label>
+                            <Select value={uploadReportType} onValueChange={setUploadReportType}>
+                              <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Weekly Report">የሳምንት ሪፖርት</SelectItem>
+                                <SelectItem value="Monthly Report">የወር ሪፖርት</SelectItem>
+                                <SelectItem value="Quarterly Report">የሩብ ዓመት ሪፖርት</SelectItem>
+                                <SelectItem value="Annual Performance Report">የዓመት አፈጻጸም ሪፖርት</SelectItem>
+                                <SelectItem value="Special/Ad-hoc Report">ልዩ/ድንገተኛ ሪፖርት</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
 
-                          {uploadCategory === 'Report' && (
-                            <div className="space-y-1.5">
-                              <label className="text-[10px] font-bold text-slate-400">የሪፖርት ዓይነት</label>
-                              <Select value={uploadReportType} onValueChange={setUploadReportType}>
-                                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="Weekly Report">የሳምንት ሪፖርት</SelectItem>
-                                  <SelectItem value="Monthly Report">የወር ሪፖርት</SelectItem>
-                                  <SelectItem value="Quarterly Report">የሩብ ዓመት ሪፖርት</SelectItem>
-                                  <SelectItem value="Annual Performance Report">የዓመት አፈጻጸም ሪፖርት</SelectItem>
-                                  <SelectItem value="Special/Ad-hoc Report">ልዩ/ድንገተኛ ሪፖርት</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          )}
+                        {uploadCategory === 'Service Taxonomy' && (
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-400">Service Taxonomy Index</label>
+                            <Select value={uploadTaxonomyService} onValueChange={setUploadTaxonomyService}>
+                              <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {BUREAU_SERVICES_REGISTRY.map(s => (
+                                  <SelectItem key={s.title} value={s.title}>{s.title}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
 
-                          {uploadCategory === 'Service Taxonomy' && (
-                            <div className="space-y-1.5">
-                              <label className="text-[10px] font-bold text-slate-400">Service Taxonomy Index</label>
-                              <Select value={uploadTaxonomyService} onValueChange={setUploadTaxonomyService}>
-                                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                  {BUREAU_SERVICES_REGISTRY.map(s => (
-                                    <SelectItem key={s.title} value={s.title}>{s.title}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          )}
-                        </div>
                         <div className="space-y-1.5">
                           <label className="text-[10px] font-bold text-slate-400">ኢላማ/ውጤት (Metric Value)</label>
                           <Input type="number" value={uploadMetric} onChange={(e) => setUploadMetric(e.target.value)} className="h-9 text-xs" />
                         </div>
-                        <Input type="file" onChange={(e) => e.target.files && setSelectedFile(e.target.files[0])} className="text-[10px]" />
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-slate-400">ፋይል ይምረጡ</label>
+                          <Input type="file" onChange={(e) => e.target.files && setSelectedFile(e.target.files[0])} className="text-[10px]" />
+                        </div>
                       </div>
                     )}
                     <DialogFooter>
@@ -754,4 +744,3 @@ export function BPMNFlowForgeApp() {
     </div>
   );
 }
-
