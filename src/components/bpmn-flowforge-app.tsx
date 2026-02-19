@@ -161,14 +161,16 @@ export function BPMNFlowForgeApp() {
       .map(([name, data]) => {
         const execution = data.planned > 0 ? (data.actual / data.planned) * 100 : 0;
         let status: 'Excellent' | 'On track' | 'Needs attention' = 'Needs attention';
-        let color = '#ef4444'; // Red
+        let color = '#22c55e'; // Green
 
         if (execution >= 90) {
           status = 'Excellent';
-          color = '#22c55e'; // Green
+          color = '#22c55e';
         } else if (execution >= 50) {
           status = 'On track';
           color = '#eab308'; // Yellow
+        } else {
+          color = '#ef4444'; // Red
         }
 
         return {
@@ -515,44 +517,48 @@ export function BPMNFlowForgeApp() {
 
               <div className="flex-1 flex flex-col gap-3 min-h-0 mt-3">
                 <TabsContent value="diagram" className="flex-1 flex flex-col gap-3 m-0 p-0 overflow-hidden">
-                  <div className="flex-[3] bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden relative min-h-0">
-                    {xmlResult ? (
-                      <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
-                    ) : (
-                      <div className="h-full flex flex-col items-center justify-center text-slate-300 gap-3">
-                        <Layout className="w-12 h-12 opacity-10" />
-                        <span className="text-[9px] font-bold uppercase tracking-widest opacity-30">የጸደቀ ሪፎርም የለም</span>
-                      </div>
-                    )}
+                  {/* Workflow Diagram Section */}
+                  <div className="flex-[65] flex flex-col gap-2 min-h-0">
+                    <h2 className="text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center px-1">
+                      <Layout className="w-3.5 h-3.5 mr-2 text-primary" /> የስራ ፍሰት ዲያግራም (Workflow Diagram)
+                    </h2>
+                    <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden relative min-h-0">
+                      {xmlResult ? (
+                        <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
+                      ) : (
+                        <div className="h-full flex flex-col items-center justify-center text-slate-300 gap-3">
+                          <Layout className="w-12 h-12 opacity-10" />
+                          <span className="text-[9px] font-bold uppercase tracking-widest opacity-30">የጸደቀ ሪፎርም የለም</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Performance Summary Table below Diagram */}
+                  {/* Performance Summary (Small and integrated) */}
                   {performanceData.length > 0 && (
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-3 shrink-0">
-                      <h3 className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center">
-                        <TrendingUp className="w-3 h-3 mr-2 text-primary" /> የሂደት አፈጻጸም ማጠቃለያ (Performance Summary)
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-2 shrink-0">
+                      <h3 className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center px-1">
+                        <TrendingUp className="w-3 h-3 mr-2 text-primary" /> የሂደት አፈጻጸም ማጠቃለያ (Summary)
                       </h3>
                       <Table>
                         <TableHeader>
-                          <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 h-7">
-                            <TableHead className="text-[8px] uppercase h-7">አገልግሎት (Service)</TableHead>
-                            <TableHead className="text-[8px] uppercase h-7">ኢላማ (Planned)</TableHead>
-                            <TableHead className="text-[8px] uppercase h-7">ውጤት (Actual)</TableHead>
-                            <TableHead className="text-[8px] uppercase h-7">ልዩነት (Variance)</TableHead>
-                            <TableHead className="text-[8px] uppercase h-7">ሁኔታ (Status)</TableHead>
+                          <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 h-6">
+                            <TableHead className="text-[7px] uppercase h-6 py-0">አገልግሎት (Service)</TableHead>
+                            <TableHead className="text-[7px] uppercase h-6 py-0">ኢላማ (Target)</TableHead>
+                            <TableHead className="text-[7px] uppercase h-6 py-0">ውጤት (Actual)</TableHead>
+                            <TableHead className="text-[7px] uppercase h-6 py-0">ሁኔታ (Status)</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {performanceData.slice(0, 3).map((item, idx) => (
-                            <TableRow key={idx} className="h-7">
-                              <TableCell className="text-[9px] font-semibold py-1">{item.serviceName}</TableCell>
-                              <TableCell className="text-[9px] py-1">{item.planned}</TableCell>
-                              <TableCell className="text-[9px] py-1">{item.actual}</TableCell>
-                              <TableCell className="text-[9px] py-1">{item.actual - item.planned}</TableCell>
-                              <TableCell className="py-1">
-                                <div className="flex items-center gap-1.5">
-                                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></div>
-                                  <span className="text-[8px] font-bold uppercase" style={{ color: item.color }}>{item.status}</span>
+                          {performanceData.slice(0, 2).map((item, idx) => (
+                            <TableRow key={idx} className="h-6">
+                              <TableCell className="text-[8px] font-semibold py-0">{item.serviceName}</TableCell>
+                              <TableCell className="text-[8px] py-0">{item.planned}</TableCell>
+                              <TableCell className="text-[8px] py-0">{item.actual}</TableCell>
+                              <TableCell className="py-0">
+                                <div className="flex items-center gap-1">
+                                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.color }}></div>
+                                  <span className="text-[7px] font-bold uppercase" style={{ color: item.color }}>{item.status}</span>
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -562,65 +568,68 @@ export function BPMNFlowForgeApp() {
                     </div>
                   )}
 
-                  <div className="flex-[1] bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col min-h-[160px] overflow-hidden">
-                    <div className="px-4 py-2 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
-                      <div className="flex items-center gap-3">
-                        <h2 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center">
-                          <Database className="w-3.5 h-3.5 mr-2 text-primary" /> የቢሮ ቮልት (DMS)
-                        </h2>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className={`h-6 text-[8px] font-bold rounded ${vaultFilter === 'plan' ? 'bg-[#1e3a8a] text-white hover:bg-[#1e3a8a]' : 'text-slate-400 hover:bg-slate-100'}`}
-                          onClick={() => setVaultFilter(vaultFilter === 'plan' ? 'all' : 'plan')}
-                        >
-                          <CalendarDays className="w-3 h-3 mr-1" /> ዓመታዊ እቅድ
-                        </Button>
+                  {/* Bureau Vault (DMS) Section */}
+                  <div className="flex-[35] flex flex-col gap-2 min-h-0">
+                    <div className="bg-white/80 rounded-xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden backdrop-blur-sm">
+                      <div className="px-4 py-2 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                        <div className="flex items-center gap-3">
+                          <h2 className="text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center">
+                            <Database className="w-3.5 h-3.5 mr-2 text-primary" /> የቢሮ መዝገብ ቤት (DMS)
+                          </h2>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className={`h-6 text-[8px] font-bold rounded ${vaultFilter === 'plan' ? 'bg-[#1e3a8a] text-white hover:bg-[#1e3a8a]' : 'text-slate-400 hover:bg-slate-100'}`}
+                            onClick={() => setVaultFilter(vaultFilter === 'plan' ? 'all' : 'plan')}
+                          >
+                            <CalendarDays className="w-3 h-3 mr-1" /> ዓመታዊ እቅድ
+                          </Button>
+                        </div>
                       </div>
+                      <ScrollArea className="flex-1 bg-white/30">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-slate-50/30 hover:bg-slate-50/30">
+                              <TableHead className="text-[8px] uppercase h-8 px-4">ስም (Title)</TableHead>
+                              <TableHead className="text-[8px] uppercase h-8">ምድብ (Category)</TableHead>
+                              <TableHead className="text-[8px] uppercase h-8">ኢላማ/ውጤት</TableHead>
+                              <TableHead className="text-[8px] uppercase h-8">ቀን (Date)</TableHead>
+                              <TableHead className="text-[8px] uppercase h-8 text-right pr-4">ተግባር</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {filteredVault.map((doc) => (
+                              <TableRow key={doc.id} className="group h-8 hover:bg-slate-50/80 transition-colors">
+                                <TableCell className="text-[9px] font-semibold py-1 px-4">{doc.title}</TableCell>
+                                <TableCell className="py-1"><Badge variant="outline" className="text-[7px] h-3.5 px-1.5">ዲያግራም</Badge></TableCell>
+                                <TableCell className="text-[8px] text-slate-400 py-1">-</TableCell>
+                                <TableCell className="text-[8px] text-slate-400 py-1">{doc.date}</TableCell>
+                                <TableCell className="text-right py-1 pr-4">
+                                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:text-primary transition-transform group-hover:scale-110" onClick={() => { setXmlResult(doc.xml); setTitle(doc.title); setInput(doc.description); }}>
+                                    <FileSearch className="w-3 h-3" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                            {filteredDocuments.map((file) => (
+                              <TableRow key={file.id} className="group h-8 hover:bg-slate-50/80 transition-colors">
+                                <TableCell className="text-[9px] font-semibold py-1 px-4">{file.name}</TableCell>
+                                <TableCell className="py-1">
+                                  <Badge variant="secondary" className={`text-[7px] h-3.5 px-1.5 ${file.category === 'Plan' ? 'bg-[#1e3a8a] text-white' : ''}`}>{file.category}</Badge>
+                                </TableCell>
+                                <TableCell className="text-[8px] font-mono text-slate-500 py-1">{file.metricValue}</TableCell>
+                                <TableCell className="text-[8px] text-slate-400 py-1">{file.uploadDate}</TableCell>
+                                <TableCell className="text-right py-1 pr-4">
+                                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:text-primary transition-transform group-hover:scale-110" onClick={() => handleDownloadFile(file)}>
+                                    <Download className="w-3 h-3" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </ScrollArea>
                     </div>
-                    <ScrollArea className="flex-1">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
-                            <TableHead className="text-[9px] uppercase h-8 px-4">ስም (Title)</TableHead>
-                            <TableHead className="text-[9px] uppercase h-8">ምድብ (Category)</TableHead>
-                            <TableHead className="text-[9px] uppercase h-8">ኢላማ/ውጤት</TableHead>
-                            <TableHead className="text-[9px] uppercase h-8">ቀን (Date)</TableHead>
-                            <TableHead className="text-[9px] uppercase h-8 text-right">ተግባር</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredVault.map((doc) => (
-                            <TableRow key={doc.id} className="group h-8">
-                              <TableCell className="text-[10px] font-semibold py-1 px-4">{doc.title}</TableCell>
-                              <TableCell className="py-1"><Badge variant="outline" className="text-[8px] h-4">ዲያግራም</Badge></TableCell>
-                              <TableCell className="text-[9px] text-slate-400 py-1">-</TableCell>
-                              <TableCell className="text-[9px] text-slate-400 py-1">{doc.date}</TableCell>
-                              <TableCell className="text-right py-1">
-                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:text-primary" onClick={() => { setXmlResult(doc.xml); setTitle(doc.title); setInput(doc.description); }}>
-                                  <FileSearch className="w-3 h-3" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                          {filteredDocuments.map((file) => (
-                            <TableRow key={file.id} className="group h-8">
-                              <TableCell className="text-[10px] font-semibold py-1 px-4">{file.name}</TableCell>
-                              <TableCell className="py-1">
-                                <Badge variant="secondary" className={`text-[8px] h-4 ${file.category === 'Plan' ? 'bg-[#1e3a8a] text-white' : ''}`}>{file.category}</Badge>
-                              </TableCell>
-                              <TableCell className="text-[9px] font-mono text-slate-500 py-1">{file.metricValue}</TableCell>
-                              <TableCell className="text-[9px] text-slate-400 py-1">{file.uploadDate}</TableCell>
-                              <TableCell className="text-right py-1">
-                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:text-primary" onClick={() => handleDownloadFile(file)}>
-                                  <Download className="w-3 h-3" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </ScrollArea>
                   </div>
                 </TabsContent>
 
