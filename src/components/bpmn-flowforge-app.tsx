@@ -142,7 +142,7 @@ export function BPMNFlowForgeApp() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadName, setUploadName] = useState("");
-  const [uploadCategory, setUploadCategory] = useState("Plan");
+  const [uploadCategory, setUploadCategory] = useState("Plan"); // Initial default is Plan, but it's now dynamic
   const [uploadPlanType, setUploadPlanType] = useState("Annual Plan");
   const [uploadReportType, setUploadReportType] = useState("Monthly Report");
   const [uploadTaxonomyService, setUploadTaxonomyService] = useState(BUREAU_SERVICES_REGISTRY[0].title);
@@ -209,11 +209,6 @@ export function BPMNFlowForgeApp() {
     if (vaultFilter === 'all') return uploadedFiles;
     return uploadedFiles.filter(item => item.category === vaultFilter);
   }, [uploadedFiles, vaultFilter]);
-
-  const filteredVault = useMemo(() => {
-    // Current diagram vault filtering logic
-    return vault;
-  }, [vault]);
 
   if (!mounted) return null;
 
@@ -419,7 +414,7 @@ export function BPMNFlowForgeApp() {
         </div>
 
         {/* 60/40 Split View */}
-        <div className="flex-1 flex flex-col gap-3 min-h-0">
+        <div className="flex-1 flex flex-col gap-3 min-h-0 overflow-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col w-full h-full min-h-0">
             <div className="flex justify-between items-center bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm shrink-0">
               <TabsList className="bg-slate-50 h-8 p-1">
@@ -456,8 +451,16 @@ export function BPMNFlowForgeApp() {
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1.5">
                             <label className="text-[10px] font-bold text-slate-400">ምድብ (Category)</label>
-                            <Select value={uploadCategory} onValueChange={setUploadCategory}>
-                              <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                            <Select 
+                              value={uploadCategory} 
+                              onValueChange={(val) => {
+                                console.log("Category changed to:", val);
+                                setUploadCategory(val);
+                              }}
+                            >
+                              <SelectTrigger className="h-9 text-xs">
+                                <SelectValue placeholder="ምድብ ይምረጡ..." />
+                              </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="Plan">እቅድ (Plan)</SelectItem>
                                 <SelectItem value="Report">ሪፖርት (Report)</SelectItem>
@@ -468,6 +471,7 @@ export function BPMNFlowForgeApp() {
                             </Select>
                           </div>
 
+                          {/* Dynamic Sub-Category Logic */}
                           {uploadCategory === 'Plan' && (
                             <div className="space-y-1.5">
                               <label className="text-[10px] font-bold text-slate-400">የእቅድ ዓይነት</label>
@@ -530,7 +534,8 @@ export function BPMNFlowForgeApp() {
             </div>
 
             <TabsContent value="diagram" className="flex-1 flex flex-col gap-3 m-0 min-h-0">
-              <div className="flex-[60] flex flex-col min-h-0 bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden relative">
+              {/* Diagram Canvas - 60% Area */}
+              <div className="flex-[60] flex flex-col min-h-[400px] bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden relative z-[5]">
                 <div className="absolute top-4 left-4 z-10">
                   <h2 className="text-[10px] font-bold text-[#1e3a8a] uppercase tracking-widest flex items-center bg-white/80 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-100">
                     <Layout className="w-3.5 h-3.5 mr-2" /> የስራ ፍሰት ዲያግራም
@@ -545,29 +550,35 @@ export function BPMNFlowForgeApp() {
                 )}
               </div>
 
-              <Separator className="shrink-0" />
+              {/* Institutional Divider */}
+              <Separator className="shrink-0 h-px bg-slate-200 my-1" />
 
-              <div className="flex-[40] flex flex-col min-h-0 bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+              {/* Bureau Vault (DMS) - 40% Area */}
+              <div className="flex-[40] flex flex-col min-h-[300px] bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden z-[10]">
                 <div className="flex justify-between items-center px-6 py-3 border-b border-slate-50 bg-slate-50/30">
                   <h2 className="text-[10px] font-bold text-[#1e3a8a] uppercase tracking-widest flex items-center">
                     <Database className="w-3.5 h-3.5 mr-2" /> የቢሮ መዝገብ ቤት (DMS)
                   </h2>
-                  <Select value={vaultFilter} onValueChange={(val: any) => setVaultFilter(val)}>
-                    <SelectTrigger className="h-7 w-40 text-[9px] font-bold">
-                      <SelectValue placeholder="ማጣሪያ (Filter)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">ሁሉም (All)</SelectItem>
-                      <SelectItem value="Plan">እቅድ (Plans)</SelectItem>
-                      <SelectItem value="Report">ሪፖርቶች (Reports)</SelectItem>
-                      <SelectItem value="Service Taxonomy">Service Taxonomy</SelectItem>
-                      <SelectItem value="Reform Documents">የሪፎርም ሰነዶች</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">ማጣሪያ (Filter):</span>
+                    <Select value={vaultFilter} onValueChange={(val: any) => setVaultFilter(val)}>
+                      <SelectTrigger className="h-7 w-40 text-[9px] font-bold bg-white">
+                        <SelectValue placeholder="ማጣሪያ (Filter)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">ሁሉም (All)</SelectItem>
+                        <SelectItem value="Plan">እቅድ (Plans)</SelectItem>
+                        <SelectItem value="Report">ሪፖርቶች (Reports)</SelectItem>
+                        <SelectItem value="Service Taxonomy">Service Taxonomy</SelectItem>
+                        <SelectItem value="Reform Documents">የሪፎርም ሰነዶች</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
+                
                 <ScrollArea className="flex-1">
                   <Table>
-                    <TableHeader className="bg-slate-50/50">
+                    <TableHeader className="bg-slate-50/50 sticky top-0 z-[5]">
                       <TableRow>
                         <TableHead className="text-[9px] font-bold uppercase px-6">ስም (Title)</TableHead>
                         <TableHead className="text-[9px] font-bold uppercase">ምድብ (Category)</TableHead>
@@ -579,22 +590,42 @@ export function BPMNFlowForgeApp() {
                     <TableBody>
                       {filteredDocuments.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={5} className="h-32 text-center text-[10px] text-slate-300 uppercase tracking-widest">መዝገብ ባዶ ነው</TableCell>
+                          <TableCell colSpan={5} className="h-48 text-center text-[10px] text-slate-300 uppercase tracking-widest font-bold">
+                            በመዝገብ ቤት ውስጥ የተመዘገበ ሰነድ የለም
+                          </TableCell>
                         </TableRow>
                       ) : (
                         filteredDocuments.map(file => (
-                          <TableRow key={file.id} className="hover:bg-slate-50/80 transition-colors">
-                            <TableCell className="text-[10px] font-bold text-slate-700 px-6">{file.name}</TableCell>
-                            <TableCell>
-                              <div className="flex flex-col gap-0.5">
-                                <Badge variant="outline" className="text-[7px] px-1.5 h-3.5 border-slate-200 text-slate-500 uppercase">{file.category}</Badge>
-                                <span className="text-[7px] text-slate-400 font-bold ml-1">{file.planType || file.reportType || file.taxonomyService}</span>
+                          <TableRow key={file.id} className="hover:bg-slate-50/80 transition-all cursor-default group">
+                            <TableCell className="text-[10px] font-bold text-slate-700 px-6">
+                              <div className="flex items-center gap-2">
+                                <FileText className="w-3 h-3 text-[#1e3a8a] opacity-40" />
+                                {file.name}
                               </div>
                             </TableCell>
-                            <TableCell className="text-[8px] font-bold text-blue-600"><div className="flex items-center gap-1"><ShieldCheck className="w-2.5 h-2.5" /> Active & Filed</div></TableCell>
-                            <TableCell className="text-[9px] text-slate-400">{file.uploadDate}</TableCell>
+                            <TableCell>
+                              <div className="flex flex-col gap-0.5">
+                                <Badge variant="outline" className="text-[7px] px-1.5 h-3.5 border-slate-200 text-slate-500 uppercase font-black bg-white">
+                                  {file.category}
+                                </Badge>
+                                <span className="text-[7px] text-[#1e3a8a] font-bold ml-1 opacity-70 italic">
+                                  {file.planType || file.reportType || file.taxonomyService || "General"}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1.5 text-[8px] font-bold text-blue-600 bg-blue-50/50 w-fit px-2 py-0.5 rounded-full">
+                                <ShieldCheck className="w-2.5 h-2.5" /> 
+                                Active & Filed
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-[9px] text-slate-400 font-mono italic">
+                              {file.uploadDate}
+                            </TableCell>
                             <TableCell className="text-right pr-6">
-                              <Button variant="ghost" size="icon" className="h-7 w-7"><Download className="w-3.5 h-3.5" /></Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Download className="w-3.5 h-3.5 text-[#1e3a8a]" />
+                              </Button>
                             </TableCell>
                           </TableRow>
                         ))
@@ -605,34 +636,102 @@ export function BPMNFlowForgeApp() {
               </div>
             </TabsContent>
 
-            <TabsContent value="dashboard" className="flex-1 p-6 space-y-6 overflow-auto">
-              {/* Performance Cards & Charts from previous turn logic */}
-              <div className="grid grid-cols-3 gap-4">
+            <TabsContent value="dashboard" className="flex-1 p-6 space-y-6 overflow-auto bg-white rounded-xl border border-slate-200">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card className="bg-slate-50 border-none shadow-none p-4 flex items-center gap-4">
-                  <Trophy className="w-8 h-8 text-[#1e3a8a] opacity-20" />
+                  <div className="p-3 bg-white rounded-xl shadow-sm">
+                    <Trophy className="w-6 h-6 text-[#1e3a8a]" />
+                  </div>
                   <div>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase">አማካይ አፈጻጸም</p>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">አማካይ አፈጻጸም</p>
                     <h4 className="text-2xl font-black text-[#1e3a8a]">{avgExecution}%</h4>
                   </div>
                 </Card>
-                {/* ... other cards ... */}
+                <Card className="bg-slate-50 border-none shadow-none p-4 flex items-center gap-4">
+                  <div className="p-3 bg-white rounded-xl shadow-sm">
+                    <Target className="w-6 h-6 text-blue-500" />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">የተመዘገቡ እቅዶች</p>
+                    <h4 className="text-2xl font-black text-[#1e3a8a]">
+                      {uploadedFiles.filter(f => f.category === 'Plan').length}
+                    </h4>
+                  </div>
+                </Card>
+                <Card className="bg-slate-50 border-none shadow-none p-4 flex items-center gap-4">
+                  <div className="p-3 bg-white rounded-xl shadow-sm">
+                    <Activity className="w-6 h-6 text-green-500" />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">የቀረቡ ሪፖርቶች</p>
+                    <h4 className="text-2xl font-black text-[#1e3a8a]">
+                      {uploadedFiles.filter(f => f.category === 'Report').length}
+                    </h4>
+                  </div>
+                </Card>
               </div>
-              <Card className="p-6 h-[400px]">
-                <h3 className="text-xs font-bold uppercase tracking-widest mb-8">የቢሮው አጠቃላይ አፈጻጸም መግለጫ</h3>
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsBarChart data={performanceData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="serviceName" fontSize={10} tick={{fill: '#94a3b8'}} axisLine={false} tickLine={false} />
-                    <YAxis fontSize={10} tick={{fill: '#94a3b8'}} axisLine={false} tickLine={false} />
-                    <RechartsTooltip />
-                    <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '20px' }} />
-                    <Bar dataKey="planned" name="ኢላማ" fill="#e2e8f0" radius={[4, 4, 0, 0]} barSize={24} />
-                    <Bar dataKey="actual" name="ውጤት" radius={[4, 4, 0, 0]} barSize={24}>
-                      {performanceData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                    </Bar>
-                  </RechartsBarChart>
-                </ResponsiveContainer>
-              </Card>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="p-6 h-[450px] shadow-sm">
+                  <div className="flex justify-between items-center mb-8">
+                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#1e3a8a] flex items-center">
+                      <BarChart className="w-4 h-4 mr-2" /> የቢሮው አጠቃላይ አፈጻጸም (Execution Index)
+                    </h3>
+                    <Badge variant="outline" className="text-[8px] bg-slate-50 border-slate-200">Real-time Analytics</Badge>
+                  </div>
+                  <ResponsiveContainer width="100%" height="90%">
+                    <RechartsBarChart data={performanceData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="serviceName" fontSize={9} tick={{fill: '#94a3b8'}} axisLine={false} tickLine={false} />
+                      <YAxis fontSize={9} tick={{fill: '#94a3b8'}} axisLine={false} tickLine={false} />
+                      <RechartsTooltip contentStyle={{ fontSize: '10px', borderRadius: '8px' }} />
+                      <Legend wrapperStyle={{ fontSize: '9px', paddingTop: '20px' }} />
+                      <Bar dataKey="planned" name="ኢላማ (Planned)" fill="#e2e8f0" radius={[4, 4, 0, 0]} barSize={20} />
+                      <Bar dataKey="actual" name="ውጤት (Actual)" radius={[4, 4, 0, 0]} barSize={20}>
+                        {performanceData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                      </Bar>
+                    </RechartsBarChart>
+                  </ResponsiveContainer>
+                </Card>
+
+                <Card className="p-6 shadow-sm overflow-hidden flex flex-col">
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#1e3a8a] mb-6 flex items-center">
+                    <TrendingUp className="w-4 h-4 mr-2" /> የአገልግሎቶች ዝርዝር አፈጻጸም
+                  </h3>
+                  <ScrollArea className="flex-1">
+                    <Table>
+                      <TableHeader className="bg-slate-50/50">
+                        <TableRow>
+                          <TableHead className="text-[9px] font-bold">አገልግሎት</TableHead>
+                          <TableHead className="text-[9px] font-bold">አፈጻጸም</TableHead>
+                          <TableHead className="text-[9px] font-bold">ሁኔታ</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {performanceData.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={3} className="text-center h-32 text-[10px] text-slate-300 font-bold uppercase italic">
+                              አፈጻጸም ለማየት እቅድና ሪፖርት ያገናኙ
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          performanceData.map((metric, i) => (
+                            <TableRow key={i}>
+                              <TableCell className="text-[10px] font-bold">{metric.serviceName}</TableCell>
+                              <TableCell className="text-[10px] font-mono">{metric.execution}%</TableCell>
+                              <TableCell>
+                                <Badge style={{ backgroundColor: metric.color }} className="text-[7px] text-white border-none px-2 h-4">
+                                  {metric.status}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                </Card>
+              </div>
             </TabsContent>
           </Tabs>
         </div>
@@ -645,7 +744,7 @@ export function BPMNFlowForgeApp() {
         </div>
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-          DMS Analytics Engine Live
+          DMS Performance Analytics Engine Live
         </div>
       </footer>
     </div>
