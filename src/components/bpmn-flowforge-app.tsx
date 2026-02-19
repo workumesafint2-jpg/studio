@@ -110,7 +110,7 @@ export function BPMNFlowForgeApp() {
   if (!mounted) return null;
 
   const generateSystemCode = () => {
-    const year = 2026;
+    const year = 2024;
     const count = (vault.length + uploadedFiles.length + 1).toString().padStart(3, '0');
     return `ITDB-${year}-${count}`;
   };
@@ -265,12 +265,12 @@ export function BPMNFlowForgeApp() {
     <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-white">
       <div className="h-1 w-full bg-[#1e3a8a]" />
       
-      <header className="flex flex-col items-center justify-center py-3 px-8 bg-white border-b border-slate-100 shrink-0 z-10 relative text-center">
-        <p className="text-[12px] font-bold text-[#1e3a8a] mb-1 tracking-widest uppercase" style={{ fontFamily: "'Noto Sans Ethiopic', sans-serif" }}>
+      <header className="flex flex-col items-center justify-center py-2 px-8 bg-white border-b border-slate-100 shrink-0 z-10 relative text-center">
+        <p className="text-[10px] font-bold text-[#1e3a8a] mb-0.5 tracking-widest uppercase" style={{ fontFamily: "'Noto Sans Ethiopic', sans-serif" }}>
           ኢኖቬሽንና ቴክኖሎጂ ልማት ቢሮ
         </p>
 
-        <h1 className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.4em] font-headline">
+        <h1 className="text-[7px] font-bold text-slate-400 uppercase tracking-[0.4em]">
           Document Management System
         </h1>
 
@@ -300,9 +300,9 @@ export function BPMNFlowForgeApp() {
         </div>
       </header>
 
-      <main className="flex flex-col flex-1 overflow-hidden p-4 gap-4 bg-slate-50/50">
-        <div className="flex flex-col lg:flex-row gap-4 h-full min-h-0">
-          <div className="w-full lg:w-[380px] flex flex-col gap-4 shrink-0">
+      <main className="flex flex-col flex-1 overflow-hidden p-3 gap-3 bg-slate-50/50">
+        <div className="flex flex-col lg:flex-row gap-3 h-full min-h-0">
+          <div className="w-full lg:w-[360px] flex flex-col gap-3 shrink-0">
             <Card className="flex-1 shadow-sm border border-slate-200 rounded-xl overflow-hidden bg-white">
               <CardContent className="p-4 flex flex-col gap-4 h-full">
                 <div className="space-y-1.5">
@@ -374,7 +374,7 @@ export function BPMNFlowForgeApp() {
             </Card>
           </div>
 
-          <div className="flex-1 flex flex-col gap-4 min-h-0">
+          <div className="flex-1 flex flex-col gap-3 min-h-0">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
               <div className="flex justify-between items-center bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm mb-2 shrink-0">
                 <TabsList className="bg-slate-50 h-9 p-1 rounded-lg border border-slate-100">
@@ -607,9 +607,9 @@ export function BPMNFlowForgeApp() {
         </div>
       </main>
       
-      <footer className="px-8 py-2 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
+      <footer className="px-8 py-1 bg-white border-t border-slate-100 flex justify-between items-center text-[7px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
         <div className="flex gap-6">
-          <span>ITDB Portal v10.0</span>
+          <span>ITDB Portal v1.0</span>
           <span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span>
         </div>
         <div className="flex gap-4 items-center">
