@@ -28,13 +28,14 @@ const suggestStepsFlow = ai.defineFlow(
   },
   async (input) => {
     // 1. Contextual Recognition: Check Knowledge Base first
-    // If it's a diagram request or general service name, check our local registry
-    const predefinedWorkflow = findServiceInRegistry(input.title);
-    if (predefinedWorkflow) {
-      return { steps: predefinedWorkflow };
+    if (input.docType === 'diagram') {
+      const predefinedWorkflow = findServiceInRegistry(input.title);
+      if (predefinedWorkflow) {
+        return { steps: predefinedWorkflow };
+      }
     }
 
-    // 2. Fallback: AI Generation if not in registry
+    // 2. Fallback: AI Generation if not in registry or for other document types
     const docTypeLabel = {
       reform: 'የሪፎርም ሰነድ (Reform Paper)',
       report: 'ቴክኒካዊ ሪፖርት (Technical Report)',
