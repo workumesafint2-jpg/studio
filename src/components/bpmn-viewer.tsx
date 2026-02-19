@@ -15,13 +15,22 @@ export interface BPMNViewerRef {
   exportXML: () => Promise<void>;
   getXML: () => Promise<string>;
   getSVG: () => Promise<string>;
+  fitViewport: () => void;
 }
 
 export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, title = "Process Diagram" }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const modelerRef = useRef<any>(null);
 
+  const fitViewport = () => {
+    if (modelerRef.current) {
+      const canvas = modelerRef.current.get('canvas');
+      canvas.zoom('fit-viewport');
+    }
+  };
+
   useImperativeHandle(ref, () => ({
+    fitViewport,
     getXML: async () => {
       if (!modelerRef.current) return '';
       try {
@@ -86,7 +95,7 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
         const url = URL.createObjectURL(svgBlob);
         
         img.onload = () => {
-          const scale = 3; // Ultra High Resolution for Production
+          const scale = 3; 
           canvas.width = img.width * scale;
           canvas.height = img.height * scale;
           const ctx = canvas.getContext('2d');
@@ -124,19 +133,18 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
   useEffect(() => {
     if (modelerRef.current && xml) {
       modelerRef.current.importXML(xml).then(() => {
-        const canvas = modelerRef.current.get('canvas');
-        canvas.zoom('fit-viewport');
+        fitViewport();
       });
     }
   }, [xml]);
 
   return (
-    <div className="w-full h-full relative group bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+    <div className="w-full h-full relative group bg-white border border-slate-200 rounded-2xl overflow-hidden">
       <div ref={containerRef} className="w-full h-full min-h-[600px]" />
       <div className="absolute bottom-4 left-4 flex gap-2">
-        <div className="bg-primary text-white px-3 py-1 rounded-full text-[10px] font-bold shadow-lg">
-          INTERACTIVE MODELER ACTIVE
-        </div>
+        <Button variant="secondary" size="sm" className="h-7 text-[8px] font-bold uppercase shadow-sm bg-white/80 backdrop-blur-sm" onClick={fitViewport}>
+          Auto-Fit View
+        </Button>
       </div>
     </div>
   );
