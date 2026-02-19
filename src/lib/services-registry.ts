@@ -1,3 +1,4 @@
+
 /**
  * @fileOverview ITDB Bureau Service Registry (Knowledge Base)
  * Transcribed from Bureau institutional documentation.
@@ -164,11 +165,11 @@ export const BUREAU_SERVICES_REGISTRY: BureauService[] = [
   },
   {
     title: "የድህረ-ምረቃ ምርምር ድጋፍ",
-    workflow: "Start [wrap] የድጋፍ ጥያቄ መቀበል [wrap] የድጋፍ እቅድ ማዘጋጀት [wrap] የላብራቶሪ/ዳታ ፈቃድ መስጠት [wrap] የባለሙያ ድጋፍ [wrap] End"
+    workflow: "Start [wrap] የድጋፍ ጥያቄ መቀበል [wrap] የድጋፍ እቅድ ማዘጋጀት [wrap] የላብራቶሪ/ዳታ ፈቃድ መስጠት [wrap] የባለሙያ ድጋ方 [wrap] End"
   },
   {
     title: "የክህሎት ማረጋገጫ ምዘና",
-    workflow: "Start [wrap] የተመዛኞች ምዝገባ [wrap] የምዘና እቅድ ማውጣት [wrap] የፈተና ዝግጅት [wrap] ምዘና ማካሄድ [wrap] ውጤት ማሳወቅ [wrap] End"
+    workflow: "Start [wrap] የተመዛኞች ምዝገባ [wrap] የምዘና እቅድ ማውጣት [wrap] የፈተና ዝግጅ [wrap] ምዘና ማካሄድ [wrap] ውጤት ማሳወቅ [wrap] End"
   },
   {
     title: "የቴክኖሎጂ ፖሊሲ ቀረጻ",
