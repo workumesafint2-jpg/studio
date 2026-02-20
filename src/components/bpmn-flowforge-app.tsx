@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -26,7 +25,8 @@ import {
   FileText,
   ShieldCheck,
   BrainCircuit,
-  TrendingUp
+  TrendingUp,
+  X
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -82,6 +82,17 @@ import {
   Cell
 } from 'recharts';
 import { BUREAU_SERVICES_REGISTRY } from '@/lib/services-registry';
+import { 
+  useCollection, 
+  useUser, 
+  useFirestore, 
+  useAuth, 
+  useMemoFirebase,
+  addDocumentNonBlocking,
+  deleteDocumentNonBlocking,
+  initiateAnonymousSignIn
+} from '@/firebase';
+import { collection, query, where, doc } from 'firebase/firestore';
 
 interface VaultItem {
   id: string;
@@ -105,8 +116,8 @@ interface UploadedFile {
   uploadDate: string;
   dataUrl: string;
   type: string;
-  metricValue: number;
   status: 'Processing' | 'Active & Filed';
+  uploaderId: string;
 }
 
 interface PerformanceMetric {
@@ -128,7 +139,6 @@ export function BPMNFlowForgeApp() {
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [vault, setVault] = useState<VaultItem[]>([]);
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -146,10 +156,26 @@ export function BPMNFlowForgeApp() {
 
   const viewerRef = useRef<BPMNViewerRef>(null);
   const { toast } = useToast();
+  
+  // FIREBASE INTEGRATION
+  const { user, isUserLoading } = useUser();
+  const db = useFirestore();
+  const auth = useAuth();
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    if (!isUserLoading && !user && auth) {
+      initiateAnonymousSignIn(auth);
+    }
+  }, [user, isUserLoading, auth]);
+
+  const documentsQuery = useMemoFirebase(() => {
+    if (!db || !user) return null;
+    return query(collection(db, 'documents'), where('uploaderId', '==', user.uid));
+  }, [db, user]);
+
+  const { data: uploadedFilesRaw, isLoading: isDocsLoading } = useCollection<UploadedFile>(documentsQuery);
+  const uploadedFiles = uploadedFilesRaw || [];
 
   const performanceData = useMemo(() => {
     const metrics: Record<string, { planned: number; actual: number; period: string }> = {};
@@ -259,7 +285,7 @@ export function BPMNFlowForgeApp() {
   };
 
   const processUpload = () => {
-    if (!selectedFile || !uploadCategory) {
+    if (!selectedFile || !uploadCategory || !user || !db) {
       toast({ title: "ስህተት", description: "እባክዎን ፋይል ይምረጡ እና ምድብ ይምረጡ።", variant: "destructive" });
       return;
     }
@@ -277,8 +303,7 @@ export function BPMNFlowForgeApp() {
             clearInterval(interval);
             const displayName = selectedFile.name.split('.').slice(0, -1).join('.') || selectedFile.name;
 
-            const newFile: UploadedFile = {
-              id: Math.random().toString(36).substr(2, 9),
+            const newFile: Omit<UploadedFile, 'id'> = {
               name: displayName,
               category: uploadCategory,
               planType: uploadCategory === 'እቅዶች (Plans)' ? uploadPlanType : undefined,
@@ -290,11 +315,12 @@ export function BPMNFlowForgeApp() {
               uploadDate: new Date().toLocaleString('am-ET'),
               dataUrl,
               type: selectedFile.type,
-              metricValue: 0,
-              status: 'Active & Filed'
+              status: 'Active & Filed',
+              uploaderId: user.uid
             };
 
-            setUploadedFiles(prev => [newFile, ...prev]);
+            addDocumentNonBlocking(collection(db, 'documents'), newFile);
+
             setIsUploading(false);
             setIsUploadOpen(false);
             setSelectedFile(null);
@@ -312,6 +338,12 @@ export function BPMNFlowForgeApp() {
       }, 200);
     };
     reader.readAsDataURL(selectedFile);
+  };
+
+  const handleDelete = (docId: string) => {
+    if (!db) return;
+    deleteDocumentNonBlocking(doc(db, 'documents', docId));
+    toast({ title: "ተሰርዟል", description: "ሰነዱ ከመዝገብ ቤት ተወግዷል።" });
   };
 
   const handleDownloadProject = async () => {
@@ -602,7 +634,14 @@ export function BPMNFlowForgeApp() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredDocuments.length === 0 ? (
+                      {isDocsLoading ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="h-48 text-center text-[10px] text-slate-300 uppercase tracking-widest font-bold">
+                            <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 opacity-20" />
+                            መረጃውን በመጫን ላይ...
+                          </TableCell>
+                        </TableRow>
+                      ) : filteredDocuments.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={5} className="h-48 text-center text-[10px] text-slate-300 uppercase tracking-widest font-bold">
                             በመዝገብ ቤት ውስጥ የተመዘገበ ሰነድ የለም
@@ -630,16 +669,37 @@ export function BPMNFlowForgeApp() {
                             <TableCell>
                               <div className="flex items-center gap-1.5 text-[8px] font-bold text-blue-600 bg-blue-50/50 w-fit px-2 py-0.5 rounded-full">
                                 <ShieldCheck className="w-2.5 h-2.5" /> 
-                                Active & Filed
+                                {file.status}
                               </div>
                             </TableCell>
                             <TableCell className="text-[9px] text-slate-400 font-mono italic">
                               {file.uploadDate}
                             </TableCell>
                             <TableCell className="text-right pr-6">
-                              <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Download className="w-3.5 h-3.5 text-[#1e3a8a]" />
-                              </Button>
+                              <div className="flex items-center justify-end gap-1">
+                                <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" asChild>
+                                  <a href={file.dataUrl} download={file.fileName}>
+                                    <Download className="w-3.5 h-3.5 text-[#1e3a8a]" />
+                                  </a>
+                                </Button>
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-destructive">
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent>
+                                    <DialogHeader>
+                                      <DialogTitle>ሰነዱን ማጥፋት ይፈልጋሉ?</DialogTitle>
+                                      <DialogDescription>ይህ ድርጊት ወደ ኋላ መመለስ አይቻልም። ሰነዱ ከመዝገብ ቤት እስከመጨረሻው ይጠፋል።</DialogDescription>
+                                    </DialogHeader>
+                                    <DialogFooter>
+                                      <Button variant="outline" size="sm">ተመለስ</Button>
+                                      <Button variant="destructive" size="sm" onClick={() => handleDelete(file.id)}>ሰርዝ (Confirm Delete)</Button>
+                                    </DialogFooter>
+                                  </DialogContent>
+                                </Dialog>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))

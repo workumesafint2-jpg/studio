@@ -1,6 +1,7 @@
 
 import type {Metadata, Viewport} from 'next';
 import './globals.css';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
   title: 'ITDB - Innovation and Technology Development Bureau',
@@ -42,7 +43,11 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="ITDB Portal" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body className="font-body antialiased bg-background text-foreground">{children}</body>
+      <body className="font-body antialiased bg-background text-foreground">
+        <FirebaseClientProvider>
+          {children}
+        </FirebaseClientProvider>
+      </body>
     </html>
   );
 }
