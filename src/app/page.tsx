@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { Toaster } from "@/components/ui/toaster";
 import { Loader2 } from "lucide-react";
@@ -30,21 +30,21 @@ const BPMNFlowForgeApp = dynamic(
 );
 
 export default function Home() {
-  const [mounted, setMounted] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    // Ensuring the component is only rendered on the client to avoid chunk-loading/hydration mismatches
+    setIsClient(true);
   }, []);
 
-  // Strict client-side mount guard to prevent hydration and chunk-loading mismatches
-  if (!mounted) {
+  if (!isClient) {
     return <LoadingScreen />;
   }
 
   return (
-    <>
+    <Suspense fallback={<LoadingScreen />}>
       <BPMNFlowForgeApp />
       <Toaster />
-    </>
+    </Suspense>
   );
 }
