@@ -1,13 +1,12 @@
 
 'use server';
 /**
- * @fileOverview Smart Institutional Workflow & Document Intelligence Agent
- * Enhanced for Deep File Analysis and Vault Registry Insights.
+ * @fileOverview Smart Institutional Workflow & Comparison Intelligence Agent
+ * Enhanced for Gap Analysis (Plan vs Report) and Vault Registry Insights.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { findServiceInRegistry } from '@/lib/services-registry';
 
 const SuggestStepsInputSchema = z.object({
   title: z.string().describe('The title of the service, process, or search query.'),
@@ -41,34 +40,32 @@ const suggestStepsFlow = ai.defineFlow(
     );
 
     // 2. Intelligence Synthesis: Analyze Vault state
-    let vaultSummary = vault.map(f => `[${f.category}] ${f.name} - Version: ${f.version}, Status: ${f.status}`).join('\n');
+    let vaultSummary = vault.map(f => `[${f.category}] ${f.name} - Status: ${f.status}`).join('\n');
     
-    // 3. Cross-Analysis Logic
-    const isComparisonRequested = query.includes('ይጣጣማል') || query.includes('compare') || query.includes('አፈጻጸም') || input.docType === 'report';
-    let analysisNote = "";
-    if (isComparisonRequested) {
-      const plans = vault.filter(f => f.category === 'እቅዶች (Plans)');
-      const reports = vault.filter(f => f.category === 'ሪፖርቶች (Reports)');
-      analysisNote = `Found ${plans.length} plans and ${reports.length} reports in vault for cross-referencing.`;
-    }
-
+    // 3. Comparison Logic (Plan vs Report)
+    const isComparisonRequested = query.includes('አነጻጽሪ') || query.includes('compare') || query.includes('አፈጻጸም') || input.docType === 'report';
+    
     // 4. AI Generation with Deep Doc Intelligence
     const response = await ai.generate({
       prompt: `You are 'ወርቁ' (Worku), the High-Value Institutional Intelligence Agent.
       
-      INSTITUTIONAL CONTEXT:
-      - Active Vault Registry:
+      INSTITUTIONAL CONTEXT (VAULT REGISTRY):
       ${vaultSummary}
       
       USER INQUIRY: "${input.title}"
       DOC TYPE: ${input.docType}
-      ANALYSIS NOTE: ${analysisNote}
+      IS COMPARISON REQUESTED: ${isComparisonRequested}
 
       YOUR TASKS:
-      1. ANALYZE: If the user asks about specific files (e.g., "የዓመት እቅዱን"), check the registry and summarize their status/version.
-      2. COMPARE: If asked to compare (Plan vs Report), highlight the gaps in the vault (e.g., "You have a plan but no matching report").
-      3. ARCHITECT: If a diagram is requested, generate a VERTICAL NUMBERED LIST (one step per line).
-      4. GUIDANCE: Be concise and professional. Reference files by their name and version.
+      1. ANALYZE & COMPARE: If comparison is requested, find documents with similar names in 'እቅዶች (Plans)' and 'ሪፖርቶች (Reports)'. 
+         - List the 'Gap': If a plan exists but no report, or vice versa.
+         - Highlight the status of these documents.
+      2. ARCHITECT: If a diagram/workflow is requested, generate a VERTICAL NUMBERED LIST (one step per line).
+         - Format: 
+           1. Start
+           2. [Task]
+           3. End
+      3. GUIDANCE: Be concise and professional in Amharic. Reference files by their exact name.
 
       STRICT MODELER RULES:
       - NO [wrap] markers. Use plain new lines.
@@ -81,7 +78,7 @@ const suggestStepsFlow = ai.defineFlow(
 
     return {
       steps: response.text,
-      relatedFiles: matchingFiles.map(f => `${f.name} (V${f.version})`)
+      relatedFiles: matchingFiles.map(f => f.name)
     };
   }
 );
