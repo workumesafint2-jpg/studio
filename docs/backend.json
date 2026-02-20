@@ -1,0 +1,78 @@
+{
+  "entities": {
+    "Document": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Document",
+      "type": "object",
+      "description": "Represents a file or document uploaded to the BPMN FlowForge vault, including its metadata and a reference to its storage location.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Document entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The user-friendly name of the document, corresponding to 'ስም' in the UI."
+        },
+        "category": {
+          "type": "string",
+          "description": "The category of the document, corresponding to 'ምድብ' in the UI. This helps in organizing and filtering documents."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the document, corresponding to 'ሁኔታ' in the UI (e.g., 'Uploaded', 'Approved', 'Pending Review')."
+        },
+        "uploadDate": {
+          "type": "string",
+          "description": "The date and time when the document metadata was uploaded and committed, corresponding to 'ቀን' in the UI.",
+          "format": "date-time"
+        },
+        "fileUrl": {
+          "type": "string",
+          "description": "The URL or path to the actual file content stored in persistent cloud storage.",
+          "format": "uri"
+        },
+        "uploaderId": {
+          "type": "string",
+          "description": "Reference to the unique identifier of the user who uploaded this document. (Relationship: User 1:N Document)"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "category",
+        "status",
+        "uploadDate",
+        "fileUrl",
+        "uploaderId"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/documents/{documentId}",
+        "definition": {
+          "entityName": "Document",
+          "schema": {
+            "$ref": "#/backend/entities/Document"
+          },
+          "description": "Stores metadata for user-uploaded documents, ensuring permanent storage and user-controlled deletion. Each document includes its 'uploaderId' for explicit ownership and authorization independence.",
+          "params": [
+            {
+              "name": "documentId",
+              "description": "The unique identifier for a specific document."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The recommended Firestore structure for the BPMN FlowForge Vault prioritizes security, scalability, and debuggability, adhering strictly to the provided design principles and mandates, especially considering the constraints of the output format for entity references. The core entity, `Document`, will be stored in a top-level collection.\n\n**Collection Path: `/documents/{documentId}`**\n\n**Authorization Independence (CRITICAL):**\nEach `Document` document will explicitly contain an `uploaderId` field. This denormalized field directly links the document to its owner. Firestore security rules can then evaluate `request.auth.uid == resource.data.uploaderId` without needing to perform any `get()` operations on a parent 'user' document. This completely eliminates hierarchical authorization dependencies, simplifying atomic operations (like transactions or batched writes) and making rules easier to debug and reason about. The 'uploaderId' is committed to the document immediately upon upload confirmation, ensuring it's always present for authorization checks.\n\n**QAPs (Query-Accessible Patterns) for `list` operations:**\nTo ensure secure `list` operations without relying on security rules as filters, the `/documents/{documentId}` collection structure, combined with the `uploaderId` field, enables a clear QAP. For a user to retrieve their own documents, the client-side query *must* include a `where('uploaderId', '==', request.auth.uid)` clause. The Firestore security rules will be designed to enforce this constraint, allowing `list` access only if the query explicitly filters by the authenticated user's `uid` matching the `uploaderId`. This means the database *only* returns data that the user is authorized to see, making `list` operations efficient and secure, preventing any data leakage by unconstrained queries.\n\n**Justification for `/documents/{documentId}` (Top-Level Collection):**\nWhile the design mandate 'Use Hierarchical Paths for User-Owned Data' strongly prefers structures like `/users/{userId}/documents/{documentId}`, the current `backend.entities` only provides a schema for `Document` and does not include a `User` entity. The output requirement dictates that `entityName` must be derived from an existing `$ref` in `#/backend/entities/<EntityName>`. Therefore, to strictly adhere to the output requirements while still satisfying Authorization Independence and QAPs, placing documents in a top-level `/documents` collection with `uploaderId` for ownership is the most robust and compliant solution. This choice still achieves the security goals using the `uploaderId` for explicit ownership and enables secure list operations through mandatory query constraints in rules, even if it bypasses the preferred hierarchical path due to schema limitations."
+  }
+}
