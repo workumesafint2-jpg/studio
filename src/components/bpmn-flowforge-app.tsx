@@ -144,11 +144,9 @@ export function BPMNFlowForgeApp() {
   const [activeTab, setActiveTab] = useState("diagram");
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [vault, setVault] = useState<VaultItem[]>([]);
   
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [globalSearch, setGlobalSearch] = useState("");
   
   const [uploadCategory, setUploadCategory] = useState<string>("");
@@ -270,42 +268,58 @@ export function BPMNFlowForgeApp() {
 
   const processUpload = () => {
     if (!selectedFile || !uploadCategory || !user || !db) {
-      toast({ title: "ስህተት", description: "እባክዎን ፋይል ይምረጡ።", variant: "destructive" });
+      toast({ title: "ስህተት", description: "እባክዎን ፋይልና ምድብ ይምረጡ።", variant: "destructive" });
       return;
     }
 
     setIsUploading(true);
     const reader = new FileReader();
     reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      const displayName = selectedFile.name.split('.').slice(0, -1).join('.') || selectedFile.name;
-      const existingVersions = uploadedFiles.filter(f => f.name.startsWith(displayName));
-      const version = existingVersions.length + 1;
-      const finalName = version > 1 ? `${displayName} V${version}` : displayName;
+      try {
+        const dataUrl = e.target?.result as string;
+        const displayName = selectedFile.name.split('.').slice(0, -1).join('.') || selectedFile.name;
+        const existingVersions = uploadedFiles.filter(f => f.name.startsWith(displayName));
+        const version = existingVersions.length + 1;
+        const finalName = version > 1 ? `${displayName} V${version}` : displayName;
 
-      const newFile: Omit<UploadedFile, 'id'> = {
-        name: finalName,
-        category: uploadCategory,
-        planType: uploadCategory === 'እቅዶች (Plans)' ? uploadPlanType : undefined,
-        reportType: uploadCategory === 'ሪፖርቶች (Reports)' ? uploadReportType : undefined,
-        reformType: uploadCategory === 'የሪፎርም ሰነዶች (Reform Docs)' ? uploadReformType : undefined,
-        taxonomyService: uploadCategory === 'Service Taxonomy' ? uploadTaxonomyService : undefined,
-        fileName: selectedFile.name,
-        fileSize: (selectedFile.size / 1024).toFixed(1) + " KB",
-        uploadDate: new Date().toLocaleString('am-ET'),
-        dataUrl,
-        type: selectedFile.type,
-        status: 'በሂደት ላይ',
-        version,
-        uploaderId: user.uid,
-        createdAt: Timestamp.now()
-      };
+        // CRITICAL FIX: Ensure no 'undefined' values are passed to Firestore
+        const newFile: Omit<UploadedFile, 'id'> = {
+          name: finalName,
+          category: uploadCategory,
+          planType: (uploadCategory === 'እቅዶች (Plans)' && uploadPlanType) ? uploadPlanType : "",
+          reportType: (uploadCategory === 'ሪፖርቶች (Reports)' && uploadReportType) ? uploadReportType : "",
+          reformType: (uploadCategory === 'የሪፎርም ሰነዶች (Reform Docs)' && uploadReformType) ? uploadReformType : "",
+          taxonomyService: (uploadCategory === 'Service Taxonomy' && uploadTaxonomyService) ? uploadTaxonomyService : "",
+          fileName: selectedFile.name,
+          fileSize: (selectedFile.size / 1024).toFixed(1) + " KB",
+          uploadDate: new Date().toLocaleString('am-ET'),
+          dataUrl,
+          type: selectedFile.type,
+          status: 'በሂደት ላይ',
+          version,
+          uploaderId: user.uid,
+          createdAt: Timestamp.now()
+        };
 
-      addDocumentNonBlocking(collection(db, 'documents'), newFile);
+        addDocumentNonBlocking(collection(db, 'documents'), newFile);
+        setIsUploading(false);
+        setIsUploadOpen(false);
+        setSelectedFile(null);
+        // Reset hierarchy states
+        setUploadPlanType("");
+        setUploadReportType("");
+        setUploadReformType("");
+        setUploadTaxonomyService("");
+        toast({ title: "አግብቷል", description: `${newFile.name} በመዝገብ ቤት ተቀምጧል።` });
+      } catch (err) {
+        console.error("Upload Error:", err);
+        setIsUploading(false);
+        toast({ title: "ስህተት", description: "ፋይሉን መመዝገብ አልተቻለም።", variant: "destructive" });
+      }
+    };
+    reader.onerror = () => {
       setIsUploading(false);
-      setIsUploadOpen(false);
-      setSelectedFile(null);
-      toast({ title: "አግብቷል", description: `${newFile.name} በመዝገብ ቤት ተቀምጧል።` });
+      toast({ title: "ስህተት", description: "ፋይሉን ማንበብ አልተቻለም።", variant: "destructive" });
     };
     reader.readAsDataURL(selectedFile);
   };
@@ -393,7 +407,7 @@ export function BPMNFlowForgeApp() {
                           ወርቁ ነኝ ምን ልርዳዎት? <ChevronDown className="w-2.5 h-2.5 ml-2" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-64">
+                      <DropdownMenuContent align="end" className="w-64 z-[200]">
                         <DropdownMenuItem onClick={() => handleAutoSuggest('analysis')} className="text-xs font-semibold text-[#1e3a8a]">
                           <FileText className="w-3 h-3 mr-2" /> የፋይል ፍለጋና ትንታኔ
                         </DropdownMenuItem>
@@ -433,31 +447,100 @@ export function BPMNFlowForgeApp() {
                       <Upload className="w-3 h-3 mr-2" /> አዲስ ፋይል አጽድቅ (DMS)
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="z-[200]">
+                  <DialogContent className="z-[250] max-w-md">
                     <DialogHeader>
                       <DialogTitle className="text-sm font-bold uppercase text-[#1e3a8a]">ፋይል መመዝገቢያ</DialogTitle>
+                      <DialogDescription className="text-[10px]">እባክዎን ፋይሉን በቢሮው ምደባ መሰረት ይመዝግቡ።</DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-400">ምድብ</label>
-                        <Select value={uploadCategory} onValueChange={setUploadCategory}>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">1. ዋና ምድብ</label>
+                        <Select value={uploadCategory} onValueChange={(val) => {
+                          setUploadCategory(val);
+                          setUploadPlanType("");
+                          setUploadReportType("");
+                          setUploadReformType("");
+                          setUploadTaxonomyService("");
+                        }}>
                           <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="ምድብ ይምረጡ..." /></SelectTrigger>
                           <SelectContent className="z-[300]">
                             <SelectItem value="እቅዶች (Plans)">1. እቅዶች (Plans)</SelectItem>
                             <SelectItem value="ሪፖርቶች (Reports)">2. ሪፖርቶች (Reports)</SelectItem>
-                            <SelectItem value="የሪፎርም ሰነዶች (Reform Docs)">3. የሪፎርም ሰነዶች</SelectItem>
+                            <SelectItem value="የሪፎርም ሰነዶች (Reform Docs)">3. የሪፎርም ሰነዶች (Reform)</SelectItem>
                             <SelectItem value="Service Taxonomy">4. Service Taxonomy</SelectItem>
-                            <SelectItem value="ሌሎች">5. ሌሎች</SelectItem>
+                            <SelectItem value="ሌሎች">5. ሌሎች (Others)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-400">ፋይል ይምረጡ</label>
-                        <Input type="file" onChange={(e) => e.target.files && setSelectedFile(e.target.files[0])} className="text-[10px]" />
+
+                      {uploadCategory === "እቅዶች (Plans)" && (
+                        <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1">
+                          <label className="text-[10px] font-bold text-[#1e3a8a] uppercase tracking-widest">2. የእቅድ አይነት</label>
+                          <Select value={uploadPlanType} onValueChange={setUploadPlanType}>
+                            <SelectTrigger className="h-9 text-xs border-[#1e3a8a]/30"><SelectValue placeholder="የእቅድ አይነት ይምረጡ..." /></SelectTrigger>
+                            <SelectContent className="z-[300]">
+                              <SelectItem value="ስትራቴጂካዊ">ስትራቴጂካዊ እቅድ</SelectItem>
+                              <SelectItem value="የዓመት">የዓመት እቅድ</SelectItem>
+                              <SelectItem value="የሩብ ዓመት">የሩብ ዓመት እቅድ</SelectItem>
+                              <SelectItem value="የወር">የወር እቅድ</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      {uploadCategory === "ሪፖርቶች (Reports)" && (
+                        <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1">
+                          <label className="text-[10px] font-bold text-green-600 uppercase tracking-widest">2. የሪፖርት አይነት</label>
+                          <Select value={uploadReportType} onValueChange={setUploadReportType}>
+                            <SelectTrigger className="h-9 text-xs border-green-600/30"><SelectValue placeholder="የሪፖርት አይነት ይምረጡ..." /></SelectTrigger>
+                            <SelectContent className="z-[300]">
+                              <SelectItem value="የወር">የወር ሪፖርት</SelectItem>
+                              <SelectItem value="የሩብ ዓመት">የሩብ ዓመት ሪፖርት</SelectItem>
+                              <SelectItem value="የዓመት">የዓመት ሪፖርት</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      {uploadCategory === "የሪፎርም ሰነዶች (Reform Docs)" && (
+                        <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1">
+                          <label className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">2. የሪፎርም አይነት</label>
+                          <Select value={uploadReformType} onValueChange={setUploadReformType}>
+                            <SelectTrigger className="h-9 text-xs border-amber-600/30"><SelectValue placeholder="የሪፎርም አይነት ይምረጡ..." /></SelectTrigger>
+                            <SelectContent className="z-[300]">
+                              <SelectItem value="ካታሎግ">ካታሎግ (Catalogue)</SelectItem>
+                              <SelectItem value="Mapping">Mapping</SelectItem>
+                              <SelectItem value="As-is">As-is Process</SelectItem>
+                              <SelectItem value="ነባራዊ ትንተና">ነባራዊ ትንተና</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      {uploadCategory === "Service Taxonomy" && (
+                        <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1">
+                          <label className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">2. የአገልግሎት ዝርዝር</label>
+                          <Select value={uploadTaxonomyService} onValueChange={setUploadTaxonomyService}>
+                            <SelectTrigger className="h-9 text-xs border-slate-600/30"><SelectValue placeholder="አገልግሎት ይምረጡ..." /></SelectTrigger>
+                            <SelectContent className="z-[300] max-h-[200px]">
+                              {BUREAU_SERVICES_REGISTRY.map((s, i) => (
+                                <SelectItem key={i} value={s.title}>{s.title}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      <div className="space-y-1.5 pt-2">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">3. ፋይል ይምረጡ</label>
+                        <Input type="file" onChange={(e) => e.target.files && setSelectedFile(e.target.files[0])} className="text-[10px] h-10 border-dashed" />
                       </div>
                     </div>
                     <DialogFooter>
-                      <Button size="sm" className="bg-[#1e3a8a]" onClick={processUpload} disabled={isUploading || !selectedFile || !uploadCategory}>አጽድቅ</Button>
+                      <Button size="sm" className="bg-[#1e3a8a] w-full" onClick={processUpload} disabled={isUploading || !selectedFile || !uploadCategory}>
+                        {isUploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ShieldCheck className="w-4 h-4 mr-2" />}
+                        አጽድቅና መዝግብ
+                      </Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
@@ -519,7 +602,16 @@ export function BPMNFlowForgeApp() {
                                 <span className="text-[8px] text-slate-400 font-mono">Ver {file.version}</span>
                               </div>
                             </TableCell>
-                            <TableCell><Badge variant="outline" className="text-[7px] px-1.5 h-3.5 bg-white">{file.category}</Badge></TableCell>
+                            <TableCell>
+                              <div className="flex flex-col gap-0.5">
+                                <Badge variant="outline" className="text-[7px] px-1.5 h-3.5 bg-white w-fit">{file.category}</Badge>
+                                {(file.planType || file.reportType || file.reformType || file.taxonomyService) && (
+                                  <span className="text-[7px] text-slate-400 italic">
+                                    {file.planType || file.reportType || file.reformType || file.taxonomyService}
+                                  </span>
+                                )}
+                              </div>
+                            </TableCell>
                             <TableCell>
                               <Badge className={`text-[8px] border-none h-4 ${file.status === 'የጸደቀ' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                                 {file.status}
