@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -118,7 +119,7 @@ interface UploadedFile {
   uploadDate: string;
   dataUrl: string;
   type: string;
-  status: 'Approved' | 'Draft' | 'Under Review';
+  status: 'የጸደቀ' | 'በሂደት ላይ';
   version: number;
   uploaderId: string;
 }
@@ -148,7 +149,6 @@ export function BPMNFlowForgeApp() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [globalSearch, setGlobalSearch] = useState("");
   
-  // HIERARCHICAL STATE MANAGEMENT
   const [uploadCategory, setUploadCategory] = useState<string>("");
   const [uploadPlanType, setUploadPlanType] = useState("");
   const [uploadReportType, setUploadReportType] = useState("");
@@ -161,7 +161,6 @@ export function BPMNFlowForgeApp() {
   const viewerRef = useRef<BPMNViewerRef>(null);
   const { toast } = useToast();
   
-  // FIREBASE INTEGRATION
   const { user, isUserLoading } = useUser();
   const db = useFirestore();
   const auth = useAuth();
@@ -233,11 +232,12 @@ export function BPMNFlowForgeApp() {
       list = list.filter(item => item.category === vaultFilter);
     }
     if (globalSearch.trim()) {
-      const query = globalSearch.toLowerCase();
+      const queryStr = globalSearch.toLowerCase();
       list = list.filter(item => 
-        item.name.toLowerCase().includes(query) || 
-        item.category.toLowerCase().includes(query) ||
-        (item.fileName && item.fileName.toLowerCase().includes(query))
+        item.name.toLowerCase().includes(queryStr) || 
+        item.category.toLowerCase().includes(queryStr) ||
+        item.status.toLowerCase().includes(queryStr) ||
+        (item.fileName && item.fileName.toLowerCase().includes(queryStr))
       );
     }
     return list;
@@ -247,7 +247,7 @@ export function BPMNFlowForgeApp() {
 
   const handleGenerate = () => {
     if (!input.trim()) {
-      toast({ title: "መረጃ የለም", description: "እባክዎን የሂደቱን ዝርዝር መግለጫ ያስገቡ።", variant: "destructive" });
+      toast({ title: "መረጃ የለም", description: "እባክዎን የሂደቱን ዝርዝር ተግባር ያስገቡ።", variant: "destructive" });
       return;
     }
     const result = generateBPMN(input, title || "የሂደት ዲያግራም");
@@ -318,7 +318,6 @@ export function BPMNFlowForgeApp() {
             clearInterval(interval);
             const displayName = selectedFile.name.split('.').slice(0, -1).join('.') || selectedFile.name;
 
-            // VERSIONING LOGIC
             const existingVersions = uploadedFiles.filter(f => f.name === displayName);
             const version = existingVersions.length + 1;
             const finalName = version > 1 ? `${displayName} V${version}` : displayName;
@@ -335,7 +334,7 @@ export function BPMNFlowForgeApp() {
               uploadDate: new Date().toLocaleString('am-ET'),
               dataUrl,
               type: selectedFile.type,
-              status: 'Approved',
+              status: 'በሂደት ላይ',
               version: version,
               uploaderId: user.uid
             };
@@ -407,7 +406,7 @@ export function BPMNFlowForgeApp() {
             <Input 
               value={globalSearch} 
               onChange={(e) => setGlobalSearch(e.target.value)} 
-              placeholder="በስም ወይም በምድብ ፈልግ..." 
+              placeholder="በስም፣ በምድብ ወይም በሁኔታ ፈልግ..." 
               className="h-8 text-[10px] pl-8 bg-slate-50 border-none rounded-lg"
             />
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300" />
@@ -721,8 +720,7 @@ export function BPMNFlowForgeApp() {
                               <Badge 
                                 variant="secondary" 
                                 className={`text-[8px] font-bold border-none px-2 h-4 ${
-                                  file.status === 'Approved' ? 'bg-green-100 text-green-700' : 
-                                  file.status === 'Draft' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
+                                  file.status === 'የጸደቀ' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
                                 }`}
                               >
                                 {file.status}
