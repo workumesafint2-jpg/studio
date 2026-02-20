@@ -1,8 +1,7 @@
 'use server';
 /**
  * @fileOverview Smart Institutional Workflow & Document Intelligence Agent
- * Integrated with Bureau Service Registry and Vault (DMS) for contextual recognition.
- * Updated to support vertical list formatting without [wrap] markers.
+ * Enhanced for Deep File Analysis and Vault Registry Insights.
  */
 
 import { ai } from '@/ai/genkit';
@@ -31,71 +30,57 @@ const suggestStepsFlow = ai.defineFlow(
   },
   async (input) => {
     const vault = input.vaultContext || [];
-    
-    // 1. Contextual Search: Check if the user is asking about a specific file in the Vault
     const query = input.title.toLowerCase();
+    
+    // 1. Contextual Search: Find specific documents
     const matchingFiles = vault.filter(f => 
       f.name.toLowerCase().includes(query) || 
       (f.planType && f.planType.toLowerCase().includes(query)) ||
       (f.reportType && f.reportType.toLowerCase().includes(query))
     );
 
-    // 2. Cross-Analysis Logic: Compare Reports and Plans if requested
-    const isComparisonRequested = query.includes('ይጣጣማል') || query.includes('compare') || query.includes('አፈጻጸም');
+    // 2. Intelligence Synthesis: Analyze Vault state
+    let vaultSummary = vault.map(f => `[${f.category}] ${f.name} - Version: ${f.version}, Status: ${f.status}`).join('\n');
+    
+    // 3. Cross-Analysis Logic
+    const isComparisonRequested = query.includes('ይጣጣማል') || query.includes('compare') || query.includes('አፈጻጸም') || input.docType === 'report';
     let analysisNote = "";
-
     if (isComparisonRequested) {
-      const plans = vault.filter(f => f.category === 'Plan');
-      const reports = vault.filter(f => f.category === 'Report');
-      analysisNote = `[SYSTEM NOTE: Analyzing ${plans.length} plans and ${reports.length} reports for variance...]`;
+      const plans = vault.filter(f => f.category === 'እቅዶች (Plans)');
+      const reports = vault.filter(f => f.category === 'ሪፖርቶች (Reports)');
+      analysisNote = `Found ${plans.length} plans and ${reports.length} reports in vault for cross-referencing.`;
     }
 
-    // 3. Service Registry Recognition
-    if (input.docType === 'diagram') {
-      const predefinedWorkflow = findServiceInRegistry(input.title);
-      if (predefinedWorkflow) {
-        // Normalize predefined workflows to new vertical format (removing [wrap])
-        const verticalWorkflow = predefinedWorkflow.replace(/\[wrap\]/gi, '\n');
-        return { 
-          steps: verticalWorkflow,
-          relatedFiles: matchingFiles.map(f => f.name)
-        };
-      }
-    }
-
-    // 4. AI Generation with Vault Intelligence
+    // 4. AI Generation with Deep Doc Intelligence
     const response = await ai.generate({
-      prompt: `You are 'ወርቁ' (Worku), the Senior Institutional Intelligence Agent for the ITDB.
+      prompt: `You are 'ወርቁ' (Worku), the High-Value Institutional Intelligence Agent.
       
-      CONTEXT:
-      - Current Vault Registry: ${JSON.stringify(vault.map(f => ({ name: f.name, category: f.category, type: f.planType || f.reportType })))}
-      - User Query: "${input.title}"
-      - Analysis Note: ${analysisNote}
+      INSTITUTIONAL CONTEXT:
+      - Active Vault Registry:
+      ${vaultSummary}
+      
+      USER INQUIRY: "${input.title}"
+      DOC TYPE: ${input.docType}
+      ANALYSIS NOTE: ${analysisNote}
 
-      TASK: 
-      1. If the user is searching for a file, summarize its status and metadata.
-      2. If the user asks for a diagram, generate professional Amharic BPMN steps as a VERTICAL NUMBERED LIST.
-      3. If the user asks to compare (Cross-Analysis), highlight gaps between 'Plan' and 'Report' categories.
-      4. If the query relates to a Bureau Service, reference its status in the 'Service Taxonomy'.
+      YOUR TASKS:
+      1. ANALYZE: If the user asks about specific files (e.g., "የዓመት እቅዱን"), check the registry and summarize their status/version.
+      2. COMPARE: If asked to compare (Plan vs Report), highlight the gaps in the vault (e.g., "You have a plan but no matching report").
+      3. ARCHITECT: If a diagram is requested, generate a VERTICAL NUMBERED LIST (one step per line).
+      4. GUIDANCE: Be concise and professional. Reference files by their name and version.
 
-      STRICT COMMAND MODELER RULES (for diagrams):
-      1. DO NOT USE '[wrap]'. USE SIMPLE NEW LINES INSTEAD.
-      2. Start with: "መጀመሪያ (Start)" on its own line.
-      3. End with: "መጨረሻ (End)" on its own line.
-      4. Place exactly one task, decision, or gateway per line.
-      5. Example Format:
-         መጀመሪያ (Start)
-         የጥያቄ መቀበል
-         ማጽደቅ? (ውሳኔ)
-         መጨረሻ (End)
+      STRICT MODELER RULES:
+      - NO [wrap] markers. Use plain new lines.
+      - Start with: "መጀመሪያ (Start)"
+      - End with: "መጨረሻ (End)"
+      - One task per line.
 
-      INTERACTIVE GUIDANCE:
-      Always act as a helpful bureau assistant. Always start with 'ወርቁ ነኝ ምን ልርዳዎት?' if it is a fresh interaction.`,
+      GREETING: Always be institutional. Your unique signature is 'ወርቁ ነኝ ምን ልርዳዎት?'.`,
     });
 
     return {
       steps: response.text,
-      relatedFiles: matchingFiles.map(f => f.name)
+      relatedFiles: matchingFiles.map(f => `${f.name} (V${f.version})`)
     };
   }
 );

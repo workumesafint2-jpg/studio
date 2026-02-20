@@ -26,7 +26,9 @@ import {
   ShieldCheck,
   BrainCircuit,
   TrendingUp,
-  X
+  Image as ImageIcon,
+  History,
+  Info
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -116,7 +118,8 @@ interface UploadedFile {
   uploadDate: string;
   dataUrl: string;
   type: string;
-  status: 'Processing' | 'Active & Filed';
+  status: 'Approved' | 'Draft' | 'Under Review';
+  version: number;
   uploaderId: string;
 }
 
@@ -143,6 +146,7 @@ export function BPMNFlowForgeApp() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [globalSearch, setGlobalSearch] = useState("");
   
   // HIERARCHICAL STATE MANAGEMENT
   const [uploadCategory, setUploadCategory] = useState<string>("");
@@ -224,9 +228,20 @@ export function BPMNFlowForgeApp() {
   }, [uploadedFiles]);
 
   const filteredDocuments = useMemo(() => {
-    if (vaultFilter === 'all') return uploadedFiles;
-    return uploadedFiles.filter(item => item.category === vaultFilter);
-  }, [uploadedFiles, vaultFilter]);
+    let list = uploadedFiles;
+    if (vaultFilter !== 'all') {
+      list = list.filter(item => item.category === vaultFilter);
+    }
+    if (globalSearch.trim()) {
+      const query = globalSearch.toLowerCase();
+      list = list.filter(item => 
+        item.name.toLowerCase().includes(query) || 
+        item.category.toLowerCase().includes(query) ||
+        (item.fileName && item.fileName.toLowerCase().includes(query))
+      );
+    }
+    return list;
+  }, [uploadedFiles, vaultFilter, globalSearch]);
 
   if (!mounted) return null;
 
@@ -255,7 +270,7 @@ export function BPMNFlowForgeApp() {
   };
 
   const handleAutoSuggest = async (docType: 'reform' | 'report' | 'guideline' | 'diagram' | 'analysis' = 'reform') => {
-    if (!title.trim()) {
+    if (!title.trim() && docType !== 'analysis') {
       toast({ title: "መረጃ የለም", description: "እባክዎን መጀመሪያ የአገልግሎቱን ስም ወይም የፍለጋ ቃል ያስገቡ።", variant: "destructive" });
       return;
     }
@@ -263,7 +278,7 @@ export function BPMNFlowForgeApp() {
     setIsSuggesting(true);
     try {
       const result = await suggestSteps({ 
-        title, 
+        title: title || "General Inquiry", 
         docType, 
         vaultContext: uploadedFiles 
       });
@@ -303,8 +318,13 @@ export function BPMNFlowForgeApp() {
             clearInterval(interval);
             const displayName = selectedFile.name.split('.').slice(0, -1).join('.') || selectedFile.name;
 
+            // VERSIONING LOGIC
+            const existingVersions = uploadedFiles.filter(f => f.name === displayName);
+            const version = existingVersions.length + 1;
+            const finalName = version > 1 ? `${displayName} V${version}` : displayName;
+
             const newFile: Omit<UploadedFile, 'id'> = {
-              name: displayName,
+              name: finalName,
               category: uploadCategory,
               planType: uploadCategory === 'እቅዶች (Plans)' ? uploadPlanType : undefined,
               reportType: uploadCategory === 'ሪፖርቶች (Reports)' ? uploadReportType : undefined,
@@ -315,7 +335,8 @@ export function BPMNFlowForgeApp() {
               uploadDate: new Date().toLocaleString('am-ET'),
               dataUrl,
               type: selectedFile.type,
-              status: 'Active & Filed',
+              status: 'Approved',
+              version: version,
               uploaderId: user.uid
             };
 
@@ -381,6 +402,18 @@ export function BPMNFlowForgeApp() {
         <p className="text-[10px] font-bold text-[#1e3a8a] mb-0.5 tracking-widest uppercase">ኢኖቬሽንና ቴክኖሎጂ ልማት ቢሮ</p>
         <h1 className="text-[7px] font-bold text-slate-400 uppercase tracking-[0.4em]">Institutional Intelligence & DMS Portal</h1>
 
+        <div className="absolute left-8 top-1/2 -translate-y-1/2 flex items-center gap-2 max-w-xs w-full">
+          <div className="relative w-full">
+            <Input 
+              value={globalSearch} 
+              onChange={(e) => setGlobalSearch(e.target.value)} 
+              placeholder="በስም ወይም በምድብ ፈልግ..." 
+              className="h-8 text-[10px] pl-8 bg-slate-50 border-none rounded-lg"
+            />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300" />
+          </div>
+        </div>
+
         <div className="absolute right-8 top-1/2 -translate-y-1/2 flex items-center gap-2">
           <Button variant="outline" size="sm" className="h-8 rounded-lg text-[9px] font-bold border-slate-200" onClick={handleDownloadProject}>
             {isDownloading ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <Archive className="w-3 h-3 mr-2" />}
@@ -395,6 +428,7 @@ export function BPMNFlowForgeApp() {
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => viewerRef.current?.exportXML()}>BPMN Export</DropdownMenuItem>
               <DropdownMenuItem onClick={() => viewerRef.current?.exportSVG()}>SVG Export</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => viewerRef.current?.exportPNG()}><ImageIcon className="w-3.5 h-3.5 mr-2" /> PNG Export</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -426,7 +460,7 @@ export function BPMNFlowForgeApp() {
                       <DropdownMenuContent align="end" className="w-64">
                         <DropdownMenuLabel className="text-[10px] uppercase text-slate-400">Analysis & Intelligence</DropdownMenuLabel>
                         <DropdownMenuItem onClick={() => handleAutoSuggest('analysis')} className="text-xs font-semibold text-[#1e3a8a]">
-                          <FileType className="w-3 h-3 mr-2" /> የፋይል ፍለጋና ትንታኔ
+                          <FileType className="w-3 h-3 mr-2" /> የፋይል ፍለጋና ትንታኔ (Doc Insights)
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleAutoSuggest('report')} className="text-xs">
                           <BarChart className="w-3 h-3 mr-2" /> የአፈጻጸም ንፅፅር (Plan vs Report)
@@ -584,10 +618,20 @@ export function BPMNFlowForgeApp() {
 
             <TabsContent value="diagram" className="flex-1 flex flex-col gap-3 m-0 min-h-0">
               <div className="flex-[60] flex flex-col min-h-[400px] bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden relative z-[5]">
-                <div className="absolute top-4 left-4 z-10">
+                <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
                   <h2 className="text-[10px] font-bold text-[#1e3a8a] uppercase tracking-widest flex items-center bg-white/80 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-100">
                     <Layout className="w-3.5 h-3.5 mr-2" /> የስራ ፍሰት ዲያግራም
                   </h2>
+                  {xmlResult && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-7 text-[8px] font-bold bg-white/80 backdrop-blur" 
+                      onClick={() => viewerRef.current?.exportPNG()}
+                    >
+                      <ImageIcon className="w-3 h-3 mr-1.5" /> PNG አውርድ
+                    </Button>
+                  )}
                 </div>
                 {xmlResult ? (
                   <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
@@ -653,7 +697,14 @@ export function BPMNFlowForgeApp() {
                             <TableCell className="text-[10px] font-bold text-slate-700 px-6">
                               <div className="flex items-center gap-2">
                                 <FileText className="w-3 h-3 text-[#1e3a8a] opacity-40" />
-                                {file.name}
+                                <div className="flex flex-col">
+                                  <span>{file.name}</span>
+                                  {file.version > 1 && (
+                                    <span className="text-[8px] text-slate-400 font-mono flex items-center gap-1">
+                                      <History className="w-2.5 h-2.5" /> Version {file.version}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </TableCell>
                             <TableCell>
@@ -667,24 +718,29 @@ export function BPMNFlowForgeApp() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center gap-1.5 text-[8px] font-bold text-blue-600 bg-blue-50/50 w-fit px-2 py-0.5 rounded-full">
-                                <ShieldCheck className="w-2.5 h-2.5" /> 
+                              <Badge 
+                                variant="secondary" 
+                                className={`text-[8px] font-bold border-none px-2 h-4 ${
+                                  file.status === 'Approved' ? 'bg-green-100 text-green-700' : 
+                                  file.status === 'Draft' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
+                                }`}
+                              >
                                 {file.status}
-                              </div>
+                              </Badge>
                             </TableCell>
                             <TableCell className="text-[9px] text-slate-400 font-mono italic">
                               {file.uploadDate}
                             </TableCell>
                             <TableCell className="text-right pr-6">
                               <div className="flex items-center justify-end gap-1">
-                                <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" asChild title="አውርድ">
                                   <a href={file.dataUrl} download={file.fileName}>
                                     <Download className="w-3.5 h-3.5 text-[#1e3a8a]" />
                                   </a>
                                 </Button>
                                 <Dialog>
                                   <DialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-destructive">
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-destructive" title="ሰርዝ">
                                       <Trash2 className="w-3.5 h-3.5" />
                                     </Button>
                                   </DialogTrigger>
@@ -813,12 +869,12 @@ export function BPMNFlowForgeApp() {
 
       <footer className="px-8 py-3 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
         <div className="flex gap-6">
-          <span>ITDB Portal v2.0 - Institutional Intelligence Live</span>
+          <span>ITDB Portal v2.1 - Enhanced Intelligence</span>
           <span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-          Worqu Assistant Synchronized with DMS
+          Worqu Assistant - Synchronized & Versioned
         </div>
       </footer>
     </div>
