@@ -2,6 +2,7 @@
 /**
  * ወርቁ Pro - Industrial BPMN Engine v8.5
  * OPTIMIZED: Compact Layout Spacing (220/160) for Production.
+ * LOCKED FOR FULL RE-SYNC (v2.5.3)
  */
 
 export function generateBPMN(input: string, title: string = "Process Diagram"): string {
