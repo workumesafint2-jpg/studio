@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import BpmnModeler from 'bpmn-js/lib/Modeler';
-import { Button } from "@/components/ui/button";
 
 interface BPMNViewerProps {
   xml: string;
