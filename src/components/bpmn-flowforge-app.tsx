@@ -166,27 +166,33 @@ export function BPMNFlowForgeApp() {
   const { data: uploadedFilesRaw, isLoading: isDocsLoading } = useCollection<UploadedFile>(documentsQuery);
   const uploadedFiles = uploadedFilesRaw || [];
 
+  /**
+   * Performance Logic: Dynamic calculation based on 'የጸደቀ' status.
+   */
   const performanceData = useMemo(() => {
-    const metrics: Record<string, { planned: number; actual: number }> = {};
+    const metrics: Record<string, { total: number; approved: number }> = {};
     
     uploadedFiles.forEach(file => {
-      const name = file.name.split(' V')[0]; 
-      if (!metrics[name]) metrics[name] = { planned: 0, actual: 0 };
+      // Use taxonomy service name or file name as key
+      const serviceKey = file.taxonomyService || file.name.split(' V')[0]; 
+      if (!metrics[serviceKey]) metrics[serviceKey] = { total: 0, approved: 0 };
       
-      if (file.category === 'እቅዶች (Plans)') metrics[name].planned = 100;
-      else if (file.category === 'ሪፖርቶች (Reports)') metrics[name].actual = 85;
+      metrics[serviceKey].total += 1;
+      if (file.status === 'የጸደቀ') {
+        metrics[serviceKey].approved += 1;
+      }
     });
 
     return Object.entries(metrics).map(([name, data]) => {
-      const execution = data.planned > 0 ? (data.actual / data.planned) * 100 : 0;
+      const execution = data.total > 0 ? (data.approved / data.total) * 100 : 0;
       return {
         serviceName: name,
-        planned: data.planned,
-        actual: data.actual,
+        planned: 100, // Target is always 100% completion per entry
+        actual: Math.round(execution),
         execution: Math.round(execution),
         color: execution >= 90 ? '#22c55e' : execution >= 50 ? '#eab308' : '#ef4444'
       } as PerformanceMetric;
-    }).slice(0, 5);
+    }).slice(0, 8);
   }, [uploadedFiles]);
 
   const todayCount = useMemo(() => {
@@ -194,13 +200,16 @@ export function BPMNFlowForgeApp() {
     return uploadedFiles.filter(f => f.uploadDate.includes(today)).length;
   }, [uploadedFiles]);
 
+  /**
+   * Live Statistics bound to Firestore.
+   */
   const stats = useMemo(() => ({
-    totalPlans: uploadedFiles.filter(f => f.category === 'እቅዶች (Plans)').length,
+    totalServices: uploadedFiles.filter(f => f.category === 'Service Taxonomy').length,
     totalReports: uploadedFiles.filter(f => f.category === 'ሪፖርቶች (Reports)').length,
-    avgExecution: performanceData.length > 0 
-      ? Math.round(performanceData.reduce((acc, curr) => acc + curr.execution, 0) / performanceData.length)
+    avgExecution: uploadedFiles.length > 0 
+      ? Math.round((uploadedFiles.filter(f => f.status === 'የጸደቀ').length / uploadedFiles.length) * 100)
       : 0
-  }), [uploadedFiles, performanceData]);
+  }), [uploadedFiles]);
 
   const filteredDocuments = useMemo(() => {
     let list = uploadedFiles;
@@ -229,7 +238,6 @@ export function BPMNFlowForgeApp() {
     if (result) {
       setXmlResult(result);
       setActiveTab("diagram");
-      // Give modeler time to import then fit
       setTimeout(() => {
         viewerRef.current?.fitViewport();
       }, 500);
@@ -625,8 +633,8 @@ export function BPMNFlowForgeApp() {
                   <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-100">
                     <Target className="w-5 h-5 text-blue-500" />
                     <div>
-                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">እቅዶች</p>
-                      <h4 className="text-lg font-black text-[#1e3a8a]">{stats.totalPlans}</h4>
+                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">አገልግሎቶች</p>
+                      <h4 className="text-lg font-black text-[#1e3a8a]">{stats.totalServices}</h4>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-100">
@@ -639,7 +647,7 @@ export function BPMNFlowForgeApp() {
                   <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-100">
                     <Trophy className="w-5 h-5 text-amber-500" />
                     <div>
-                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">አማካይ አፈጻጸም</p>
+                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">አጠቃላይ አፈጻጸም</p>
                       <h4 className="text-lg font-black text-[#1e3a8a]">{stats.avgExecution}%</h4>
                     </div>
                   </div>
@@ -766,7 +774,7 @@ export function BPMNFlowForgeApp() {
       </main>
 
       <footer className="px-8 py-3 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
-        <div className="flex gap-6"><span>ITDB Portal v2.5 - Stable Production</span><span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span></div>
+        <div className="flex gap-6"><span>ITDB Portal v2.6.0 - Live Analytics</span><span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span></div>
         <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>Assistant Synchronized</div>
       </footer>
     </div>

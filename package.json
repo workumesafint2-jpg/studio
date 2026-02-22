@@ -1,8 +1,9 @@
+
 {
   "name": "ወርቁ-bpmn",
-  "version": "2.5.4",
+  "version": "2.6.0",
   "private": true,
-  "description": "Professional BPMN Diagram Generator (ወርቁ) - Production Build",
+  "description": "Professional BPMN Diagram Generator (ወርቁ) - Live Analytics Build",
   "author": "Worku Team",
   "main": "main.js",
   "scripts": {
