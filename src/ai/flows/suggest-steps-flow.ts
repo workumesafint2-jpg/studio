@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview Smart Institutional Workflow & Comparison Intelligence Agent
@@ -33,7 +32,6 @@ const suggestStepsFlow = ai.defineFlow(
     const query = input.title.toLowerCase();
     
     // 1. Contextual Search: Find specific documents
-    // Priority search for 'Service Taxonomy' when service details are requested.
     const matchingFiles = vault.filter(f => 
       f.name.toLowerCase().includes(query) || 
       (f.taxonomyService && f.taxonomyService.toLowerCase().includes(query)) ||
@@ -62,7 +60,7 @@ const suggestStepsFlow = ai.defineFlow(
          - List the 'Gap': If a plan exists but no report, or vice versa.
          - Highlight the status (Approved vs Draft) of these documents.
       2. SERVICE TAXONOMY INSIGHTS: If the user asks about service details or taxonomies, look for files categorized as 'Service Taxonomy'. 
-         - Summarize the contents found in those files.
+         - Extract and summarize the contents found in those files. Present them in a Vertical Numbered List.
       3. ARCHITECT: If a diagram/workflow is requested, generate a VERTICAL NUMBERED LIST (one step per line).
          - Format: 
            1. Start
@@ -71,10 +69,10 @@ const suggestStepsFlow = ai.defineFlow(
       4. GUIDANCE: Be concise and professional in Amharic. Reference files by their exact name and version.
 
       STRICT MODELER RULES:
-      - NO [wrap] markers. Use plain new lines.
       - Start with: "1. Start"
       - End with: "X. End" (where X is the last step number)
       - ONE STEP PER LINE.
+      - NO [wrap] markers.
 
       GREETING: Always be institutional. Your unique signature is 'ወርቁ ነኝ ምን ልርዳዎት?'.`,
     });

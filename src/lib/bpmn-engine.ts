@@ -1,6 +1,6 @@
 /**
- * ወርቁ Pro - Industrial BPMN Engine v7.0
- * OPTIMIZED: Compact Layout Spacing (220/160)
+ * ወርቁ Pro - Industrial BPMN Engine v8.0
+ * OPTIMIZED: Compact Layout Spacing (220/160) for Production.
  */
 
 export function generateBPMN(input: string, title: string = "Process Diagram"): string {
@@ -74,7 +74,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const diElements: string[] = [];
   const positions: Record<string, { x: number, y: number, w: number, h: number }> = {};
 
-  // INSTITUTIONAL COMPACT SPACING: (220/160)
+  // INSTITUTIONAL COMPACT SPACING: (220/160) - LOCKED FOR PRODUCTION
   const COL_SPACING = 220; 
   const ROW_SPACING = 160;
   const BOX_WIDTH = 120;

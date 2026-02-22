@@ -49,6 +49,9 @@
 /* Enabled Palette for full modeler editing features */
 .djs-palette {
   display: block !important;
+  background-color: white !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1) !important;
 }
 
 /* Rule: High resolution text rendering for diagrams */
