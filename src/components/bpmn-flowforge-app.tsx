@@ -250,17 +250,42 @@ export function BPMNFlowForgeApp() {
   const handleAutoSuggest = async (docType: 'reform' | 'report' | 'guideline' | 'diagram' | 'analysis' = 'reform') => {
     setIsSuggesting(true);
     try {
+      // CRITICAL FIX: Sanitize vault data to remove non-serializable objects (like Firestore Timestamps)
+      // and ensure AI can process them as plain objects.
+      const sanitizedVault = uploadedFiles.map(f => ({
+        id: f.id,
+        name: f.name,
+        category: f.category,
+        planType: f.planType || "",
+        reportType: f.reportType || "",
+        reformType: f.reformType || "",
+        taxonomyService: f.taxonomyService || "",
+        status: f.status,
+        version: f.version,
+        uploadDate: f.uploadDate,
+        // Convert timestamp to ISO string for AI readability
+        createdAt: f.createdAt instanceof Timestamp ? f.createdAt.toDate().toISOString() : ""
+      }));
+
       const result = await suggestSteps({ 
         title: title || "General Inquiry", 
         docType, 
-        vaultContext: uploadedFiles 
+        vaultContext: sanitizedVault 
       });
+
       if (result && result.steps) {
         setInput(result.steps);
         toast({ title: "ወርቁ ትንተና", description: "የመዝገብ ቤት መረጃ ተሰናድቷል።" });
+      } else {
+        throw new Error("No analysis returned from AI.");
       }
     } catch (error: any) {
-      toast({ title: "ስህተት", description: "መረጃውን ማግኘት አልተቻለም።", variant: "destructive" });
+      console.error("AI Retrieval Error:", error);
+      toast({ 
+        title: "ስህተት", 
+        description: "መረጃውን ማግኘት አልተቻለም። እባክዎን የፋይል መኖሩን ያረጋግጡ።", 
+        variant: "destructive" 
+      });
     } finally {
       setIsSuggesting(false);
     }
@@ -409,10 +434,10 @@ export function BPMNFlowForgeApp() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-64 z-[200]">
                         <DropdownMenuItem onClick={() => handleAutoSuggest('analysis')} className="text-xs font-semibold text-[#1e3a8a]">
-                          <FileText className="w-3 h-3 mr-2" /> የፋይል ፍለጋና ትንታኔ
+                          <FileText className="w-3 h-3 mr-2" /> የፋይል ፍለጋና ትንታኔ (Insight)
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleAutoSuggest('report')} className="text-xs font-semibold text-green-600">
-                          <TrendingUp className="w-3 h-3 mr-2" /> እቅድና ሪፖርቱን አነጻጽሪ (Gap Analysis)
+                          <TrendingUp className="w-3 h-3 mr-2" /> እቅድና ሪፖርቱን አነጻጽሪ (Gap)
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => handleAutoSuggest('diagram')} className="text-xs">
