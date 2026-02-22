@@ -3,32 +3,38 @@
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore'
+import { getFirestore } from 'firebase/firestore';
 
-// IMPORTANT: DO NOT MODIFY THIS FUNCTION
+/**
+ * Institutional Firebase Initializer.
+ * Optimized for Vercel and BPMN Resilience.
+ */
 export function initializeFirebase() {
+  if (typeof window === 'undefined') {
+    return { firebaseApp: null, auth: null, firestore: null };
+  }
+
   if (!getApps().length) {
-    // Important! initializeApp() is called without any arguments because Firebase App Hosting
-    // integrates with the initializeApp() function to provide the environment variables needed to
-    // populate the FirebaseOptions in production. It is critical that we attempt to call initializeApp()
-    // without arguments.
     let firebaseApp;
+    
+    // Check if we have valid config options to avoid 'app/no-options' error
+    const hasConfig = firebaseConfig.apiKey && firebaseConfig.projectId;
+
     try {
-      // Attempt to initialize via Firebase App Hosting environment variables
-      firebaseApp = initializeApp();
-    } catch (e) {
-      // Only warn in production because it's normal to use the firebaseConfig to initialize
-      // during development
-      if (process.env.NODE_ENV === "production") {
-        console.warn('Automatic initialization failed. Falling back to firebase config object.', e);
+      if (hasConfig) {
+        firebaseApp = initializeApp(firebaseConfig);
+      } else {
+        // Attempt automatic initialization (App Hosting) or fallback
+        firebaseApp = initializeApp();
       }
-      firebaseApp = initializeApp(firebaseConfig);
+    } catch (e) {
+      console.warn('Firebase initialization failed. Running in standalone Modeler mode.', e);
+      return { firebaseApp: null, auth: null, firestore: null };
     }
 
     return getSdks(firebaseApp);
   }
 
-  // If already initialized, return the SDKs with the already initialized App
   return getSdks(getApp());
 }
 

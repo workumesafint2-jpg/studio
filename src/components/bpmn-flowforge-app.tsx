@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -166,14 +165,10 @@ export function BPMNFlowForgeApp() {
   const { data: uploadedFilesRaw, isLoading: isDocsLoading } = useCollection<UploadedFile>(documentsQuery);
   const uploadedFiles = uploadedFilesRaw || [];
 
-  /**
-   * Performance Logic: Dynamic calculation based on 'የጸደቀ' status.
-   */
   const performanceData = useMemo(() => {
     const metrics: Record<string, { total: number; approved: number }> = {};
     
     uploadedFiles.forEach(file => {
-      // Use taxonomy service name or file name as key
       const serviceKey = file.taxonomyService || file.name.split(' V')[0]; 
       if (!metrics[serviceKey]) metrics[serviceKey] = { total: 0, approved: 0 };
       
@@ -187,7 +182,7 @@ export function BPMNFlowForgeApp() {
       const execution = data.total > 0 ? (data.approved / data.total) * 100 : 0;
       return {
         serviceName: name,
-        planned: 100, // Target is always 100% completion per entry
+        planned: 100,
         actual: Math.round(execution),
         execution: Math.round(execution),
         color: execution >= 90 ? '#22c55e' : execution >= 50 ? '#eab308' : '#ef4444'
@@ -200,9 +195,6 @@ export function BPMNFlowForgeApp() {
     return uploadedFiles.filter(f => f.uploadDate.includes(today)).length;
   }, [uploadedFiles]);
 
-  /**
-   * Live Statistics bound to Firestore.
-   */
   const stats = useMemo(() => ({
     totalServices: uploadedFiles.filter(f => f.category === 'Service Taxonomy').length,
     totalReports: uploadedFiles.filter(f => f.category === 'ሪፖርቶች (Reports)').length,
@@ -696,7 +688,7 @@ export function BPMNFlowForgeApp() {
                             <TableCell className="text-[9px] text-slate-400 italic">{file.uploadDate}</TableCell>
                             <TableCell className="text-right pr-6">
                               <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                {file.status !== 'የጸደቀ' && (
+                                {file.status !== 'የጸደቀ' && db && (
                                   <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600" onClick={() => handleApprove(file.id)} title="አጽድቅ">
                                     <CheckCircle2 className="w-3.5 h-3.5" />
                                   </Button>
@@ -704,9 +696,11 @@ export function BPMNFlowForgeApp() {
                                 <Button variant="ghost" size="icon" className="h-7 w-7 text-[#1e3a8a]" asChild title="አውርድ">
                                   <a href={file.dataUrl} download={file.fileName}><Download className="w-3.5 h-3.5" /></a>
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(file.id)} title="ሰርዝ">
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </Button>
+                                {db && (
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(file.id)} title="ሰርዝ">
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>
@@ -774,8 +768,8 @@ export function BPMNFlowForgeApp() {
       </main>
 
       <footer className="px-8 py-3 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
-        <div className="flex gap-6"><span>ITDB Portal v2.6.0 - Live Analytics</span><span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span></div>
-        <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>Assistant Synchronized</div>
+        <div className="flex gap-6"><span>ITDB Portal v2.7.0 - Institutional Launch</span><span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span></div>
+        <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>System Optimized</div>
       </footer>
     </div>
   );
