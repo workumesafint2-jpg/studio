@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
@@ -142,11 +141,6 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
   return (
     <div className="w-full h-full relative group bg-white border border-slate-200 rounded-2xl overflow-hidden">
       <div ref={containerRef} className="w-full h-full min-h-[600px]" />
-      <div className="absolute bottom-4 left-4 flex gap-2">
-        <Button variant="secondary" size="sm" className="h-7 text-[8px] font-bold uppercase shadow-sm bg-white/80 backdrop-blur-sm" onClick={fitViewport}>
-          Auto-Fit View
-        </Button>
-      </div>
     </div>
   );
 });

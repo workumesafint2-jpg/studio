@@ -1,6 +1,6 @@
 /**
- * ወርቁ Pro - Industrial BPMN Engine v6.1
- * UPDATED: Enhanced Spacing & Orthogonal Routing for Professional Layout
+ * ወርቁ Pro - Industrial BPMN Engine v6.2
+ * UPDATED: Compact Spacing & Orthogonal Routing for Professional Layout
  */
 
 export function generateBPMN(input: string, title: string = "Process Diagram"): string {
@@ -75,13 +75,13 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const diElements: string[] = [];
   const positions: Record<string, { x: number, y: number, w: number, h: number }> = {};
 
-  // UPDATED: Increased spacing for professional breathing room and return paths
-  const COL_SPACING = 480; 
-  const ROW_SPACING = 380;
-  const BOX_WIDTH = 130;
-  const BOX_HEIGHT = 80;
-  const X_OFFSET = 180;
-  const Y_OFFSET = 180;
+  // UPDATED: Compact spacing to reduce scrolling and improve visibility
+  const COL_SPACING = 220; 
+  const ROW_SPACING = 160;
+  const BOX_WIDTH = 120;
+  const BOX_HEIGHT = 70;
+  const X_OFFSET = 120;
+  const Y_OFFSET = 120;
 
   nodeDefs.forEach((node, i) => {
     const x = X_OFFSET + node.col * COL_SPACING;
@@ -107,8 +107,8 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
     // SIDE DATA OBJECTS (Positioned strategically to avoid line overlaps)
     if (node.hasDataAssociation) {
       const dataId = `Data_${node.id}`;
-      const dataX = x + 150; 
-      const dataY = y - 80;
+      const dataX = x + 80; 
+      const dataY = y - 60;
       elements.push(`<bpmn:dataObjectReference id="${dataId}" name="ሰነድ" dataObjectRef="DO_${node.id}" />`);
       elements.push(`<bpmn:dataObject id="DO_${node.id}" />`);
       elements.push(`<bpmn:association id="Assoc_${node.id}" sourceRef="${node.id}" targetRef="${dataId}" />`);
@@ -137,10 +137,10 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         waypoints += `<di:waypoint x="${t.x - t.w/2}" y="${t.y}" />`;
       } else {
         const midX = (s.x + t.x) / 2;
-        waypoints += `<di:waypoint x="${s.x + s.w/2 + 40}" y="${s.y}" />`;
-        waypoints += `<di:waypoint x="${s.x + s.w/2 + 40}" y="${(s.y + t.y)/2}" />`;
-        waypoints += `<di:waypoint x="${t.x - t.w/2 - 40}" y="${(s.y + t.y)/2}" />`;
-        waypoints += `<di:waypoint x="${t.x - t.w/2 - 40}" y="${t.y}" />`;
+        waypoints += `<di:waypoint x="${s.x + s.w/2 + 20}" y="${s.y}" />`;
+        waypoints += `<di:waypoint x="${s.x + s.w/2 + 20}" y="${(s.y + t.y)/2}" />`;
+        waypoints += `<di:waypoint x="${t.x - t.w/2 - 20}" y="${(s.y + t.y)/2}" />`;
+        waypoints += `<di:waypoint x="${t.x - t.w/2 - 20}" y="${t.y}" />`;
         waypoints += `<di:waypoint x="${t.x - t.w/2}" y="${t.y}" />`;
       }
 

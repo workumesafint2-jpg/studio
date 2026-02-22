@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -8,12 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
   Trash2, 
-  MoreVertical, 
-  FileType, 
   Archive, 
   Database, 
   ChevronDown, 
-  Zap, 
   Activity,
   Loader2,
   Layout,
@@ -27,18 +23,16 @@ import {
   ShieldCheck,
   BrainCircuit,
   TrendingUp,
-  Image as ImageIcon,
-  History,
-  Info,
   Bell,
-  CheckCircle2
+  CheckCircle2,
+  Save,
+  Maximize2
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BPMNViewer, type BPMNViewerRef } from "@/components/bpmn-viewer";
-import { Progress } from "@/components/ui/progress";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -73,7 +67,6 @@ import {
 } from "@/components/ui/table";
 import { suggestSteps } from "@/ai/flows/suggest-steps-flow";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import JSZip from 'jszip';
 import { 
   Bar, 
@@ -99,15 +92,6 @@ import {
   initiateAnonymousSignIn
 } from '@/firebase';
 import { collection, query, where, doc, Timestamp } from 'firebase/firestore';
-
-interface VaultItem {
-  id: string;
-  systemCode: string;
-  title: string;
-  description: string;
-  date: string;
-  xml: string;
-}
 
 interface UploadedFile {
   id: string;
@@ -144,6 +128,7 @@ export function BPMNFlowForgeApp() {
   const [activeTab, setActiveTab] = useState("diagram");
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -243,15 +228,52 @@ export function BPMNFlowForgeApp() {
     if (result) {
       setXmlResult(result);
       setActiveTab("diagram");
+      // Give modeler time to import then fit
+      setTimeout(() => {
+        viewerRef.current?.fitViewport();
+      }, 500);
       toast({ title: "ተሳክቷል", description: "ዲያግራሙ በአሁኑ ሰርክ ውስጥ ተዘጋጅቷል።" });
+    }
+  };
+
+  const handleSaveDiagramToDMS = async () => {
+    if (!user || !db || !xmlResult) {
+      toast({ title: "ስህተት", description: "ዲያግራም አልተገኘም ወይም አልገቡም::", variant: "destructive" });
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const currentXml = await viewerRef.current?.getXML() || xmlResult;
+      const diagramName = (title || "የሂደት ዲያግራም") + " (Archived)";
+      
+      const newFile: Omit<UploadedFile, 'id'> = {
+        name: diagramName,
+        category: 'ሌሎች',
+        taxonomyService: title || "BPMN Diagram",
+        fileName: `${(title || "diagram").replace(/\s+/g, '-')}.bpmn`,
+        fileSize: (new Blob([currentXml]).size / 1024).toFixed(1) + " KB",
+        uploadDate: new Date().toLocaleString('am-ET'),
+        dataUrl: `data:application/xml;base64,${btoa(unescape(encodeURIComponent(currentXml)))}`,
+        type: 'application/xml',
+        status: 'በሂደት ላይ',
+        version: 1,
+        uploaderId: user.uid,
+        createdAt: Timestamp.now()
+      };
+
+      addDocumentNonBlocking(collection(db, 'documents'), newFile);
+      toast({ title: "ተሳክቷል", description: "ዲያግራሙ በመዝገብ ቤት ተቀምጧል::" });
+    } catch (err) {
+      console.error("Save Diagram Error:", err);
+      toast({ title: "ስህተት", description: "ዲያግራሙን ማስቀመጥ አልተቻለም::", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleAutoSuggest = async (docType: 'reform' | 'report' | 'guideline' | 'diagram' | 'analysis' = 'reform') => {
     setIsSuggesting(true);
     try {
-      // CRITICAL FIX: Sanitize vault data to remove non-serializable objects (like Firestore Timestamps)
-      // and ensure AI can process them as plain objects.
       const sanitizedVault = uploadedFiles.map(f => ({
         id: f.id,
         name: f.name,
@@ -263,7 +285,6 @@ export function BPMNFlowForgeApp() {
         status: f.status,
         version: f.version,
         uploadDate: f.uploadDate,
-        // Convert timestamp to ISO string for AI readability
         createdAt: f.createdAt instanceof Timestamp ? f.createdAt.toDate().toISOString() : ""
       }));
 
@@ -307,7 +328,6 @@ export function BPMNFlowForgeApp() {
         const version = existingVersions.length + 1;
         const finalName = version > 1 ? `${displayName} V${version}` : displayName;
 
-        // CRITICAL FIX: Ensure no 'undefined' values are passed to Firestore
         const newFile: Omit<UploadedFile, 'id'> = {
           name: finalName,
           category: uploadCategory,
@@ -330,7 +350,6 @@ export function BPMNFlowForgeApp() {
         setIsUploading(false);
         setIsUploadOpen(false);
         setSelectedFile(null);
-        // Reset hierarchy states
         setUploadPlanType("");
         setUploadReportType("");
         setUploadReformType("");
@@ -466,6 +485,29 @@ export function BPMNFlowForgeApp() {
               </TabsList>
               
               <div className="flex gap-2">
+                {activeTab === "diagram" && xmlResult && (
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" className="h-8 text-[9px] text-green-600 font-bold border border-green-600/20 rounded-lg bg-green-50/30" onClick={handleSaveDiagramToDMS} disabled={isSaving}>
+                      {isSaving ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <Save className="w-3 h-3 mr-2" />}
+                      ወደ መዝገብ ቤት አስገባ
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 text-[9px] text-[#1e3a8a] font-bold border border-[#1e3a8a]/20 rounded-lg">
+                          <Download className="w-3 h-3 mr-2" /> አውርድ <ChevronDown className="w-2.5 h-2.5 ml-1" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="z-[300]">
+                        <DropdownMenuItem onClick={() => viewerRef.current?.exportXML()} className="text-xs">BPMN ፋይል (.bpmn)</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => viewerRef.current?.exportSVG()} className="text-xs">SVG ምስል (.svg)</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => viewerRef.current?.exportPNG()} className="text-xs">PNG ምስል (.png)</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Button variant="ghost" size="sm" className="h-8 text-[9px] text-slate-600 font-bold border border-slate-200 rounded-lg" onClick={() => viewerRef.current?.fitViewport()}>
+                      <Maximize2 className="w-3 h-3 mr-2" /> Auto-Fit
+                    </Button>
+                  </div>
+                )}
                 <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
                   <DialogTrigger asChild>
                     <Button variant="ghost" size="sm" className="h-8 text-[9px] text-[#1e3a8a] font-bold border border-[#1e3a8a]/20 rounded-lg">
@@ -573,11 +615,11 @@ export function BPMNFlowForgeApp() {
             </div>
 
             <TabsContent value="diagram" className="flex-1 flex flex-col gap-3 m-0 min-h-0">
-              <div className="flex-[60] flex flex-col min-h-[350px] bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden relative">
+              <div className="flex-[70] flex flex-col min-h-[450px] bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden relative">
                 {xmlResult ? <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} /> : <div className="h-full flex items-center justify-center text-slate-200 text-[10px] font-black opacity-30">ዲያግራም የለም</div>}
               </div>
 
-              <div className="flex-[40] flex flex-col min-h-[300px] bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+              <div className="flex-[30] flex flex-col min-h-[250px] bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
                 <div className="grid grid-cols-3 gap-3 p-3 bg-slate-50/30 border-b border-slate-100 shrink-0">
                   <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-100">
                     <Target className="w-5 h-5 text-blue-500" />
