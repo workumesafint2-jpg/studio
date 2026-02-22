@@ -6,6 +6,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 
+ * (ወርቁ) Pro - DEPLOYMENT SIGNATURE: v2.5.1-OPTIMIZED
+ * Triggering fresh Vercel build for compact layout and palette fixes.
+ */
+
 @layer base {
   :root {
     --background: 210 20% 98%;
@@ -46,16 +51,19 @@
   overflow: hidden;
 }
 
-/* Enabled Palette for full modeler editing features */
+/* CRITICAL: Force visibility of the Modeler Palette */
 .djs-palette {
   display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
   background-color: white !important;
   border-radius: 8px !important;
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1) !important;
   border: 1px solid #e2e8f0 !important;
+  z-index: 100 !important;
 }
 
-/* Rule: High resolution text rendering for diagrams */
+/* High resolution text rendering for diagrams */
 .djs-visual text {
   font-family: 'Inter', sans-serif !important;
   font-weight: 500 !important;
