@@ -1,6 +1,6 @@
 /**
- * ወርቁ Pro - Industrial BPMN Engine v6.2
- * UPDATED: Compact Spacing & Orthogonal Routing for Professional Layout
+ * ወርቁ Pro - Industrial BPMN Engine v6.5
+ * OPTIMIZED: Compact Layout Spacing (220/160)
  */
 
 export function generateBPMN(input: string, title: string = "Process Diagram"): string {
@@ -54,7 +54,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
       startTextToMove = "";
     }
 
-    // AUTO-WRAP LOGIC
     const nodeIndex = nodeDefs.length;
     const row = Math.floor(nodeIndex / NODES_PER_ROW);
     const col = nodeIndex % NODES_PER_ROW;
@@ -75,7 +74,7 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
   const diElements: string[] = [];
   const positions: Record<string, { x: number, y: number, w: number, h: number }> = {};
 
-  // UPDATED: Compact spacing to reduce scrolling and improve visibility
+  // COMPACT SPACING: (220/160)
   const COL_SPACING = 220; 
   const ROW_SPACING = 160;
   const BOX_WIDTH = 120;
@@ -104,7 +103,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
     diElements.push(`<bpmndi:BPMNShape id="${node.id}_di" bpmnElement="${node.id}"><dc:Bounds x="${x - w/2}" y="${y - h/2}" width="${w}" height="${h}" /></bpmndi:BPMNShape>`);
 
-    // SIDE DATA OBJECTS (Positioned strategically to avoid line overlaps)
     if (node.hasDataAssociation) {
       const dataId = `Data_${node.id}`;
       const dataX = x + 80; 
@@ -117,7 +115,6 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
         <bpmndi:BPMNEdge id="Assoc_${node.id}_di" bpmnElement="Assoc_${node.id}"><di:waypoint x="${x + w/2}" y="${y}" /><di:waypoint x="${dataX - 18}" y="${dataY}" /></bpmndi:BPMNEdge>`);
     }
 
-    // CONNECT NODES WITH ORTHOGONAL ROUTING
     if (i > 0) {
       const prev = nodeDefs[i-1];
       const s = positions[prev.id];
@@ -131,12 +128,10 @@ export function generateBPMN(input: string, title: string = "Process Diagram"): 
 
       flows.push(`<bpmn:sequenceFlow id="${flowId}" ${label ? `name="${label}"` : ''} sourceRef="${prev.id}" targetRef="${node.id}" />`);
       
-      // ORTHOGONAL ROUTING: Detect row change for cleaner routing
       let waypoints = `<di:waypoint x="${s.x + s.w/2}" y="${s.y}" />`;
       if (s.y === t.y) {
         waypoints += `<di:waypoint x="${t.x - t.w/2}" y="${t.y}" />`;
       } else {
-        const midX = (s.x + t.x) / 2;
         waypoints += `<di:waypoint x="${s.x + s.w/2 + 20}" y="${s.y}" />`;
         waypoints += `<di:waypoint x="${s.x + s.w/2 + 20}" y="${(s.y + t.y)/2}" />`;
         waypoints += `<di:waypoint x="${t.x - t.w/2 - 20}" y="${(s.y + t.y)/2}" />`;

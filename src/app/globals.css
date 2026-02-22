@@ -1,5 +1,6 @@
 @import "bpmn-js/dist/assets/diagram-js.css";
 @import "bpmn-js/dist/assets/bpmn-font/css/bpmn.css";
+@import "bpmn-js/dist/assets/bpmn-js.css";
 
 @tailwind base;
 @tailwind components;
@@ -13,7 +14,7 @@
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 222 47% 31%; /* Institutional Navy Blue */
+    --primary: 222 47 31%; /* Institutional Navy Blue */
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96%;
     --secondary-foreground: 222 47% 11%;
@@ -26,7 +27,7 @@
     --border: 214 32% 91%;
     --input: 214 32% 91%;
     --ring: 222 47% 31%;
-    --radius: 0.5rem; /* More professional tighter radius */
+    --radius: 0.5rem;
   }
 }
 
