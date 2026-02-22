@@ -1,3 +1,4 @@
+
 'use client';
 
 import { firebaseConfig } from '@/firebase/config';
@@ -7,7 +8,7 @@ import { getFirestore } from 'firebase/firestore';
 
 /**
  * Institutional Firebase Initializer.
- * Optimized for Vercel build resilience and BPMN standalone functionality.
+ * Enhanced for Vercel build resilience and Zero-Failure initialization.
  */
 export function initializeFirebase() {
   if (typeof window === 'undefined') {
@@ -19,23 +20,30 @@ export function initializeFirebase() {
     return getSdks(getApp());
   }
 
-  // CRITICAL: Only initialize if we have a valid configuration.
-  // This prevents the 'app/no-options' error during Next.js static generation.
-  const hasConfig = !!(firebaseConfig.apiKey && firebaseConfig.projectId);
+  // CRITICAL RESILIENCE: 
+  // We check if the config is not just present, but also valid.
+  // Next.js static exports sometimes inject 'undefined' as a string.
+  const isConfigValid = (
+    firebaseConfig.apiKey && 
+    firebaseConfig.apiKey !== 'undefined' && 
+    firebaseConfig.projectId && 
+    firebaseConfig.projectId !== 'undefined'
+  );
 
-  if (hasConfig) {
+  if (isConfigValid) {
     try {
       const firebaseApp = initializeApp(firebaseConfig);
+      console.log('(ወርቁ) Pro: Firebase Intelligence Activated.');
       return getSdks(firebaseApp);
     } catch (e) {
-      console.warn('Firebase initialization failed. Falling back to standalone mode.', e);
+      console.warn('Firebase initialization failed. Falling back to Standalone Mode.', e);
       return { firebaseApp: null, auth: null, firestore: null };
     }
   }
 
   // If no config is present, we return null services. 
   // The app is designed to handle this state and keep the Modeler functional.
-  console.warn('Firebase configuration missing. (ወርቁ) Pro is running in standalone Modeler mode.');
+  console.warn('Firebase credentials missing or invalid. (ወርቁ) Pro is running in Standalone Modeler mode.');
   return { firebaseApp: null, auth: null, firestore: null };
 }
 

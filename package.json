@@ -1,8 +1,9 @@
+
 {
   "name": "ወርቁ-bpmn",
-  "version": "2.7.1",
+  "version": "2.7.2",
   "private": true,
-  "description": "Professional BPMN Diagram Generator (ወርቁ) - Resilience Build v2.7.1",
+  "description": "Professional BPMN Diagram Generator (ወርቁ) - Synchronization Build v2.7.2",
   "author": "Worku Team",
   "main": "main.js",
   "scripts": {
