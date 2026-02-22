@@ -2,6 +2,7 @@
 import type {Metadata, Viewport} from 'next';
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: 'ITDB - Innovation and Technology Development Bureau',
@@ -46,6 +47,7 @@ export default function RootLayout({
       <body className="font-body antialiased bg-background text-foreground">
         <FirebaseClientProvider>
           {children}
+          <SpeedInsights />
         </FirebaseClientProvider>
       </body>
     </html>
