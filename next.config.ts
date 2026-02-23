@@ -39,7 +39,8 @@ const nextConfig: NextConfig = {
       'localhost:9002', 
       '0.0.0.0:9002', 
       '*.cloudworkstations.dev', 
-      '*.cluster-*.cloudworkstations.dev'
+      '*.cluster-*.cloudworkstations.dev',
+      '*.vercel.app'
     ]
   }
 };
