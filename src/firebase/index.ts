@@ -9,6 +9,7 @@ import { getFirestore } from 'firebase/firestore';
 /**
  * Institutional Firebase Initializer.
  * Enhanced for Vercel build resilience and Zero-Failure initialization.
+ * v2.7.4 - Strict configuration validation for production synchronization.
  */
 export function initializeFirebase() {
   // Never initialize during server-side rendering or static export
@@ -26,9 +27,9 @@ export function initializeFirebase() {
   // Next.js static exports sometimes inject 'undefined' as a string.
   const isConfigValid = (
     firebaseConfig.apiKey && 
-    String(firebaseConfig.apiKey) !== 'undefined' && 
+    firebaseConfig.apiKey !== 'undefined' && 
     firebaseConfig.projectId && 
-    String(firebaseConfig.projectId) !== 'undefined'
+    firebaseConfig.projectId !== 'undefined'
   );
 
   if (isConfigValid) {
