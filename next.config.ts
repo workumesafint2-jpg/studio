@@ -1,13 +1,13 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   typescript: {
-    // 🚀 ይህ መስመር የ TypeScript ስህተቶች ቢኖሩም ግንባታው እንዲቀጥል ያደርጋል
     ignoreBuildErrors: true,
   },
-  eslint: {
-    // 🚀 ይህ ደግሞ የ ESLint ስህተቶችን ችላ ይላል
-    ignoreDuringBuilds: true,
+  images: {
+    unoptimized: true,
   },
 };
 
