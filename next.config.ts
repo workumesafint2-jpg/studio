@@ -33,7 +33,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Fix for the dev origin warning in cloud environments like Firebase Studio
+  // Fix for the dev origin warning in cloud environments like Firebase Studio and Vercel Previews
   experimental: {
     allowedDevOrigins: [
       'localhost:9002', 
@@ -41,7 +41,8 @@ const nextConfig: NextConfig = {
       '*.cloudworkstations.dev', 
       '*.cluster-*.cloudworkstations.dev',
       '*.vercel.app',
-      'worku-mesafint.vercel.app'
+      'worku-mesafint.vercel.app',
+      'studio-fzzu-*.vercel.app'
     ]
   }
 };

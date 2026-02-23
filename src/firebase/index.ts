@@ -9,7 +9,7 @@ import { getFirestore } from 'firebase/firestore';
 /**
  * Institutional Firebase Initializer.
  * Enhanced for Vercel build resilience and Zero-Failure initialization.
- * v2.7.6 - Strict configuration validation for production synchronization.
+ * v2.7.7 - Zero-Failure logic for production synchronization.
  */
 export function initializeFirebase() {
   // Never initialize during server-side rendering or static export
@@ -28,14 +28,16 @@ export function initializeFirebase() {
   const isConfigValid = (
     firebaseConfig.apiKey && 
     firebaseConfig.apiKey !== 'undefined' && 
+    firebaseConfig.apiKey !== '' &&
     firebaseConfig.projectId && 
-    firebaseConfig.projectId !== 'undefined'
+    firebaseConfig.projectId !== 'undefined' &&
+    firebaseConfig.projectId !== ''
   );
 
   if (isConfigValid) {
     try {
       const firebaseApp = initializeApp(firebaseConfig);
-      console.log('(ወርቁ) Pro: Firebase Intelligence Activated.');
+      console.log('(ወርቁ) Pro: Firebase Intelligence Activated (v2.7.7).');
       return getSdks(firebaseApp);
     } catch (e) {
       console.warn('Firebase initialization failed. Falling back to Standalone Mode.', e);

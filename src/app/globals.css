@@ -8,8 +8,8 @@
 @tailwind utilities;
 
 /* 
- * (ወርቁ) Pro - DEPLOYMENT SIGNATURE: v2.5.3-FULL-RESYNC
- * Triggering clean build for forced Modeler Palette visibility and spacing fixes.
+ * (ወርቁ) Pro - DEPLOYMENT SIGNATURE: v2.7.7-SYNC-VERCEL
+ * Triggering clean build for Vercel synchronization and build-time resilience.
  */
 
 @layer base {
