@@ -5,11 +5,11 @@
 :root {
   --primary: #1e3a8a;
   --secondary: #facc15;
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
 }
 
 body {
   background-color: white;
   color: black;
+  margin: 0;
+  padding: 0;
 }
