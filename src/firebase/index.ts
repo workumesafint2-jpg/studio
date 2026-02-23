@@ -11,6 +11,7 @@ import { getFirestore } from 'firebase/firestore';
  * Enhanced for Vercel build resilience and Zero-Failure initialization.
  */
 export function initializeFirebase() {
+  // Never initialize during server-side rendering or static export
   if (typeof window === 'undefined') {
     return { firebaseApp: null, auth: null, firestore: null };
   }
@@ -25,9 +26,9 @@ export function initializeFirebase() {
   // Next.js static exports sometimes inject 'undefined' as a string.
   const isConfigValid = (
     firebaseConfig.apiKey && 
-    firebaseConfig.apiKey !== 'undefined' && 
+    String(firebaseConfig.apiKey) !== 'undefined' && 
     firebaseConfig.projectId && 
-    firebaseConfig.projectId !== 'undefined'
+    String(firebaseConfig.projectId) !== 'undefined'
   );
 
   if (isConfigValid) {

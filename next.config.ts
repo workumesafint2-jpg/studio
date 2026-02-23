@@ -33,6 +33,10 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Fix for the dev origin warning in cloud environments like Firebase Studio
+  experimental: {
+    allowedDevOrigins: ['localhost:9002', '0.0.0.0:9002', '*.cloudworkstations.dev']
+  }
 };
 
 export default nextConfig;
