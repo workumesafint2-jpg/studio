@@ -7,6 +7,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 export const metadata: Metadata = {
   title: 'ITDB - Innovation and Technology Development Bureau',
   description: 'Official Process Modeling and Standardization Portal for the Innovation and Technology Development Bureau.',
+  metadataBase: new URL('https://worku-mesafint.vercel.app'),
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',

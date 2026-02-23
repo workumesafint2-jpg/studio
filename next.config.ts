@@ -40,7 +40,8 @@ const nextConfig: NextConfig = {
       '0.0.0.0:9002', 
       '*.cloudworkstations.dev', 
       '*.cluster-*.cloudworkstations.dev',
-      '*.vercel.app'
+      '*.vercel.app',
+      'worku-mesafint.vercel.app'
     ]
   }
 };
