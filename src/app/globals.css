@@ -1,5 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* v2.7.7 Institutional Color Sync */
 :root {
   --primary: #1e3a8a;
   --secondary: #facc15;
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  /* ሌሎች አስፈላጊ ተለዋዋጮች እዚህ ይቀጥላሉ */
+}
+
+body {
+  background: white;
+  color: black;
 }
