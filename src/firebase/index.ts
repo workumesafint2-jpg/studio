@@ -9,7 +9,7 @@ import { getFirestore } from 'firebase/firestore';
 /**
  * Institutional Firebase Initializer.
  * Enhanced for Vercel build resilience and Zero-Failure initialization.
- * v2.7.4 - Strict configuration validation for production synchronization.
+ * v2.7.5 - Strict configuration validation for production synchronization.
  */
 export function initializeFirebase() {
   // Never initialize during server-side rendering or static export
