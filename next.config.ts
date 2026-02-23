@@ -1,50 +1,32 @@
-
-import type {NextConfig} from 'next';
-
-const nextConfig: NextConfig = {
-  output: 'export',
-  trailingSlash: true, // Crucial for static export file paths in Electron
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  output: 'standalone', // ለ Vercel ግንባታ አስፈላጊ ነው
   images: {
     unoptimized: true,
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'placehold.co',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'picsum.photos',
-        port: '',
-        pathname: '/**',
-      },
+      { protocol: 'https', hostname: 'worku-mesafint.vercel.app' },
+      { protocol: 'https', hostname: 'images.unsplash.com' }
     ],
   },
-  // Fix for the dev origin warning in cloud environments like Firebase Studio and Vercel Previews
   experimental: {
     allowedDevOrigins: [
-      'localhost:9002', 
-      '0.0.0.0:9002', 
-      '*.cloudworkstations.dev', 
-      '*.cluster-*.cloudworkstations.dev',
+      'localhost:9002',
+      '*.cloudworkstations.dev',
       '*.vercel.app',
-      'worku-mesafint.vercel.app',
-      'studio-fzzu-*.vercel.app'
-    ]
-  }
+      'worku-mesafint.vercel.app'
+    ],
+  },
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET,POST,OPTIONS' },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
