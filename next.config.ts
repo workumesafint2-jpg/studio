@@ -11,13 +11,7 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
-  experimental: {
-    allowedDevOrigins: [
-      "https://*.cloudworkstations.dev",
-      "https://*.vercel.app",
-      "http://localhost:9002"
-    ],
-  },
+  // Removed experimental.allowedDevOrigins to resolve "Unrecognized key" warnings in Next.js 15.5.9
 };
 
 export default nextConfig;
