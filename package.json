@@ -1,9 +1,9 @@
 
 {
   "name": "ወርቁ-bpmn",
-  "version": "2.7.7",
+  "version": "2.7.8",
   "private": true,
-  "description": "Professional BPMN Diagram Generator (ወርቁ) - Institutional Sync Build v2.7.7",
+  "description": "Professional BPMN Diagram Generator (ወርቁ) - Institutional Sync Build v2.7.8",
   "author": "Worku Team",
   "repository": {
     "type": "git",
@@ -19,9 +19,8 @@
     "electron:build": "npm run build && electron-builder"
   },
   "dependencies": {
-  
     "@capacitor/android": "^6.2.0",
-    "@capacitor/cli": "^6.2.0",ኀ
+    "@capacitor/cli": "^6.2.0",
     "@capacitor/core": "^6.2.0",
     "@radix-ui/react-accordion": "^1.2.2",
     "@radix-ui/react-alert-dialog": "^1.1.4",
