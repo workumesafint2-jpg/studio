@@ -5,7 +5,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/Card";
 import { 
   Trash2, 
   MoreVertical, 
@@ -282,7 +282,6 @@ export function BPMNFlowForgeApp() {
         const version = existingVersions.length + 1;
         const finalName = version > 1 ? `${displayName} V${version}` : displayName;
 
-        // CRITICAL FIX: Ensure no 'undefined' values are passed to Firestore
         const newFile: Omit<UploadedFile, 'id'> = {
           name: finalName,
           category: uploadCategory,
@@ -305,7 +304,6 @@ export function BPMNFlowForgeApp() {
         setIsUploading(false);
         setIsUploadOpen(false);
         setSelectedFile(null);
-        // Reset hierarchy states
         setUploadPlanType("");
         setUploadReportType("");
         setUploadReformType("");
@@ -698,7 +696,7 @@ export function BPMNFlowForgeApp() {
       </main>
 
       <footer className="px-8 py-3 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
-        <div className="flex gap-6"><span>ITDB Portal v2.5 - Stable Production</span><span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span></div>
+        <div className="flex gap-6"><span>ITDB Portal v2.7.9 - Stable Production</span><span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span></div>
         <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>Assistant Synchronized</div>
       </footer>
     </div>

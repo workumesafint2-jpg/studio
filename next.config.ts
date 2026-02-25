@@ -1,5 +1,7 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -8,6 +10,13 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
+  },
+  experimental: {
+    allowedDevOrigins: [
+      "https://*.cloudworkstations.dev",
+      "https://*.vercel.app",
+      "http://localhost:9002"
+    ],
   },
 };
 
