@@ -5,7 +5,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/Card";
+import { Card, CardContent } from "@/components/ui/card";
 import { 
   Trash2, 
   MoreVertical, 
@@ -360,7 +360,7 @@ export function BPMNFlowForgeApp() {
       
       <header className="flex items-center justify-between py-3 px-8 bg-white border-b border-slate-100 shrink-0 sticky top-0 z-[100]">
         <div className="flex flex-col">
-          <p className="text-[10px] font-bold text-[#1e3a8a] mb-0.5 tracking-widest uppercase">ኢኖቬሽንና ቴክኖሎጂ ልማት ቢሮ</p>
+          <p className="text-[10px] font-bold text-[#1e3a8a] mb-0.5 tracking-widest uppercase">ኢኖቬሽንና ቴክኖሎጂ ልልማት ቢሮ</p>
           <h1 className="text-[7px] font-bold text-slate-400 uppercase tracking-[0.4em]">ITDB Institutional Portal</h1>
         </div>
 
@@ -665,7 +665,7 @@ export function BPMNFlowForgeApp() {
                       <TableHeader className="bg-slate-50/50">
                         <TableRow>
                           <TableHead className="text-[9px] font-bold">አገልግሎት</TableHead>
-                          <TableHead className="text-[9px] font-bold">አፈጻጸም</TableHead>
+                          <TableHead className="text-[9px] font-bold">አፈጻጻጸም</TableHead>
                           <TableHead className="text-[9px] font-bold">ሁኔታ</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -696,7 +696,7 @@ export function BPMNFlowForgeApp() {
       </main>
 
       <footer className="px-8 py-3 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
-        <div className="flex gap-6"><span>ITDB Portal v2.7.9 - Stable Production</span><span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span></div>
+        <div className="flex gap-6"><span>ITDB Portal v2.8.0 - Stable Production</span><span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span></div>
         <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>Assistant Synchronized</div>
       </footer>
     </div>
