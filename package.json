@@ -19,6 +19,7 @@
     "electron:build": "npm run build && electron-builder"
   },
   "dependencies": {
+  
     "@capacitor/android": "^6.2.0",
     "@capacitor/cli": "^6.2.0",ኀ
     "@capacitor/core": "^6.2.0",
