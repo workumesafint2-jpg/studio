@@ -354,12 +354,12 @@ export function BPMNFlowForgeApp() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-white overflow-hidden font-body">
-      <div className="h-1 w-full bg-[#1e3a8a] shrink-0" />
+    <div className="flex flex-col h-screen bg-background overflow-hidden font-body">
+      <div className="h-1 w-full bg-primary shrink-0" />
       
       <header className="flex items-center justify-between py-3 px-8 bg-white border-b border-slate-100 shrink-0 sticky top-0 z-[100]">
         <div className="flex flex-col">
-          <p className="text-[10px] font-bold text-[#1e3a8a] mb-0.5 tracking-widest uppercase">ኢኖቬሽንና ቴክኖሎጂ ልልማት ቢሮ</p>
+          <p className="text-[10px] font-bold text-primary mb-0.5 tracking-widest uppercase">ኢኖቬሽንና ቴክኖሎጂ ልልማት ቢሮ</p>
           <h1 className="text-[7px] font-bold text-slate-400 uppercase tracking-[0.4em]">ITDB Institutional Portal</h1>
         </div>
 
@@ -390,7 +390,7 @@ export function BPMNFlowForgeApp() {
                 <DropdownMenuLabel className="text-[9px] uppercase tracking-widest text-slate-400">ኤክስፖርት አማራጮች</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => viewerRef.current?.exportXML()} className="text-xs">
-                  <FileCode className="w-3.5 h-3.5 mr-2 text-blue-600" /> Export BPMN (.bpmn)
+                  <FileCode className="w-3.5 h-3.5 mr-2 text-primary" /> Export BPMN (.bpmn)
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => viewerRef.current?.exportSVG()} className="text-xs">
                   <ImageIcon className="w-3.5 h-3.5 mr-2 text-green-600" /> Export SVG (.svg)
@@ -415,13 +415,13 @@ export function BPMNFlowForgeApp() {
                     <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">የሂደቱን ዝርዝር ተግባር</label>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-7 px-3 text-[9px] text-[#1e3a8a] font-bold border border-[#1e3a8a]/20 rounded-lg bg-blue-50/50">
+                        <Button variant="ghost" size="sm" className="h-7 px-3 text-[9px] text-primary font-bold border border-primary/20 rounded-lg bg-accent/30">
                           {isSuggesting ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <BrainCircuit className="w-3.5 h-3.5 mr-2" />}
                           ወርቁ ነኝ ምን ልርዳዎት? <ChevronDown className="w-2.5 h-2.5 ml-2" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-64 z-[200]">
-                        <DropdownMenuItem onClick={() => handleAutoSuggest('analysis')} className="text-xs font-semibold text-[#1e3a8a]">
+                        <DropdownMenuItem onClick={() => handleAutoSuggest('analysis')} className="text-xs font-semibold text-primary">
                           <FileText className="w-3 h-3 mr-2" /> የፋይል ፍለጋና ትንታኔ
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleAutoSuggest('report')} className="text-xs font-semibold text-green-600">
@@ -438,8 +438,8 @@ export function BPMNFlowForgeApp() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button className="flex-[3] h-11 bg-[#1e3a8a] text-xs font-bold" onClick={handleGenerate}>ዲያግራም አመንጭ</Button>
-                <Button variant="outline" className="flex-1 h-11 text-xs font-bold border-[#1e3a8a] text-[#1e3a8a] hover:bg-blue-50" onClick={handleSaveToVault} disabled={isSaving || !xmlResult}>
+                <Button className="flex-[3] h-11 bg-primary text-primary-foreground text-xs font-bold" onClick={handleGenerate}>ዲያግራም አመንጭ</Button>
+                <Button variant="outline" className="flex-1 h-11 text-xs font-bold border-primary text-primary hover:bg-accent/30" onClick={handleSaveToVault} disabled={isSaving || !xmlResult}>
                   {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                   መዝግብ (Save)
                 </Button>
@@ -460,13 +460,13 @@ export function BPMNFlowForgeApp() {
               <div className="flex gap-2">
                 <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8 text-[9px] text-[#1e3a8a] font-bold border border-[#1e3a8a]/20 rounded-lg">
+                    <Button variant="ghost" size="sm" className="h-8 text-[9px] text-primary font-bold border border-primary/20 rounded-lg">
                       <Upload className="w-3 h-3 mr-2" /> አዲስ ፋይል አጽድቅ (DMS)
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-md p-8 gap-8">
                     <DialogHeader>
-                      <DialogTitle className="text-base font-bold uppercase text-[#1e3a8a]">ፋይል መመዝገቢያ</DialogTitle>
+                      <DialogTitle className="text-base font-bold uppercase text-primary">ፋይል መመዝገቢያ</DialogTitle>
                       <DialogDescription className="text-xs text-slate-500">እባክዎን ፋይሉን በቢሮው ምደባ መሰረት ይመዝግቡ።</DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-6 py-2">
@@ -492,9 +492,9 @@ export function BPMNFlowForgeApp() {
 
                       {uploadCategory === "እቅዶች (Plans)" && (
                         <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
-                          <label className="text-[10px] font-bold text-[#1e3a8a] uppercase tracking-widest">2. የእቅድ አይነት</label>
+                          <label className="text-[10px] font-bold text-primary uppercase tracking-widest">2. የእቅድ አይነት</label>
                           <Select value={uploadPlanType} onValueChange={setUploadPlanType}>
-                            <SelectTrigger className="h-10 text-xs border-[#1e3a8a]/30 shadow-sm"><SelectValue placeholder="የእቅድ አይነት ይምረጡ..." /></SelectTrigger>
+                            <SelectTrigger className="h-10 text-xs border-primary/30 shadow-sm"><SelectValue placeholder="የእቅድ አይነት ይምረጡ..." /></SelectTrigger>
                             <SelectContent className="z-[1100]">
                               <SelectItem value="ስትራቴጂካዊ">ስትራቴጂካዊ እቅድ</SelectItem>
                               <SelectItem value="የዓመት">የዓመት እቅድ</SelectItem>
@@ -562,7 +562,7 @@ export function BPMNFlowForgeApp() {
                       </div>
                     </div>
                     <DialogFooter className="mt-2">
-                      <Button size="lg" className="bg-[#1e3a8a] w-full h-12 text-sm font-bold shadow-md hover:bg-[#172e6e]" onClick={processUpload} disabled={isUploading || !selectedFile || !uploadCategory}>
+                      <Button size="lg" className="bg-primary text-primary-foreground w-full h-12 text-sm font-bold shadow-md hover:bg-primary/90" onClick={processUpload} disabled={isUploading || !selectedFile || !uploadCategory}>
                         {isUploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ShieldCheck className="w-4 h-4 mr-2" />}
                         አጽድቅና መዝግብ
                       </Button>
@@ -580,24 +580,24 @@ export function BPMNFlowForgeApp() {
               <div className="flex-[40] flex flex-col min-h-[300px] bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
                 <div className="grid grid-cols-3 gap-3 p-3 bg-slate-50/30 border-b border-slate-100 shrink-0">
                   <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-100">
-                    <Target className="w-5 h-5 text-blue-500" />
+                    <Target className="w-5 h-5 text-primary" />
                     <div>
                       <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">እቅዶች</p>
-                      <h4 className="text-lg font-black text-[#1e3a8a]">{stats.totalPlans}</h4>
+                      <h4 className="text-lg font-black text-primary">{stats.totalPlans}</h4>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-100">
                     <Activity className="w-5 h-5 text-green-500" />
                     <div>
                       <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">ሪፖርቶች</p>
-                      <h4 className="text-lg font-black text-[#1e3a8a]">{stats.totalReports}</h4>
+                      <h4 className="text-lg font-black text-primary">{stats.totalReports}</h4>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-100">
                     <Trophy className="w-5 h-5 text-amber-500" />
                     <div>
                       <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">አማካይ አፈጻጸም</p>
-                      <h4 className="text-lg font-black text-[#1e3a8a]">{stats.avgExecution}%</h4>
+                      <h4 className="text-lg font-black text-primary">{stats.avgExecution}%</h4>
                     </div>
                   </div>
                 </div>
@@ -650,7 +650,7 @@ export function BPMNFlowForgeApp() {
                                     <CheckCircle2 className="w-3.5 h-3.5" />
                                   </Button>
                                 )}
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-[#1e3a8a]" asChild title="አውርድ">
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" asChild title="አውርድ">
                                   <a href={file.dataUrl} download={file.fileName}><Download className="w-3.5 h-3.5" /></a>
                                 </Button>
                                 <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(file.id)} title="ሰርዝ">
@@ -670,7 +670,7 @@ export function BPMNFlowForgeApp() {
             <TabsContent value="dashboard" className="flex-1 p-6 space-y-6 overflow-auto bg-white rounded-xl border border-slate-200">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card className="p-6 h-[400px] shadow-sm">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#1e3a8a] mb-8 flex items-center"><BarChart className="w-4 h-4 mr-2" /> የቢሮው አጠቃላይ አፈጻጸም</h3>
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-primary mb-8 flex items-center"><BarChart className="w-4 h-4 mr-2" /> የቢሮው አጠቃላይ አፈጻጸም</h3>
                   <ResponsiveContainer width="100%" height="80%">
                     <RechartsBarChart data={performanceData}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -686,7 +686,7 @@ export function BPMNFlowForgeApp() {
                 </Card>
 
                 <Card className="p-6 shadow-sm overflow-hidden flex flex-col">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#1e3a8a] mb-6 flex items-center"><TrendingUp className="w-4 h-4 mr-2" /> ዝርዝር አፈጻጸም ሪፖርት</h3>
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-primary mb-6 flex items-center"><TrendingUp className="w-4 h-4 mr-2" /> ዝርዝር አፈጻጸም ሪፖርት</h3>
                   <ScrollArea className="flex-1">
                     <Table>
                       <TableHeader className="bg-slate-50/50">
@@ -723,7 +723,7 @@ export function BPMNFlowForgeApp() {
       </main>
 
       <footer className="px-8 py-3 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
-        <div className="flex gap-6"><span>ITDB Portal v2.9.2 - Stable Production</span><span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span></div>
+        <div className="flex gap-6"><span>ITDB Portal v2.9.3 - Stable Production</span><span className="text-primary/40">© 2024 Innovation and Technology Development Bureau</span></div>
         <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>Assistant Synchronized</div>
       </footer>
     </div>
