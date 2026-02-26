@@ -31,7 +31,10 @@ import {
   History,
   Info,
   Bell,
-  CheckCircle2
+  CheckCircle2,
+  Save,
+  FileCode,
+  Image as LucideImage
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -100,15 +103,6 @@ import {
 } from '@/firebase';
 import { collection, query, where, doc, Timestamp } from 'firebase/firestore';
 
-interface VaultItem {
-  id: string;
-  systemCode: string;
-  title: string;
-  description: string;
-  date: string;
-  xml: string;
-}
-
 interface UploadedFile {
   id: string;
   name: string;
@@ -144,6 +138,7 @@ export function BPMNFlowForgeApp() {
   const [activeTab, setActiveTab] = useState("diagram");
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -244,6 +239,43 @@ export function BPMNFlowForgeApp() {
       setXmlResult(result);
       setActiveTab("diagram");
       toast({ title: "ተሳክቷል", description: "ዲያግራሙ በአሁኑ ሰርክ ውስጥ ተዘጋጅቷል።" });
+    }
+  };
+
+  const handleSaveToVault = async () => {
+    if (!xmlResult && !viewerRef.current) {
+      toast({ title: "መረጃ የለም", description: "የሚቀመጥ ዲያግራም የለም።", variant: "destructive" });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const currentXml = await viewerRef.current?.getXML() || xmlResult;
+      const docName = title || "ያልተሰየመ ዲያግራም";
+      
+      const newFile: Omit<UploadedFile, 'id'> = {
+        name: docName,
+        category: 'የሪፎርም ሰነዶች (Reform Docs)',
+        reformType: "Mapping",
+        fileName: `${docName.replace(/\s+/g, '-')}.bpmn`,
+        fileSize: (new Blob([currentXml]).size / 1024).toFixed(1) + " KB",
+        uploadDate: new Date().toLocaleString('am-ET'),
+        dataUrl: `data:application/xml;base64,${btoa(currentXml)}`,
+        type: 'application/xml',
+        status: 'በሂደት ላይ',
+        version: 1,
+        uploaderId: user?.uid || 'anonymous',
+        createdAt: Timestamp.now()
+      };
+
+      if (db) {
+        await addDocumentNonBlocking(collection(db, 'documents'), newFile);
+        toast({ title: "ተቀምጧል", description: "ዲያግራሙ በመዝገብ ቤት ተመዝግቧል።" });
+      }
+    } catch (err) {
+      toast({ title: "ስህተት", description: "ዲያግራሙን ማስቀመጥ አልተቻለም።", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -380,9 +412,31 @@ export function BPMNFlowForgeApp() {
               </span>
             )}
           </div>
-          <Button variant="outline" size="sm" className="h-8 rounded-lg text-[9px] font-bold" onClick={handleDownloadProject}>
-            <Archive className="w-3 h-3 mr-2" /> ZIP ኤክስፖርት
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="sm" className="h-8 rounded-lg text-[9px] font-bold" onClick={handleDownloadProject}>
+              <Archive className="w-3 h-3 mr-2" /> ZIP ኤክስፖርት
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg border border-slate-200">
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 z-[200]">
+                <DropdownMenuLabel className="text-[9px] uppercase tracking-widest text-slate-400">ኤክስፖርት አማራጮች</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => viewerRef.current?.exportXML()} className="text-xs">
+                  <FileCode className="w-3.5 h-3.5 mr-2 text-blue-600" /> BPMN XML (.bpmn)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => viewerRef.current?.exportSVG()} className="text-xs">
+                  <ImageIcon className="w-3.5 h-3.5 mr-2 text-green-600" /> SVG ምስል (.svg)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => viewerRef.current?.exportPNG()} className="text-xs">
+                  <LucideImage className="w-3.5 h-3.5 mr-2 text-amber-600" /> PNG ምስል (.png)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </header>
 
@@ -423,7 +477,11 @@ export function BPMNFlowForgeApp() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button className="flex-1 h-11 bg-[#1e3a8a] text-xs font-bold" onClick={handleGenerate}>ዲያግራም አመንጭ</Button>
+                <Button className="flex-[3] h-11 bg-[#1e3a8a] text-xs font-bold" onClick={handleGenerate}>ዲያግራም አመንጭ</Button>
+                <Button variant="outline" className="flex-1 h-11 text-xs font-bold border-[#1e3a8a] text-[#1e3a8a] hover:bg-blue-50" onClick={handleSaveToVault} disabled={isSaving || !xmlResult}>
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                  መዝግብ (Save)
+                </Button>
                 <Button variant="outline" className="h-11 px-4 border-slate-200" onClick={() => { setInput(""); setTitle(""); }}><Trash2 className="w-4 h-4" /></Button>
               </div>
             </CardContent>
@@ -696,7 +754,7 @@ export function BPMNFlowForgeApp() {
       </main>
 
       <footer className="px-8 py-3 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
-        <div className="flex gap-6"><span>ITDB Portal v2.8.2 - Stable Production</span><span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span></div>
+        <div className="flex gap-6"><span>ITDB Portal v2.8.4 - Stable Production</span><span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span></div>
         <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>Assistant Synchronized</div>
       </footer>
     </div>

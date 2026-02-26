@@ -1,7 +1,10 @@
+
 'use client';
 
 import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import BpmnModeler from 'bpmn-js/lib/Modeler';
+import 'bpmn-js/dist/assets/diagram-js.css';
+import 'bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css';
 
 interface BPMNViewerProps {
   xml: string;
@@ -19,11 +22,11 @@ export interface BPMNViewerRef {
 
 export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, title = "Process Diagram" }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const modelerRef = useRef<any>(null);
+  const modelerRef = useRef<BpmnModeler | null>(null);
 
   const fitViewport = () => {
     if (modelerRef.current) {
-      const canvas = modelerRef.current.get('canvas');
+      const canvas: any = modelerRef.current.get('canvas');
       canvas.zoom('fit-viewport');
     }
   };
@@ -34,7 +37,7 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
       if (!modelerRef.current) return '';
       try {
         const { xml: resultXml } = await modelerRef.current.saveXML({ format: true });
-        return resultXml;
+        return resultXml || '';
       } catch (err) {
         console.error('Error getting XML:', err);
         return '';
@@ -44,7 +47,7 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
       if (!modelerRef.current) return '';
       try {
         const { svg } = await modelerRef.current.saveSVG();
-        return svg;
+        return svg || '';
       } catch (err) {
         console.error('Error getting SVG:', err);
         return '';
@@ -54,6 +57,7 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
       if (!modelerRef.current) return;
       try {
         const { xml: resultXml } = await modelerRef.current.saveXML({ format: true });
+        if (!resultXml) return;
         const blob = new Blob([resultXml], { type: 'application/xml;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -71,6 +75,7 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
       if (!modelerRef.current) return;
       try {
         const { svg } = await modelerRef.current.saveSVG();
+        if (!svg) return;
         const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -88,6 +93,7 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
       if (!modelerRef.current) return;
       try {
         const { svg } = await modelerRef.current.saveSVG();
+        if (!svg) return;
         const canvas = document.createElement('canvas');
         const img = new Image();
         const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
@@ -121,26 +127,41 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
 
   useEffect(() => {
     if (!containerRef.current) return;
-    // Fix: Keyboard binding is now implicit in diagram-js/bpmn-js.
-    // Explicit bindTo: window has been removed to prevent hydration/initialization errors.
+    
     const modeler = new BpmnModeler({
-      container: containerRef.current
+      container: containerRef.current,
+      keyboard: {
+        bindTo: window
+      }
     });
+    
     modelerRef.current = modeler;
-    return () => modeler.destroy();
+    
+    return () => {
+      if (modelerRef.current) {
+        modelerRef.current.destroy();
+      }
+    };
   }, []);
 
   useEffect(() => {
     if (modelerRef.current && xml) {
       modelerRef.current.importXML(xml).then(() => {
         fitViewport();
+      }).catch(err => {
+        console.error('Error importing XML:', err);
       });
     }
   }, [xml]);
 
   return (
     <div className="w-full h-full relative group bg-white border border-slate-200 rounded-2xl overflow-hidden">
-      <div ref={containerRef} className="w-full h-full min-h-[600px]" />
+      <div ref={containerRef} className="w-full h-full min-h-[600px] bpmn-viewer-container" />
+      <style jsx global>{`
+        .bpmn-viewer-container .bjs-powered-by {
+          display: none;
+        }
+      `}</style>
     </div>
   );
 });
