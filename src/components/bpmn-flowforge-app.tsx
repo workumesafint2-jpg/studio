@@ -231,7 +231,9 @@ export function BPMNFlowForgeApp() {
   };
 
   const handleSaveToVault = async () => {
-    if (!xmlResult && !viewerRef.current) {
+    const currentXml = await viewerRef.current?.getXML() || xmlResult;
+    
+    if (!currentXml) {
       toast({ title: "መረጃ የለም", description: "የሚቀመጥ ዲያግራም የለም።", variant: "destructive" });
       return;
     }
@@ -247,16 +249,18 @@ export function BPMNFlowForgeApp() {
 
     if (isUserLoading || !user) {
       toast({ 
-        title: "የተጠቃሚ መረጃ", 
-        description: "እባክዎን ሲስተሙ እስኪዘጋጅ ጥቂት ሰከንድ ይጠብቁ...", 
+        title: "የተጠቃሚ መታወቂያ", 
+        description: "ሲስተሙ መታወቂያዎን እያረጋገጠ ነው። እባክዎን ሰከንዶች ይጠብቁ...", 
       });
       return;
     }
 
     setIsSaving(true);
     try {
-      const currentXml = await viewerRef.current?.getXML() || xmlResult;
       const docName = title || "ያልተሰየመ ዲያግራም";
+      
+      // Robust Unicode Base64 encoding for Amharic characters
+      const encodedData = btoa(unescape(encodeURIComponent(currentXml)));
       
       const newFile: Omit<UploadedFile, 'id'> = {
         name: docName,
@@ -265,7 +269,7 @@ export function BPMNFlowForgeApp() {
         fileName: `${docName.replace(/\s+/g, '-')}.bpmn`,
         fileSize: (new Blob([currentXml]).size / 1024).toFixed(1) + " KB",
         uploadDate: new Date().toLocaleString('am-ET'),
-        dataUrl: `data:application/xml;base64,${btoa(currentXml)}`,
+        dataUrl: `data:application/xml;base64,${encodedData}`,
         type: 'application/xml',
         status: 'በሂደት ላይ',
         version: 1,
@@ -276,10 +280,10 @@ export function BPMNFlowForgeApp() {
       await addDocumentNonBlocking(collection(db, 'documents'), newFile);
       toast({ title: "ተቀምጧል", description: "ዲያግራሙ በመዝገብ ቤት ተመዝግቧል።" });
     } catch (err: any) {
-      console.error("Save Error:", err);
+      console.error("Institutional Sync Save Error:", err);
       toast({ 
         title: "ስህተት", 
-        description: `ዲያግራሙን ማስቀመጥ አልተቻለም፡ ${err.message || 'Unknown Error'}`, 
+        description: `ዲያግራሙን ማስቀመጥ አልተቻለም። እባክዎን እንደገና ይሞክሩ።`, 
         variant: "destructive" 
       });
     } finally {
@@ -744,7 +748,7 @@ export function BPMNFlowForgeApp() {
       </main>
 
       <footer className="px-8 py-3 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
-        <div className="flex gap-6"><span>ITDB Portal v2.9.7 - Stable Production</span><span className="text-primary/40">© 2024 Innovation and Technology Development Bureau</span></div>
+        <div className="flex gap-6"><span>ITDB Portal v2.9.8 - Stable Production</span><span className="text-primary/40">© 2024 Innovation and Technology Development Bureau</span></div>
         <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>Assistant Synchronized</div>
       </footer>
     </div>
