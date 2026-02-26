@@ -1,9 +1,8 @@
-
 {
   "name": "ወርቁ-bpmn",
-  "version": "2.9.1",
+  "version": "2.9.2",
   "private": true,
-  "description": "Professional BPMN Diagram Generator (ወርቁ) - Netlify Sync Build v2.9.1",
+  "description": "Professional BPMN Diagram Generator (ወርቁ) - Netlify Sync Build v2.9.2",
   "author": "Worku Team",
   "repository": {
     "type": "git",
@@ -11,7 +10,7 @@
   },
   "main": "main.js",
   "scripts": {
-    "dev": "next dev -p 9002",
+    "dev": "next dev -p 9002 --port 9002 --hostname 0.0.0.0",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
