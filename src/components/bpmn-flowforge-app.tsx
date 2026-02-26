@@ -230,6 +230,18 @@ export function BPMNFlowForgeApp() {
     }
   };
 
+  /**
+   * Helper function to robustly encode Unicode strings (like Amharic XML) to Base64.
+   */
+  const toUnicodeBase64 = (str: string) => {
+    const bytes = new TextEncoder().encode(str);
+    let binString = "";
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binString += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binString);
+  };
+
   const handleSaveToVault = async () => {
     const currentXml = await viewerRef.current?.getXML() || xmlResult;
     
@@ -260,7 +272,7 @@ export function BPMNFlowForgeApp() {
       const docName = title || "ያልተሰየመ ዲያግራም";
       
       // Robust Unicode Base64 encoding for Amharic characters
-      const encodedData = btoa(unescape(encodeURIComponent(currentXml)));
+      const encodedData = toUnicodeBase64(currentXml);
       
       const newFile: Omit<UploadedFile, 'id'> = {
         name: docName,
@@ -748,7 +760,7 @@ export function BPMNFlowForgeApp() {
       </main>
 
       <footer className="px-8 py-3 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
-        <div className="flex gap-6"><span>ITDB Portal v2.9.8 - Stable Production</span><span className="text-primary/40">© 2024 Innovation and Technology Development Bureau</span></div>
+        <div className="flex gap-6"><span>ITDB Portal v2.9.9 - Stable Production</span><span className="text-primary/40">© 2024 Innovation and Technology Development Bureau</span></div>
         <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>Assistant Synchronized</div>
       </footer>
     </div>
