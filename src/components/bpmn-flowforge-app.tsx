@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -9,39 +8,30 @@ import { Card, CardContent } from "@/components/ui/card";
 import { 
   Trash2, 
   MoreVertical, 
-  FileType, 
-  Archive, 
-  Database, 
-  ChevronDown, 
-  Zap, 
-  Activity,
+  Search,
   Loader2,
-  Layout,
   Upload,
   Download,
   Target,
   Trophy,
   BarChart,
-  Search,
   FileText,
   ShieldCheck,
   BrainCircuit,
   TrendingUp,
   Image as ImageIcon,
-  History,
-  Info,
   Bell,
   CheckCircle2,
   Save,
   FileCode,
-  Image as LucideImage
+  ChevronDown,
+  Activity
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BPMNViewer, type BPMNViewerRef } from "@/components/bpmn-viewer";
-import { Progress } from "@/components/ui/progress";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -76,8 +66,6 @@ import {
 } from "@/components/ui/table";
 import { suggestSteps } from "@/ai/flows/suggest-steps-flow";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import JSZip from 'jszip';
 import { 
   Bar, 
   BarChart as RechartsBarChart, 
@@ -86,7 +74,6 @@ import {
   CartesianGrid, 
   Tooltip as RechartsTooltip, 
   ResponsiveContainer, 
-  Legend,
   Cell
 } from 'recharts';
 import { BUREAU_SERVICES_REGISTRY } from '@/lib/services-registry';
@@ -137,7 +124,6 @@ export function BPMNFlowForgeApp() {
   const [xmlResult, setXmlResult] = useState("");
   const [activeTab, setActiveTab] = useState("diagram");
   const [isSuggesting, setIsSuggesting] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -477,13 +463,13 @@ export function BPMNFlowForgeApp() {
                       <Upload className="w-3 h-3 mr-2" /> አዲስ ፋይል አጽድቅ (DMS)
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="z-[250] max-w-md">
+                  <DialogContent className="max-w-md p-8 gap-8">
                     <DialogHeader>
-                      <DialogTitle className="text-sm font-bold uppercase text-[#1e3a8a]">ፋይል መመዝገቢያ</DialogTitle>
-                      <DialogDescription className="text-[10px]">እባክዎን ፋይሉን በቢሮው ምደባ መሰረት ይመዝግቡ።</DialogDescription>
+                      <DialogTitle className="text-base font-bold uppercase text-[#1e3a8a]">ፋይል መመዝገቢያ</DialogTitle>
+                      <DialogDescription className="text-xs text-slate-500">እባክዎን ፋይሉን በቢሮው ምደባ መሰረት ይመዝግቡ።</DialogDescription>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="space-y-1.5">
+                    <div className="grid gap-6 py-2">
+                      <div className="space-y-2">
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">1. ዋና ምድብ</label>
                         <Select value={uploadCategory} onValueChange={(val) => {
                           setUploadCategory(val);
@@ -492,8 +478,8 @@ export function BPMNFlowForgeApp() {
                           setUploadReformType("");
                           setUploadTaxonomyService("");
                         }}>
-                          <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="ምድብ ይምረጡ..." /></SelectTrigger>
-                          <SelectContent className="z-[300]">
+                          <SelectTrigger className="h-10 text-xs shadow-sm"><SelectValue placeholder="ምድብ ይምረጡ..." /></SelectTrigger>
+                          <SelectContent className="z-[1100]">
                             <SelectItem value="እቅዶች (Plans)">1. እቅዶች (Plans)</SelectItem>
                             <SelectItem value="ሪፖርቶች (Reports)">2. ሪፖርቶች (Reports)</SelectItem>
                             <SelectItem value="የሪፎርም ሰነዶች (Reform Docs)">3. የሪፎርም ሰነዶች (Reform)</SelectItem>
@@ -504,11 +490,11 @@ export function BPMNFlowForgeApp() {
                       </div>
 
                       {uploadCategory === "እቅዶች (Plans)" && (
-                        <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1">
+                        <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
                           <label className="text-[10px] font-bold text-[#1e3a8a] uppercase tracking-widest">2. የእቅድ አይነት</label>
                           <Select value={uploadPlanType} onValueChange={setUploadPlanType}>
-                            <SelectTrigger className="h-9 text-xs border-[#1e3a8a]/30"><SelectValue placeholder="የእቅድ አይነት ይምረጡ..." /></SelectTrigger>
-                            <SelectContent className="z-[300]">
+                            <SelectTrigger className="h-10 text-xs border-[#1e3a8a]/30 shadow-sm"><SelectValue placeholder="የእቅድ አይነት ይምረጡ..." /></SelectTrigger>
+                            <SelectContent className="z-[1100]">
                               <SelectItem value="ስትራቴጂካዊ">ስትራቴጂካዊ እቅድ</SelectItem>
                               <SelectItem value="የዓመት">የዓመት እቅድ</SelectItem>
                               <SelectItem value="የሩብ ዓመት">የሩብ ዓመት እቅድ</SelectItem>
@@ -519,11 +505,11 @@ export function BPMNFlowForgeApp() {
                       )}
 
                       {uploadCategory === "ሪፖርቶች (Reports)" && (
-                        <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1">
+                        <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
                           <label className="text-[10px] font-bold text-green-600 uppercase tracking-widest">2. የሪፖርት አይነት</label>
                           <Select value={uploadReportType} onValueChange={setUploadReportType}>
-                            <SelectTrigger className="h-9 text-xs border-green-600/30"><SelectValue placeholder="የሪፖርት አይነት ይምረጡ..." /></SelectTrigger>
-                            <SelectContent className="z-[300]">
+                            <SelectTrigger className="h-10 text-xs border-green-600/30 shadow-sm"><SelectValue placeholder="የሪፖርት አይነት ይምረጡ..." /></SelectTrigger>
+                            <SelectContent className="z-[1100]">
                               <SelectItem value="የወር">የወር ሪፖርት</SelectItem>
                               <SelectItem value="የሩብ ዓመት">የሩብ ዓመት ሪፖርት</SelectItem>
                               <SelectItem value="የዓመት">የዓመት ሪፖርት</SelectItem>
@@ -533,11 +519,11 @@ export function BPMNFlowForgeApp() {
                       )}
 
                       {uploadCategory === "የሪፎርም ሰነዶች (Reform Docs)" && (
-                        <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1">
+                        <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
                           <label className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">2. የሪፎርም አይነት</label>
                           <Select value={uploadReformType} onValueChange={setUploadReformType}>
-                            <SelectTrigger className="h-9 text-xs border-amber-600/30"><SelectValue placeholder="የሪፎርም አይነት ይምረጡ..." /></SelectTrigger>
-                            <SelectContent className="z-[300]">
+                            <SelectTrigger className="h-10 text-xs border-amber-600/30 shadow-sm"><SelectValue placeholder="የሪፎርም አይነት ይምረጡ..." /></SelectTrigger>
+                            <SelectContent className="z-[1100]">
                               <SelectItem value="ካታሎግ">ካታሎግ (Catalogue)</SelectItem>
                               <SelectItem value="Mapping">Mapping</SelectItem>
                               <SelectItem value="As-is">As-is Process</SelectItem>
@@ -548,11 +534,11 @@ export function BPMNFlowForgeApp() {
                       )}
 
                       {uploadCategory === "Service Taxonomy" && (
-                        <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1">
+                        <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
                           <label className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">2. የአገልግሎት ዝርዝር</label>
                           <Select value={uploadTaxonomyService} onValueChange={setUploadTaxonomyService}>
-                            <SelectTrigger className="h-9 text-xs border-slate-600/30"><SelectValue placeholder="አገልግሎት ይምረጡ..." /></SelectTrigger>
-                            <SelectContent className="z-[300] max-h-[200px]">
+                            <SelectTrigger className="h-10 text-xs border-slate-600/30 shadow-sm"><SelectValue placeholder="አገልግሎት ይምረጡ..." /></SelectTrigger>
+                            <SelectContent className="z-[1100] max-h-[200px]">
                               {BUREAU_SERVICES_REGISTRY.map((s, i) => (
                                 <SelectItem key={i} value={s.title}>{s.title}</SelectItem>
                               ))}
@@ -561,13 +547,21 @@ export function BPMNFlowForgeApp() {
                         </div>
                       )}
 
-                      <div className="space-y-1.5 pt-2">
+                      <div className="space-y-2 pt-2">
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">3. ፋይል ይምረጡ</label>
-                        <Input type="file" onChange={(e) => e.target.files && setSelectedFile(e.target.files[0])} className="text-[10px] h-10 border-dashed" />
+                        <div className="flex items-center justify-center w-full">
+                          <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-slate-200 border-dashed rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                              <Upload className="w-6 h-6 mb-2 text-slate-400" />
+                              <p className="text-[10px] text-slate-500 font-semibold">{selectedFile ? selectedFile.name : 'Choose File'}</p>
+                            </div>
+                            <input type="file" className="hidden" onChange={(e) => e.target.files && setSelectedFile(e.target.files[0])} />
+                          </label>
+                        </div>
                       </div>
                     </div>
-                    <DialogFooter>
-                      <Button size="sm" className="bg-[#1e3a8a] w-full" onClick={processUpload} disabled={isUploading || !selectedFile || !uploadCategory}>
+                    <DialogFooter className="mt-2">
+                      <Button size="lg" className="bg-[#1e3a8a] w-full h-12 text-sm font-bold shadow-md hover:bg-[#172e6e]" onClick={processUpload} disabled={isUploading || !selectedFile || !uploadCategory}>
                         {isUploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ShieldCheck className="w-4 h-4 mr-2" />}
                         አጽድቅና መዝግብ
                       </Button>
@@ -728,7 +722,7 @@ export function BPMNFlowForgeApp() {
       </main>
 
       <footer className="px-8 py-3 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
-        <div className="flex gap-6"><span>ITDB Portal v2.8.6 - Stable Production</span><span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span></div>
+        <div className="flex gap-6"><span>ITDB Portal v2.8.7 - Stable Production</span><span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span></div>
         <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>Assistant Synchronized</div>
       </footer>
     </div>
