@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -26,7 +27,7 @@ import {
   FileCode,
   ChevronDown,
   Activity,
-  Layout
+  Layout as LayoutIcon
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -429,7 +430,7 @@ export function BPMNFlowForgeApp() {
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => handleAutoSuggest('diagram')} className="text-xs">
-                          <Layout className="w-3 h-3 mr-2" /> የስራ ፍሰት ዝርዝር አመንጭ
+                          <LayoutIcon className="w-3 h-3 mr-2" /> የስራ ፍሰት ዝርዝር አመንጭ
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -723,7 +724,7 @@ export function BPMNFlowForgeApp() {
       </main>
 
       <footer className="px-8 py-3 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
-        <div className="flex gap-6"><span>ITDB Portal v2.9.3 - Stable Production</span><span className="text-primary/40">© 2024 Innovation and Technology Development Bureau</span></div>
+        <div className="flex gap-6"><span>ITDB Portal v2.9.5 - Stable Production</span><span className="text-primary/40">© 2024 Innovation and Technology Development Bureau</span></div>
         <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>Assistant Synchronized</div>
       </footer>
     </div>

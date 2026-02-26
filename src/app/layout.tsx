@@ -3,6 +3,7 @@ import type {Metadata, Viewport} from 'next';
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import Script from 'next/script';
 
 export const metadata: Metadata = {
   title: 'ITDB - Innovation and Technology Development Bureau',
@@ -44,6 +45,23 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="ITDB Portal" />
         <meta name="mobile-web-app-capable" content="yes" />
+        <Script id="error-resilience" strategy="beforeInteractive">
+          {`
+            window.addEventListener('error', (e) => {
+              if (e.message === 'ResizeObserver loop limit exceeded' || e.message === 'Script error.') {
+                const resizeObserverErrGuid = 'window.onerror - ResizeObserver loop limit exceeded';
+                if (e.message === resizeObserverErrGuid) {
+                  e.stopImmediatePropagation();
+                }
+              }
+            });
+            window.addEventListener('unhandledrejection', (e) => {
+              if (e.reason && (e.reason.message === 'ResizeObserver loop limit exceeded' || e.reason === 'ResizeObserver loop limit exceeded')) {
+                e.stopImmediatePropagation();
+              }
+            });
+          `}
+        </Script>
       </head>
       <body className="font-body antialiased bg-background text-foreground">
         <FirebaseClientProvider>
