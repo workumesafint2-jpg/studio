@@ -1,4 +1,3 @@
-
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -12,7 +11,6 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
-  // Removed experimental.allowedDevOrigins to resolve "Unrecognized key" warnings in Next.js 15.5.9
 };
 
 export default nextConfig;
