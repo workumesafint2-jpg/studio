@@ -366,26 +366,6 @@ export function BPMNFlowForgeApp() {
     toast({ title: "ተሰርዟል", description: "ሰነዱ ከመዝገብ ቤት ተወግዷል።" });
   };
 
-  const handleDownloadProject = async () => {
-    setIsDownloading(true);
-    try {
-      const zip = new JSZip();
-      const currentXml = await viewerRef.current?.getXML() || xmlResult;
-      if (currentXml) zip.file("diagram.bpmn", currentXml);
-      const content = await zip.generateAsync({ type: "blob" });
-      const url = URL.createObjectURL(content);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `itdb-vault-export.zip`;
-      link.click();
-      toast({ title: "ተሳክቷል", description: "መረጃው ተልኳል።" });
-    } catch (error) {
-      toast({ title: "ስህተት", description: "ማጠናቀር አልተቻለም።", variant: "destructive" });
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
   return (
     <div className="flex flex-col h-screen bg-white overflow-hidden font-body">
       <div className="h-1 w-full bg-[#1e3a8a] shrink-0" />
@@ -413,8 +393,15 @@ export function BPMNFlowForgeApp() {
             )}
           </div>
           <div className="flex items-center gap-1">
-            <Button variant="outline" size="sm" className="h-8 rounded-lg text-[9px] font-bold" onClick={handleDownloadProject}>
-              <Archive className="w-3 h-3 mr-2" /> ZIP ኤክስፖርት
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-8 rounded-lg text-[9px] font-bold border-[#1e3a8a] text-[#1e3a8a] hover:bg-blue-50" 
+              onClick={handleSaveToVault}
+              disabled={isSaving || !xmlResult}
+            >
+              {isSaving ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <Save className="w-3 h-3 mr-2" />}
+              መዝገብ ቤት (Save)
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -426,13 +413,10 @@ export function BPMNFlowForgeApp() {
                 <DropdownMenuLabel className="text-[9px] uppercase tracking-widest text-slate-400">ኤክስፖርት አማራጮች</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => viewerRef.current?.exportXML()} className="text-xs">
-                  <FileCode className="w-3.5 h-3.5 mr-2 text-blue-600" /> BPMN XML (.bpmn)
+                  <FileCode className="w-3.5 h-3.5 mr-2 text-blue-600" /> Export BPMN (.bpmn)
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => viewerRef.current?.exportSVG()} className="text-xs">
-                  <ImageIcon className="w-3.5 h-3.5 mr-2 text-green-600" /> SVG ምስል (.svg)
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => viewerRef.current?.exportPNG()} className="text-xs">
-                  <LucideImage className="w-3.5 h-3.5 mr-2 text-amber-600" /> PNG ምስል (.png)
+                  <ImageIcon className="w-3.5 h-3.5 mr-2 text-green-600" /> Export SVG (.svg)
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -754,7 +738,7 @@ export function BPMNFlowForgeApp() {
       </main>
 
       <footer className="px-8 py-3 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
-        <div className="flex gap-6"><span>ITDB Portal v2.8.4 - Stable Production</span><span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span></div>
+        <div className="flex gap-6"><span>ITDB Portal v2.8.5 - Stable Production</span><span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span></div>
         <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>Assistant Synchronized</div>
       </footer>
     </div>
