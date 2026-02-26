@@ -236,6 +236,23 @@ export function BPMNFlowForgeApp() {
       return;
     }
 
+    if (!db) {
+      toast({ 
+        title: "Cloud Sync Disabled", 
+        description: "የቢሮው የደመና መዝገብ ቤት አልነቃም። እባክዎን የሲስተም አድሚን ያነጋግሩ።", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    if (isUserLoading || !user) {
+      toast({ 
+        title: "የተጠቃሚ መረጃ", 
+        description: "እባክዎን ሲስተሙ እስኪዘጋጅ ጥቂት ሰከንድ ይጠብቁ...", 
+      });
+      return;
+    }
+
     setIsSaving(true);
     try {
       const currentXml = await viewerRef.current?.getXML() || xmlResult;
@@ -252,16 +269,19 @@ export function BPMNFlowForgeApp() {
         type: 'application/xml',
         status: 'በሂደት ላይ',
         version: 1,
-        uploaderId: user?.uid || 'anonymous',
+        uploaderId: user.uid,
         createdAt: Timestamp.now()
       };
 
-      if (db) {
-        await addDocumentNonBlocking(collection(db, 'documents'), newFile);
-        toast({ title: "ተቀምጧል", description: "ዲያግራሙ በመዝገብ ቤት ተመዝግቧል።" });
-      }
-    } catch (err) {
-      toast({ title: "ስህተት", description: "ዲያግራሙን ማስቀመጥ አልተቻለም።", variant: "destructive" });
+      await addDocumentNonBlocking(collection(db, 'documents'), newFile);
+      toast({ title: "ተቀምጧል", description: "ዲያግራሙ በመዝገብ ቤት ተመዝግቧል።" });
+    } catch (err: any) {
+      console.error("Save Error:", err);
+      toast({ 
+        title: "ስህተት", 
+        description: `ዲያግራሙን ማስቀመጥ አልተቻለም፡ ${err.message || 'Unknown Error'}`, 
+        variant: "destructive" 
+      });
     } finally {
       setIsSaving(false);
     }
@@ -440,7 +460,7 @@ export function BPMNFlowForgeApp() {
               </div>
               <div className="flex gap-2">
                 <Button className="flex-[3] h-11 bg-primary text-primary-foreground text-xs font-bold" onClick={handleGenerate}>ዲያግራም አመንጭ</Button>
-                <Button variant="outline" className="flex-1 h-11 text-xs font-bold border-primary text-primary hover:bg-accent/30" onClick={handleSaveToVault} disabled={isSaving || !xmlResult}>
+                <Button variant="outline" className="flex-1 h-11 text-xs font-bold border-primary text-primary hover:bg-accent/30" onClick={handleSaveToVault} disabled={isSaving}>
                   {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                   መዝግብ (Save)
                 </Button>
@@ -724,7 +744,7 @@ export function BPMNFlowForgeApp() {
       </main>
 
       <footer className="px-8 py-3 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
-        <div className="flex gap-6"><span>ITDB Portal v2.9.5 - Stable Production</span><span className="text-primary/40">© 2024 Innovation and Technology Development Bureau</span></div>
+        <div className="flex gap-6"><span>ITDB Portal v2.9.6 - Stable Production</span><span className="text-primary/40">© 2024 Innovation and Technology Development Bureau</span></div>
         <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>Assistant Synchronized</div>
       </footer>
     </div>
