@@ -393,16 +393,6 @@ export function BPMNFlowForgeApp() {
             )}
           </div>
           <div className="flex items-center gap-1">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="h-8 rounded-lg text-[9px] font-bold border-[#1e3a8a] text-[#1e3a8a] hover:bg-blue-50" 
-              onClick={handleSaveToVault}
-              disabled={isSaving || !xmlResult}
-            >
-              {isSaving ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <Save className="w-3 h-3 mr-2" />}
-              መዝገብ ቤት (Save)
-            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg border border-slate-200">
@@ -738,7 +728,7 @@ export function BPMNFlowForgeApp() {
       </main>
 
       <footer className="px-8 py-3 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
-        <div className="flex gap-6"><span>ITDB Portal v2.8.5 - Stable Production</span><span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span></div>
+        <div className="flex gap-6"><span>ITDB Portal v2.8.6 - Stable Production</span><span className="text-[#1e3a8a]/40">© 2024 Innovation and Technology Development Bureau</span></div>
         <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>Assistant Synchronized</div>
       </footer>
     </div>
