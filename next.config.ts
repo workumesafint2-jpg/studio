@@ -2,11 +2,11 @@
 import type { NextConfig } from "next";
 
 /**
- * (ወርቁ) Pro - Next.js Configuration v3.0.3
+ * (ወርቁ) Pro - Next.js Configuration v3.0.5
  * 
  * CRITICAL: Do NOT use output: 'export'. 
  * The application utilizes Genkit Server Actions for AI Intelligence, 
- * which requires a dynamic server environment.
+ * which requires a dynamic server environment (Node.js runtime).
  */
 const nextConfig: NextConfig = {
   eslint: {
@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
-  // Server Actions are enabled by default in Next.js 15
+  // Dynamic runtime is required for Genkit and Server Actions
 };
 
 export default nextConfig;

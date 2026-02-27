@@ -1,7 +1,8 @@
+
 {
-  "name": "ወርቁ (Worku) - ITDB Portal",
-  "short_name": "Worku",
-  "description": "Institutional Process Modeling and Standardization Portal",
+  "name": "ITDB Institutional Portal",
+  "short_name": "ITDB",
+  "description": "Innovation and Technology Development Bureau Portal",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

@@ -1,5 +1,5 @@
 
-# ወርቁ (Worku) - Patent Technical Documentation v3.0.4
+# ወርቁ (Worku) - Patent Technical Documentation v3.0.5
 
 ## 1. System Architecture Overview
 The ወርቁ (Worku) system is a multi-platform (Web, Desktop, Mobile) Institutional Process Modeling and Document Management system.
@@ -32,7 +32,7 @@ The system contains a hardcoded `BUREAU_SERVICES_REGISTRY` of over 50 institutio
 | **v2.9.9** | Unicode Fix | Final stabilization of Ethiopic character encoding for cloud saving. |
 | **v3.0.1** | Deployment Fix | Static manifest implementation and Netlify routing stabilization. |
 | **v3.0.3** | Dynamic Build | Transition to Dynamic Next.js build to support Genkit Server Actions in production. |
-| **v3.0.4** | Final Deploy | Full infrastructure synchronization with static assets and dynamic runtime. |
+| **v3.0.5** | Final Deploy | Full infrastructure synchronization with static assets and enforced dynamic runtime. |
 
 ---
 *© 2024 Innovation and Technology Development Bureau (ITDB). All Rights Reserved.*
