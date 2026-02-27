@@ -1,26 +1,22 @@
 
 {
-  "name": "(ወርቁ) - Smart BPMN Generator",
-  "short_name": "ወርቁ",
-  "description": "Professional BPMN diagram generator with AI-ready logic for desktop and mobile.",
+  "name": "ITDB Portal",
+  "short_name": "ITDB",
+  "description": "Official Process Modeling and Standardization Portal for the Innovation and Technology Development Bureau.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f4f4f5",
-  "theme_color": "#1a365d",
-  "orientation": "any",
-  "scope": "/",
+  "background_color": "#1e3a8a",
+  "theme_color": "#1e3a8a",
   "icons": [
     {
-      "src": "https://picsum.photos/seed/pwa/192/192",
+      "src": "https://picsum.photos/seed/pwa-1/192/192",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
+      "type": "image/png"
     },
     {
-      "src": "https://picsum.photos/seed/pwa/512/512",
+      "src": "https://picsum.photos/seed/pwa-2/512/512",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
+      "type": "image/png"
     }
   ]
 }

@@ -78,7 +78,6 @@ import {
   ResponsiveContainer, 
   Cell
 } from 'recharts';
-import { BUREAU_SERVICES_REGISTRY } from '@/lib/services-registry';
 import { 
   useCollection, 
   useUser, 
@@ -104,7 +103,7 @@ interface UploadedFile {
   fileSize: string;
   uploadDate: string;
   dataUrl: string;
-  fileUrl: string; // Required by Backend Schema
+  fileUrl: string; 
   type: string;
   status: 'የጸደቀ' | 'በሂደት ላይ';
   version: number;
@@ -231,10 +230,6 @@ export function BPMNFlowForgeApp() {
     }
   };
 
-  /**
-   * Institutional Unicode-Safe Base64 Encoding.
-   * Ensures Ethiopic characters (Amharic) are preserved correctly.
-   */
   const toUnicodeBase64 = (str: string) => {
     const bytes = new TextEncoder().encode(str);
     let binString = "";
@@ -253,19 +248,12 @@ export function BPMNFlowForgeApp() {
     }
 
     if (!db) {
-      toast({ 
-        title: "Cloud Sync Disabled", 
-        description: "የቢሮው የደመና መዝገብ ቤት አልነቃም። እባክዎን የሲስተም አድሚን ያነጋግሩ።", 
-        variant: "destructive" 
-      });
+      toast({ title: "Cloud Sync Disabled", description: "የቢሮው የደመና መዝገብ ቤት አልነቃም።", variant: "destructive" });
       return;
     }
 
     if (isUserLoading || !user) {
-      toast({ 
-        title: "የተጠቃሚ መታወቂያ", 
-        description: "ሲስተሙ መታወቂያዎን እያረጋገጠ ነው። እባክዎን ሰከንዶች ይጠብቁ...", 
-      });
+      toast({ title: "የተጠቃሚ መታወቂያ", description: "ሲስተሙ መታወቂያዎን እያረጋገጠ ነው።" });
       return;
     }
 
@@ -275,16 +263,15 @@ export function BPMNFlowForgeApp() {
       const encodedData = toUnicodeBase64(currentXml);
       const dataUri = `data:application/xml;base64,${encodedData}`;
       
-      // SCHEMA ALIGNMENT (v3.0.0): Ensure all required fields from backend.json are present
       const newFile: Omit<UploadedFile, 'id'> = {
         name: docName,
         category: 'የሪፎርም ሰነዶች (Reform Docs)',
         reformType: "Mapping",
         fileName: `${docName.replace(/\s+/g, '-')}.bpmn`,
         fileSize: (new Blob([currentXml]).size / 1024).toFixed(1) + " KB",
-        uploadDate: new Date().toISOString(), // Standard date-time for schema
+        uploadDate: new Date().toISOString(),
         dataUrl: dataUri,
-        fileUrl: dataUri, // EXPLICIT SCHEMA MATCH
+        fileUrl: dataUri, // MANDATORY FOR SCHEMA COMPLIANCE
         type: 'application/xml',
         status: 'በሂደት ላይ',
         version: 1,
@@ -296,11 +283,7 @@ export function BPMNFlowForgeApp() {
       toast({ title: "ተቀምጧል", description: "ዲያግራሙ በመዝገብ ቤት ተመዝግቧል።" });
     } catch (err: any) {
       console.error("Institutional Sync Save Error:", err);
-      toast({ 
-        title: "ስህተት", 
-        description: `ዲያግራሙን ማስቀመጥ አልተቻለም። እባክዎን እንደገና ይሞክሩ።`, 
-        variant: "destructive" 
-      });
+      toast({ title: "ስህተት", description: `ዲያግራሙን ማስቀመጥ አልተቻለም።`, variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
@@ -393,7 +376,7 @@ export function BPMNFlowForgeApp() {
       <header className="flex items-center justify-between py-3 px-8 bg-white border-b border-slate-100 shrink-0 sticky top-0 z-[100]">
         <div className="flex flex-col">
           <p className="text-[10px] font-bold text-primary mb-0.5 tracking-widest uppercase">ኢኖቬሽንና ቴክኖሎጂ ልልማት ቢሮ</p>
-          <h1 className="text-[7px] font-bold text-slate-400 uppercase tracking-[0.4em]">ITDB Institutional Portal v3.0.0</h1>
+          <h1 className="text-[7px] font-bold text-slate-400 uppercase tracking-[0.4em]">ITDB Institutional Portal v3.0.1</h1>
         </div>
 
         <div className="flex items-center gap-4 max-w-md w-full mx-8">
@@ -687,7 +670,7 @@ export function BPMNFlowForgeApp() {
       </main>
 
       <footer className="px-8 py-3 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
-        <div className="flex gap-6"><span>ITDB Portal v3.0.0 - Stable Production</span><span className="text-primary/40">© 2024 Innovation and Technology Development Bureau</span></div>
+        <div className="flex gap-6"><span>ITDB Portal v3.0.1 - Stable Production</span><span className="text-primary/40">© 2024 Innovation and Technology Development Bureau</span></div>
         <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>Assistant Synchronized</div>
       </footer>
     </div>
