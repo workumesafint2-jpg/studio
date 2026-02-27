@@ -1,9 +1,9 @@
 
 {
   "name": "ወርቁ-bpmn",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "private": true,
-  "description": "Professional BPMN Diagram Generator (ወርቁ) - Institutional Sync v3.0.1",
+  "description": "Professional BPMN Diagram Generator (ወርቁ) - Institutional Sync v3.0.2",
   "author": "Worku Team",
   "repository": {
     "type": "git",

@@ -1,5 +1,5 @@
 
-# ወርቁ (Worku) - Patent Technical Documentation v3.0.1
+# ወርቁ (Worku) - Patent Technical Documentation v3.0.2
 
 ## 1. System Architecture Overview
 The ወርቁ (Worku) system is a multi-platform (Web, Desktop, Mobile) Institutional Process Modeling and Document Management system.
@@ -8,7 +8,7 @@ The ወርቁ (Worku) system is a multi-platform (Web, Desktop, Mobile) Institut
 - **Intelligent Architect (AI Layer)**: Utilizes Google Genkit and Gemini 1.5 Flash to transform natural language descriptions into structured BPMN logic.
 - **BPMN-js Modeler (Visualization)**: A customized rendering engine that allows for real-time manipulation and interactive editing of process flows.
 - **Institutional Sync (Persistence Layer)**: A proprietary bridge between client-side modeling and Firebase Firestore (DMS Vault).
-- **Multi-Platform Wrapper**: Support for Electron (Desktop) and Capacitor (Android) via static Next.js exports.
+- **Multi-Platform Wrapper**: Support for Electron (Desktop) and Capacitor (Android) via Next.js.
 
 ## 2. Unique BPMN-to-DMS Integration Logic
 The core innovation of ወርቁ (Worku) lies in its **Zero-Failure Persistence Protocol**:
@@ -27,9 +27,8 @@ The system contains a hardcoded `BUREAU_SERVICES_REGISTRY` of over 50 institutio
 | **v2.0.0** | Intelligence Sync | Integration of Genkit AI flows and Firebase real-time synchronization. |
 | **v2.5.3** | Industrial Spacing | Optimization of BPMN layout spacing (220/160) for production clarity. |
 | **v2.9.0** | Cross-Platform | Addition of Capacitor and Electron support for institutional deployment. |
-| **v2.9.5** | Resilience Patch | Global error handling for ResizeObserver and script event crashes. |
-| **v2.9.9** | Unicode Fix | Final stabilization of Ethiopic character encoding for cloud saving. |
-| **v3.0.1** | Production Stable | Static manifest implementation for Vercel/Netlify and schema-compliant DMS saving. |
+| **v3.0.0** | Dynamic Intel | Removal of static export to enable Genkit Server Actions and dynamic builds. |
+| **v3.0.2** | Patent Ready | Final stabilization of infrastructure routing and Unicode persistence logic. |
 
 ---
 *© 2024 Innovation and Technology Development Bureau (ITDB). All Rights Reserved.*

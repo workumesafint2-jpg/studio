@@ -1,7 +1,8 @@
+
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'export',
+  /* output: 'export' removed to enable Server Actions & Dynamic Intelligence */
   eslint: {
     ignoreDuringBuilds: true,
   },
