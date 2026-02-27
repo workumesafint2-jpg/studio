@@ -376,7 +376,7 @@ export function BPMNFlowForgeApp() {
       <header className="flex items-center justify-between py-3 px-8 bg-white border-b border-slate-100 shrink-0 sticky top-0 z-[100]">
         <div className="flex flex-col">
           <p className="text-[10px] font-bold text-primary mb-0.5 tracking-widest uppercase">ኢኖቬሽንና ቴክኖሎጂ ልልማት ቢሮ</p>
-          <h1 className="text-[7px] font-bold text-slate-400 uppercase tracking-[0.4em]">ITDB Institutional Portal v3.0.2</h1>
+          <h1 className="text-[7px] font-bold text-slate-400 uppercase tracking-[0.4em]">ITDB Institutional Portal v3.0.3</h1>
         </div>
 
         <div className="flex items-center gap-4 max-w-md w-full mx-8">
@@ -670,7 +670,7 @@ export function BPMNFlowForgeApp() {
       </main>
 
       <footer className="px-8 py-3 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
-        <div className="flex gap-6"><span>ITDB Portal v3.0.2 - Stable Production</span><span className="text-primary/40">© 2024 Innovation and Technology Development Bureau</span></div>
+        <div className="flex gap-6"><span>ITDB Portal v3.0.3 - Stable Production</span><span className="text-primary/40">© 2024 Innovation and Technology Development Bureau</span></div>
         <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>Assistant Synchronized</div>
       </footer>
     </div>
