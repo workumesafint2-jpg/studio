@@ -1,11 +1,11 @@
 
 {
-  "name": "ITDB Portal",
-  "short_name": "ITDB",
+  "name": "ITDB - Innovation and Technology Development Bureau",
+  "short_name": "ITDB Portal",
   "description": "Official Process Modeling and Standardization Portal for the Innovation and Technology Development Bureau.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1e3a8a",
+  "background_color": "#ffffff",
   "theme_color": "#1e3a8a",
   "icons": [
     {
