@@ -1,8 +1,7 @@
-
 {
-  "name": "(ወርቁ) - ITDB Institutional Portal",
-  "short_name": "Worku Pro",
-  "description": "Official Process Modeling and Standardization Portal for ITDB.",
+  "name": "(ወርቁ) Pro - BPMN Generator",
+  "short_name": "Worku BPMN",
+  "description": "Innovation and Technology Development Bureau (ITDB) Institutional Portal",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F0F0F0",
