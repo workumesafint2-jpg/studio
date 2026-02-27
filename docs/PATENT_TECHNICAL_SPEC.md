@@ -1,14 +1,14 @@
 
-# ወርቁ (Worku) - Patent Technical Documentation v3.0.3
+# ወርቁ (Worku) - Patent Technical Documentation v3.0.4
 
 ## 1. System Architecture Overview
 The ወርቁ (Worku) system is a multi-platform (Web, Desktop, Mobile) Institutional Process Modeling and Document Management system.
 
 ### 1.1 Core Components
-- **Intelligent Architect (AI Layer)**: Utilizes Google Genkit and Gemini 1.5 Flash to transform natural language descriptions into structured BPMN logic.
+- **Intelligent Architect (AI Layer)**: Utilizes Google Genkit and Gemini 1.5 Flash to transform natural language descriptions into structured BPMN logic via Server Actions.
 - **BPMN-js Modeler (Visualization)**: A customized rendering engine that allows for real-time manipulation and interactive editing of process flows.
 - **Institutional Sync (Persistence Layer)**: A proprietary bridge between client-side modeling and Firebase Firestore (DMS Vault).
-- **Multi-Platform Wrapper**: Support for Electron (Desktop) and Capacitor (Android) via static Next.js exports.
+- **Multi-Platform Wrapper**: Support for Electron (Desktop) and Capacitor (Android) via production-optimized builds.
 
 ### 1.2 Data Flow Diagram
 User Input -> Genkit (Gemini 1.5 Flash) -> Structured JSON Steps -> BPMN-js XML Generator -> Unicode-Safe Persistence -> Firestore (DMS Vault).
@@ -29,12 +29,10 @@ The system contains a hardcoded `BUREAU_SERVICES_REGISTRY` of over 50 institutio
 | :--- | :--- | :--- |
 | **v1.0.0** | Core Engine | Initial BPMN generation logic and standalone modeling interface. |
 | **v2.0.0** | Intelligence Sync | Integration of Genkit AI flows and Firebase real-time synchronization. |
-| **v2.5.3** | Industrial Spacing | Optimization of BPMN layout spacing (220/160) for production clarity. |
-| **v2.9.0** | Cross-Platform | Addition of Capacitor and Electron support for institutional deployment. |
 | **v2.9.9** | Unicode Fix | Final stabilization of Ethiopic character encoding for cloud saving. |
 | **v3.0.1** | Deployment Fix | Static manifest implementation and Netlify routing stabilization. |
-| **v3.0.2** | Patent Final | Comprehensive IP documentation and infrastructure hardening. |
-| **v3.0.3** | Runtime Patch | Transition to Dynamic Next.js build to support Genkit Server Actions in production. |
+| **v3.0.3** | Dynamic Build | Transition to Dynamic Next.js build to support Genkit Server Actions in production. |
+| **v3.0.4** | Final Deploy | Full infrastructure synchronization with static assets and dynamic runtime. |
 
 ---
 *© 2024 Innovation and Technology Development Bureau (ITDB). All Rights Reserved.*
