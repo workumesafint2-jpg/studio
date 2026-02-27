@@ -1,29 +1,10 @@
+
+/**
+ * @fileOverview Manifest.ts is deprecated in v3.0.0 in favor of public/manifest.json
+ * to resolve Vercel static export "failed to collect page data" errors.
+ */
 import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
-  return {
-    name: '(ወርቁ) - Smart BPMN Generator',
-    short_name: 'ወርቁ',
-    description: 'Professional BPMN diagram generator with AI-ready logic for desktop and mobile.',
-    start_url: '/',
-    display: 'standalone',
-    background_color: '#f4f4f5',
-    theme_color: '#1a365d',
-    orientation: 'any',
-    scope: '/',
-    icons: [
-      {
-        src: 'https://picsum.photos/seed/pwa/192/192',
-        sizes: '192x192',
-        type: 'image/png',
-        purpose: 'maskable'
-      },
-      {
-        src: 'https://picsum.photos/seed/pwa/512/512',
-        sizes: '512x512',
-        type: 'image/png',
-        purpose: 'any'
-      },
-    ],
-  }
+  return {};
 }

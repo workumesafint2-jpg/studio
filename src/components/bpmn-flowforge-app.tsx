@@ -20,14 +20,14 @@ import {
   ShieldCheck,
   BrainCircuit,
   TrendingUp,
-  Image as ImageIcon,
+  ImageIcon,
   Bell,
   CheckCircle2,
   Save,
   FileCode,
   ChevronDown,
   Activity,
-  Layout as LayoutIcon
+  LayoutIcon
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -104,6 +104,7 @@ interface UploadedFile {
   fileSize: string;
   uploadDate: string;
   dataUrl: string;
+  fileUrl: string; // Required by Backend Schema
   type: string;
   status: 'የጸደቀ' | 'በሂደት ላይ';
   version: number;
@@ -231,7 +232,8 @@ export function BPMNFlowForgeApp() {
   };
 
   /**
-   * Helper function to robustly encode Unicode strings (like Amharic XML) to Base64.
+   * Institutional Unicode-Safe Base64 Encoding.
+   * Ensures Ethiopic characters (Amharic) are preserved correctly.
    */
   const toUnicodeBase64 = (str: string) => {
     const bytes = new TextEncoder().encode(str);
@@ -270,18 +272,19 @@ export function BPMNFlowForgeApp() {
     setIsSaving(true);
     try {
       const docName = title || "ያልተሰየመ ዲያግራም";
-      
-      // Robust Unicode Base64 encoding for Amharic characters
       const encodedData = toUnicodeBase64(currentXml);
+      const dataUri = `data:application/xml;base64,${encodedData}`;
       
+      // SCHEMA ALIGNMENT (v3.0.0): Ensure all required fields from backend.json are present
       const newFile: Omit<UploadedFile, 'id'> = {
         name: docName,
         category: 'የሪፎርም ሰነዶች (Reform Docs)',
         reformType: "Mapping",
         fileName: `${docName.replace(/\s+/g, '-')}.bpmn`,
         fileSize: (new Blob([currentXml]).size / 1024).toFixed(1) + " KB",
-        uploadDate: new Date().toLocaleString('am-ET'),
-        dataUrl: `data:application/xml;base64,${encodedData}`,
+        uploadDate: new Date().toISOString(), // Standard date-time for schema
+        dataUrl: dataUri,
+        fileUrl: dataUri, // EXPLICIT SCHEMA MATCH
         type: 'application/xml',
         status: 'በሂደት ላይ',
         version: 1,
@@ -347,8 +350,9 @@ export function BPMNFlowForgeApp() {
           taxonomyService: (uploadCategory === 'Service Taxonomy' && uploadTaxonomyService) ? uploadTaxonomyService : "",
           fileName: selectedFile.name,
           fileSize: (selectedFile.size / 1024).toFixed(1) + " KB",
-          uploadDate: new Date().toLocaleString('am-ET'),
+          uploadDate: new Date().toISOString(),
           dataUrl,
+          fileUrl: dataUrl,
           type: selectedFile.type,
           status: 'በሂደት ላይ',
           version,
@@ -360,20 +364,12 @@ export function BPMNFlowForgeApp() {
         setIsUploading(false);
         setIsUploadOpen(false);
         setSelectedFile(null);
-        setUploadPlanType("");
-        setUploadReportType("");
-        setUploadReformType("");
-        setUploadTaxonomyService("");
         toast({ title: "አግብቷል", description: `${newFile.name} በመዝገብ ቤት ተቀምጧል።` });
       } catch (err) {
         console.error("Upload Error:", err);
         setIsUploading(false);
         toast({ title: "ስህተት", description: "ፋይሉን መመዝገብ አልተቻለም።", variant: "destructive" });
       }
-    };
-    reader.onerror = () => {
-      setIsUploading(false);
-      toast({ title: "ስህተት", description: "ፋይሉን ማንበብ አልተቻለም።", variant: "destructive" });
     };
     reader.readAsDataURL(selectedFile);
   };
@@ -397,7 +393,7 @@ export function BPMNFlowForgeApp() {
       <header className="flex items-center justify-between py-3 px-8 bg-white border-b border-slate-100 shrink-0 sticky top-0 z-[100]">
         <div className="flex flex-col">
           <p className="text-[10px] font-bold text-primary mb-0.5 tracking-widest uppercase">ኢኖቬሽንና ቴክኖሎጂ ልልማት ቢሮ</p>
-          <h1 className="text-[7px] font-bold text-slate-400 uppercase tracking-[0.4em]">ITDB Institutional Portal</h1>
+          <h1 className="text-[7px] font-bold text-slate-400 uppercase tracking-[0.4em]">ITDB Institutional Portal v3.0.0</h1>
         </div>
 
         <div className="flex items-center gap-4 max-w-md w-full mx-8">
@@ -501,7 +497,7 @@ export function BPMNFlowForgeApp() {
                       <Upload className="w-3 h-3 mr-2" /> አዲስ ፋይል አጽድቅ (DMS)
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-md p-8 gap-8">
+                  <DialogContent className="max-w-md p-8 gap-6 z-[1000]">
                     <DialogHeader>
                       <DialogTitle className="text-base font-bold uppercase text-primary">ፋይል መመዝገቢያ</DialogTitle>
                       <DialogDescription className="text-xs text-slate-500">እባክዎን ፋይሉን በቢሮው ምደባ መሰረት ይመዝግቡ።</DialogDescription>
@@ -509,13 +505,7 @@ export function BPMNFlowForgeApp() {
                     <div className="grid gap-6 py-2">
                       <div className="space-y-2">
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">1. ዋና ምድብ</label>
-                        <Select value={uploadCategory} onValueChange={(val) => {
-                          setUploadCategory(val);
-                          setUploadPlanType("");
-                          setUploadReportType("");
-                          setUploadReformType("");
-                          setUploadTaxonomyService("");
-                        }}>
+                        <Select value={uploadCategory} onValueChange={setUploadCategory}>
                           <SelectTrigger className="h-10 text-xs shadow-sm"><SelectValue placeholder="ምድብ ይምረጡ..." /></SelectTrigger>
                           <SelectContent className="z-[1100]">
                             <SelectItem value="እቅዶች (Plans)">1. እቅዶች (Plans)</SelectItem>
@@ -527,66 +517,8 @@ export function BPMNFlowForgeApp() {
                         </Select>
                       </div>
 
-                      {uploadCategory === "እቅዶች (Plans)" && (
-                        <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
-                          <label className="text-[10px] font-bold text-primary uppercase tracking-widest">2. የእቅድ አይነት</label>
-                          <Select value={uploadPlanType} onValueChange={setUploadPlanType}>
-                            <SelectTrigger className="h-10 text-xs border-primary/30 shadow-sm"><SelectValue placeholder="የእቅድ አይነት ይምረጡ..." /></SelectTrigger>
-                            <SelectContent className="z-[1100]">
-                              <SelectItem value="ስትራቴጂካዊ">ስትራቴጂካዊ እቅድ</SelectItem>
-                              <SelectItem value="የዓመት">የዓመት እቅድ</SelectItem>
-                              <SelectItem value="የሩብ ዓመት">የሩብ ዓመት እቅድ</SelectItem>
-                              <SelectItem value="የወር">የወር እቅድ</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
-
-                      {uploadCategory === "ሪፖርቶች (Reports)" && (
-                        <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
-                          <label className="text-[10px] font-bold text-green-600 uppercase tracking-widest">2. የሪፖርት አይነት</label>
-                          <Select value={uploadReportType} onValueChange={setUploadReportType}>
-                            <SelectTrigger className="h-10 text-xs border-green-600/30 shadow-sm"><SelectValue placeholder="የሪፖርት አይነት ይምረጡ..." /></SelectTrigger>
-                            <SelectContent className="z-[1100]">
-                              <SelectItem value="የወር">የወር ሪፖርት</SelectItem>
-                              <SelectItem value="የሩብ ዓመት">የሩብ ዓመት ሪፖርት</SelectItem>
-                              <SelectItem value="የዓመት">የዓመት ሪፖርት</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
-
-                      {uploadCategory === "የሪፎርም ሰነዶች (Reform Docs)" && (
-                        <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
-                          <label className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">2. የሪፎርም አይነት</label>
-                          <Select value={uploadReformType} onValueChange={setUploadReformType}>
-                            <SelectTrigger className="h-10 text-xs border-amber-600/30 shadow-sm"><SelectValue placeholder="የሪፎርም አይነት ይምረጡ..." /></SelectTrigger>
-                            <SelectContent className="z-[1100]">
-                              <SelectItem value="ካታሎግ">ካታሎግ (Catalogue)</SelectItem>
-                              <SelectItem value="Mapping">Mapping</SelectItem>
-                              <SelectItem value="As-is">As-is Process</SelectItem>
-                              <SelectItem value="ነባራዊ ትንተና">ነባራዊ ትንተና</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
-
-                      {uploadCategory === "Service Taxonomy" && (
-                        <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
-                          <label className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">2. የአገልግሎት ዝርዝር</label>
-                          <Select value={uploadTaxonomyService} onValueChange={setUploadTaxonomyService}>
-                            <SelectTrigger className="h-10 text-xs border-slate-600/30 shadow-sm"><SelectValue placeholder="አገልግሎት ይምረጡ..." /></SelectTrigger>
-                            <SelectContent className="z-[1100] max-h-[200px]">
-                              {BUREAU_SERVICES_REGISTRY.map((s, i) => (
-                                <SelectItem key={i} value={s.title}>{s.title}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
-
                       <div className="space-y-2 pt-2">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">3. ፋይል ይምረጡ</label>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">2. ፋይል ይምረጡ</label>
                         <div className="flex items-center justify-center w-full">
                           <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-slate-200 border-dashed rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
                             <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -667,11 +599,6 @@ export function BPMNFlowForgeApp() {
                             <TableCell>
                               <div className="flex flex-col gap-0.5">
                                 <Badge variant="outline" className="text-[7px] px-1.5 h-3.5 bg-white w-fit">{file.category}</Badge>
-                                {(file.planType || file.reportType || file.reformType || file.taxonomyService) && (
-                                  <span className="text-[7px] text-slate-400 italic">
-                                    {file.planType || file.reportType || file.reformType || file.taxonomyService}
-                                  </span>
-                                )}
                               </div>
                             </TableCell>
                             <TableCell>
@@ -760,7 +687,7 @@ export function BPMNFlowForgeApp() {
       </main>
 
       <footer className="px-8 py-3 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
-        <div className="flex gap-6"><span>ITDB Portal v2.9.9 - Stable Production</span><span className="text-primary/40">© 2024 Innovation and Technology Development Bureau</span></div>
+        <div className="flex gap-6"><span>ITDB Portal v3.0.0 - Stable Production</span><span className="text-primary/40">© 2024 Innovation and Technology Development Bureau</span></div>
         <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>Assistant Synchronized</div>
       </footer>
     </div>
