@@ -2,12 +2,13 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     /**
-     * Institutional Security Rules v3.0.9
+     * Institutional Security Rules v3.1.0
      * - Public Read: Anyone can view diagrams and documents.
      * - Admin/Owner Write: Only authenticated owners or verified Admins can create/edit.
      */
     
     // Helper to safely check if the user has the 'admin' role
+    // Uses exists() to prevent null pointer errors if a user doc is missing
     function isAdmin() {
       return request.auth != null && 
              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&

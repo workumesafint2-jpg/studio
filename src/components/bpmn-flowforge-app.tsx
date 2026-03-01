@@ -165,18 +165,26 @@ export function BPMNFlowForgeApp() {
   const { data: uploadedFilesRaw, isLoading: isDocsLoading } = useCollection<UploadedFile>(documentsQuery);
   const uploadedFiles = uploadedFilesRaw || [];
 
+  /**
+   * Defensive Performance Data Calculation
+   */
   const performanceData = useMemo(() => {
     if (!uploadedFiles || uploadedFiles.length === 0) return [];
 
     const metrics: Record<string, { planned: number; actual: number }> = {};
     
     uploadedFiles.forEach(file => {
+      // Defensive check: Ensure file and name exist to prevent .split() crash
       if (!file || !file.name) return;
+      
       const name = file.name.split(' V')[0]; 
       if (!metrics[name]) metrics[name] = { planned: 0, actual: 0 };
       
-      if (file.category === 'እቅዶች (Plans)') metrics[name].planned = 100;
-      else if (file.category === 'ሪፖርቶች (Reports)') metrics[name].actual = 85;
+      if (file.category === 'እቅዶች (Plans)') {
+        metrics[name].planned = 100;
+      } else if (file.category === 'ሪፖርቶች (Reports)') {
+        metrics[name].actual = 85;
+      }
     });
 
     return Object.entries(metrics).map(([name, data]) => {
@@ -191,29 +199,45 @@ export function BPMNFlowForgeApp() {
     }).slice(0, 5);
   }, [uploadedFiles]);
 
+  /**
+   * Defensive Today Count
+   */
   const todayCount = useMemo(() => {
-    if (!uploadedFiles) return 0;
-    const today = new Date().toLocaleDateString('am-ET');
-    return uploadedFiles.filter(f => f && f.uploadDate && f.uploadDate.includes(today)).length;
+    if (!uploadedFiles || uploadedFiles.length === 0) return 0;
+    try {
+      const today = new Date().toLocaleDateString('am-ET');
+      return uploadedFiles.filter(f => 
+        f && f.uploadDate && typeof f.uploadDate === 'string' && f.uploadDate.includes(today)
+      ).length;
+    } catch (e) {
+      console.warn("Date localization error", e);
+      return 0;
+    }
   }, [uploadedFiles]);
 
+  /**
+   * Defensive Stats
+   */
   const stats = useMemo(() => {
     if (!uploadedFiles) return { totalPlans: 0, totalReports: 0, avgExecution: 0 };
     return {
       totalPlans: uploadedFiles.filter(f => f && f.category === 'እቅዶች (Plans)').length,
       totalReports: uploadedFiles.filter(f => f && f.category === 'ሪፖርቶች (Reports)').length,
       avgExecution: performanceData.length > 0 
-        ? Math.round(performanceData.reduce((acc, curr) => acc + curr.execution, 0) / performanceData.length)
+        ? Math.round(performanceData.reduce((acc, curr) => acc + (curr?.execution || 0), 0) / performanceData.length)
         : 0
     };
   }, [uploadedFiles, performanceData]);
 
+  /**
+   * Defensive Filtering
+   */
   const filteredDocuments = useMemo(() => {
     let list = uploadedFiles || [];
     if (vaultFilter !== 'all') {
       list = list.filter(item => item && item.category === vaultFilter);
     }
-    if (globalSearch.trim()) {
+    if (globalSearch && globalSearch.trim()) {
       const q = globalSearch.toLowerCase();
       list = list.filter(item => 
         item && (
@@ -387,7 +411,7 @@ export function BPMNFlowForgeApp() {
       <header className="flex items-center justify-between py-3 px-8 bg-white border-b border-slate-100 shrink-0 sticky top-0 z-[100]">
         <div className="flex flex-col">
           <p className="text-[10px] font-bold text-primary mb-0.5 tracking-widest uppercase">ኢኖቬሽንና ቴክኖሎጂ ልልማት ቢሮ</p>
-          <h1 className="text-[7px] font-bold text-slate-400 uppercase tracking-[0.4em]">ITDB Institutional Portal v3.0.9</h1>
+          <h1 className="text-[7px] font-bold text-slate-400 uppercase tracking-[0.4em]">ITDB Institutional Portal v3.1.0</h1>
         </div>
 
         <div className="flex items-center gap-4 max-w-md w-full mx-8">
@@ -582,42 +606,47 @@ export function BPMNFlowForgeApp() {
                       ) : filteredDocuments.length === 0 ? (
                         <TableRow><TableCell colSpan={5} className="h-32 text-center text-[10px] text-slate-300 uppercase font-bold tracking-widest">መዝገብ ቤት ባዶ ነው</TableCell></TableRow>
                       ) : (
-                        filteredDocuments.map(file => (
-                          <TableRow key={file.id} className="hover:bg-slate-50/80 transition-all group">
-                            <TableCell className="text-[10px] font-bold px-6">
-                              <div className="flex flex-col">
-                                <span>{file.name || "ያልተሰየመ ሰነድ"}</span>
-                                <span className="text-[8px] text-slate-400 font-mono">Ver {file.version || 1}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-col gap-0.5">
-                                <Badge variant="outline" className="text-[7px] px-1.5 h-3.5 bg-white w-fit">{file.category || "ያልተመደበ"}</Badge>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge className={`text-[8px] border-none h-4 ${file.status === 'የጸደቀ' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                                {file.status || "በሂደት ላይ"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-[9px] text-slate-400 italic">{file.uploadDate ? new Date(file.uploadDate).toLocaleDateString() : "--"}</TableCell>
-                            <TableCell className="text-right pr-6">
-                              <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                {file.status !== 'የጸደቀ' && (
-                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600" onClick={() => handleApprove(file.id)} title="አጽድቅ">
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                        filteredDocuments.map(file => {
+                          if (!file) return null;
+                          return (
+                            <TableRow key={file.id} className="hover:bg-slate-50/80 transition-all group">
+                              <TableCell className="text-[10px] font-bold px-6">
+                                <div className="flex flex-col">
+                                  <span>{file.name || "ያልተሰየመ ሰነድ"}</span>
+                                  <span className="text-[8px] text-slate-400 font-mono">Ver {file.version || 1}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-col gap-0.5">
+                                  <Badge variant="outline" className="text-[7px] px-1.5 h-3.5 bg-white w-fit">{file.category || "ያልተመደበ"}</Badge>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={`text-[8px] border-none h-4 ${file.status === 'የጸደቀ' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                                  {file.status || "በሂደት ላይ"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-[9px] text-slate-400 italic">
+                                {file.uploadDate ? new Date(file.uploadDate).toLocaleDateString() : "--"}
+                              </TableCell>
+                              <TableCell className="text-right pr-6">
+                                <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  {file.status !== 'የጸደቀ' && (
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600" onClick={() => handleApprove(file.id)} title="አጽድቅ">
+                                      <CheckCircle2 className="w-3.5 h-3.5" />
+                                    </Button>
+                                  )}
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" asChild title="አውርድ">
+                                    <a href={file.dataUrl || '#'} download={file.fileName || 'document'}><Download className="w-3.5 h-3.5" /></a>
                                   </Button>
-                                )}
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" asChild title="አውርድ">
-                                  <a href={file.dataUrl} download={file.fileName}><Download className="w-3.5 h-3.5" /></a>
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(file.id)} title="ሰርዝ">
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(file.id)} title="ሰርዝ">
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
                       )}
                     </TableBody>
                   </Table>
@@ -682,7 +711,7 @@ export function BPMNFlowForgeApp() {
 
       <footer className="px-8 py-3 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
         <div className="flex gap-6 items-center">
-          <span>ITDB Portal v3.0.9 - Stable Production</span>
+          <span>ITDB Portal v3.1.0 - Stable Production</span>
           <span className="text-primary/40">© 2024 Innovation and Technology Development Bureau</span>
           <Link href="/admin" className="ml-4 inline-flex items-center text-primary hover:underline">
             <LogIn className="w-3 h-3 mr-1" /> Admin Login
