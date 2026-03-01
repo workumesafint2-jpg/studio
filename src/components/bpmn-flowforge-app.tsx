@@ -166,9 +166,12 @@ export function BPMNFlowForgeApp() {
   const uploadedFiles = uploadedFilesRaw || [];
 
   const performanceData = useMemo(() => {
+    if (!uploadedFiles || uploadedFiles.length === 0) return [];
+
     const metrics: Record<string, { planned: number; actual: number }> = {};
     
     uploadedFiles.forEach(file => {
+      if (!file || !file.name) return;
       const name = file.name.split(' V')[0]; 
       if (!metrics[name]) metrics[name] = { planned: 0, actual: 0 };
       
@@ -189,29 +192,35 @@ export function BPMNFlowForgeApp() {
   }, [uploadedFiles]);
 
   const todayCount = useMemo(() => {
+    if (!uploadedFiles) return 0;
     const today = new Date().toLocaleDateString('am-ET');
-    return uploadedFiles.filter(f => f.uploadDate.includes(today)).length;
+    return uploadedFiles.filter(f => f && f.uploadDate && f.uploadDate.includes(today)).length;
   }, [uploadedFiles]);
 
-  const stats = useMemo(() => ({
-    totalPlans: uploadedFiles.filter(f => f.category === 'እቅዶች (Plans)').length,
-    totalReports: uploadedFiles.filter(f => f.category === 'ሪፖርቶች (Reports)').length,
-    avgExecution: performanceData.length > 0 
-      ? Math.round(performanceData.reduce((acc, curr) => acc + curr.execution, 0) / performanceData.length)
-      : 0
-  }), [uploadedFiles, performanceData]);
+  const stats = useMemo(() => {
+    if (!uploadedFiles) return { totalPlans: 0, totalReports: 0, avgExecution: 0 };
+    return {
+      totalPlans: uploadedFiles.filter(f => f && f.category === 'እቅዶች (Plans)').length,
+      totalReports: uploadedFiles.filter(f => f && f.category === 'ሪፖርቶች (Reports)').length,
+      avgExecution: performanceData.length > 0 
+        ? Math.round(performanceData.reduce((acc, curr) => acc + curr.execution, 0) / performanceData.length)
+        : 0
+    };
+  }, [uploadedFiles, performanceData]);
 
   const filteredDocuments = useMemo(() => {
-    let list = uploadedFiles;
+    let list = uploadedFiles || [];
     if (vaultFilter !== 'all') {
-      list = list.filter(item => item.category === vaultFilter);
+      list = list.filter(item => item && item.category === vaultFilter);
     }
     if (globalSearch.trim()) {
       const q = globalSearch.toLowerCase();
       list = list.filter(item => 
-        item.name.toLowerCase().includes(q) || 
-        item.category.toLowerCase().includes(q) ||
-        item.status.toLowerCase().includes(q)
+        item && (
+          (item.name && item.name.toLowerCase().includes(q)) || 
+          (item.category && item.category.toLowerCase().includes(q)) ||
+          (item.status && item.status.toLowerCase().includes(q))
+        )
       );
     }
     return list;
@@ -322,7 +331,7 @@ export function BPMNFlowForgeApp() {
       try {
         const dataUrl = e.target?.result as string;
         const displayName = selectedFile.name.split('.').slice(0, -1).join('.') || selectedFile.name;
-        const existingVersions = uploadedFiles.filter(f => f.name.startsWith(displayName));
+        const existingVersions = uploadedFiles.filter(f => f && f.name && f.name.startsWith(displayName));
         const version = existingVersions.length + 1;
         const finalName = version > 1 ? `${displayName} V${version}` : displayName;
 
@@ -378,7 +387,7 @@ export function BPMNFlowForgeApp() {
       <header className="flex items-center justify-between py-3 px-8 bg-white border-b border-slate-100 shrink-0 sticky top-0 z-[100]">
         <div className="flex flex-col">
           <p className="text-[10px] font-bold text-primary mb-0.5 tracking-widest uppercase">ኢኖቬሽንና ቴክኖሎጂ ልልማት ቢሮ</p>
-          <h1 className="text-[7px] font-bold text-slate-400 uppercase tracking-[0.4em]">ITDB Institutional Portal v3.0.8</h1>
+          <h1 className="text-[7px] font-bold text-slate-400 uppercase tracking-[0.4em]">ITDB Institutional Portal v3.0.9</h1>
         </div>
 
         <div className="flex items-center gap-4 max-w-md w-full mx-8">
@@ -577,21 +586,21 @@ export function BPMNFlowForgeApp() {
                           <TableRow key={file.id} className="hover:bg-slate-50/80 transition-all group">
                             <TableCell className="text-[10px] font-bold px-6">
                               <div className="flex flex-col">
-                                <span>{file.name}</span>
-                                <span className="text-[8px] text-slate-400 font-mono">Ver {file.version}</span>
+                                <span>{file.name || "ያልተሰየመ ሰነድ"}</span>
+                                <span className="text-[8px] text-slate-400 font-mono">Ver {file.version || 1}</span>
                               </div>
                             </TableCell>
                             <TableCell>
                               <div className="flex flex-col gap-0.5">
-                                <Badge variant="outline" className="text-[7px] px-1.5 h-3.5 bg-white w-fit">{file.category}</Badge>
+                                <Badge variant="outline" className="text-[7px] px-1.5 h-3.5 bg-white w-fit">{file.category || "ያልተመደበ"}</Badge>
                               </div>
                             </TableCell>
                             <TableCell>
                               <Badge className={`text-[8px] border-none h-4 ${file.status === 'የጸደቀ' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                                {file.status}
+                                {file.status || "በሂደት ላይ"}
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-[9px] text-slate-400 italic">{file.uploadDate}</TableCell>
+                            <TableCell className="text-[9px] text-slate-400 italic">{file.uploadDate ? new Date(file.uploadDate).toLocaleDateString() : "--"}</TableCell>
                             <TableCell className="text-right pr-6">
                               <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 {file.status !== 'የጸደቀ' && (
@@ -673,7 +682,7 @@ export function BPMNFlowForgeApp() {
 
       <footer className="px-8 py-3 bg-white border-t border-slate-100 flex justify-between items-center text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] shrink-0">
         <div className="flex gap-6 items-center">
-          <span>ITDB Portal v3.0.8 - Stable Production</span>
+          <span>ITDB Portal v3.0.9 - Stable Production</span>
           <span className="text-primary/40">© 2024 Innovation and Technology Development Bureau</span>
           <Link href="/admin" className="ml-4 inline-flex items-center text-primary hover:underline">
             <LogIn className="w-3 h-3 mr-1" /> Admin Login

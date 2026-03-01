@@ -2,17 +2,31 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     /**
-     * Institutional Security Rules v3.0.8
+     * Institutional Security Rules v3.0.9
      * - Public Read: Anyone can view diagrams and documents.
-     * - Admin Write: Only authenticated staff can create, update, or delete.
+     * - Admin/Owner Write: Only authenticated owners or verified Admins can create/edit.
      */
+    
+    // Helper to safely check if the user has the 'admin' role
+    function isAdmin() {
+      return request.auth != null && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
     match /documents/{documentId} {
-      // Everyone can view diagrams
+      // Everyone can view diagrams and bureau documents
       allow read: if true;
       
-      // Only authenticated users can manage documents
-      allow create: if request.auth != null && request.resource.data.uploaderId == request.auth.uid;
-      allow update, delete: if request.auth != null && resource.data.uploaderId == request.auth.uid;
+      // Only the uploader or an Admin can create, update, or delete
+      allow create: if request.auth != null && (request.resource.data.uploaderId == request.auth.uid || isAdmin());
+      allow update, delete: if request.auth != null && (resource.data.uploaderId == request.auth.uid || isAdmin());
+    }
+
+    match /users/{userId} {
+      // Users can only read their own profile; only Admins can manage roles
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow write: if isAdmin();
     }
   }
 }
