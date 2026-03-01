@@ -2,7 +2,7 @@
 import type { NextConfig } from "next";
 
 /**
- * (ወርቁ) Pro - Next.js Configuration v3.0.5
+ * (ወርቁ) Pro - Next.js Configuration v3.0.8
  * 
  * CRITICAL: Do NOT use output: 'export'. 
  * The application utilizes Genkit Server Actions for AI Intelligence, 
@@ -18,7 +18,13 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
-  // Dynamic runtime is required for Genkit and Server Actions
+  experimental: {
+    // Allows the development server to trust the Cloud Workstation origin
+    allowedDevOrigins: [
+      '6000-firebase-studio-1770108645086.cluster-fbfjltn375c6wqxlhoehbz44sk.cloudworkstations.dev',
+      '*.cloudworkstations.dev'
+    ]
+  }
 };
 
 export default nextConfig;
