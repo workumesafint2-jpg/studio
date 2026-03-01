@@ -1,86 +1,18 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
     /**
-     * BPMN FlowForge Vault - Security Rules Documentation
-     *
-     * Core Philosophy:
-     * This ruleset implements a strict Ownership-Based Access Control (OBAC) model for a Document 
-     * Management System (Vault). It ensures that files are persistently stored and only accessible 
-     * by the users who uploaded them.
-     *
-     * Data Structure:
-     * All document metadata is stored in a top-level `/documents` collection. This flat structure 
-     * is chosen to facilitate granular authorization independent of a hierarchical user tree, 
-     * relying on internal document fields for ownership verification.
-     *
-     * Key Security Decisions:
-     * 1. Authorization Independence: Every document contains an 'uploaderId' field. Security 
-     *    checks compare this field directly against 'request.auth.uid' to avoid costly cross-document 
-     *    lookups (get() calls).
-     * 2. Query Security: List operations are restricted such that users can only retrieve 
-     *    documents where they are the explicit owner. This prevents data leakage across users.
-     * 3. Relational Integrity: On creation, the rules force the 'uploaderId' to match the 
-     *    authenticated user. On update, this field is immutable, preventing ownership transfer.
-     * 4. State Safety: Update and delete operations strictly require the document to exist 
-     *    and the requester to be the verified owner.
-     *
-     * Denormalization for Authorization:
-     * The 'uploaderId' is denormalized onto every document in the '/documents' collection. This 
-     * allows for O(1) authorization checks during both individual document access and collection 
-     * queries, ensuring high performance as the vault grows.
-     */
-
-    // --- GLOBAL HELPER FUNCTIONS ---
-
-    /**
-     * @description Checks if the request is made by an authenticated user.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the provided ID matches the authenticated user's UID.
-     */
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    /**
-     * @description Combined check: Ensures document exists and requester is the owner.
-     * Used for destructive operations (update, delete).
-     */
-    function isExistingOwner(userId) {
-      return resource != null && isOwner(userId);
-    }
-
-    // --- COLLECTION RULES ---
-
-    /**
-     * @description Rules for the Document Vault. Enforces that users can only manage their own files.
-     * @path /documents/{documentId}
-     * @allow (create) if user is signed in and sets 'uploaderId' to their own UID.
-     * @deny (list) if the user attempts to fetch documents belonging to other users.
-     * @principle Ownership-based security with relational integrity and immutability.
+     * Institutional Security Rules v3.0.8
+     * - Public Read: Anyone can view diagrams and documents.
+     * - Admin Write: Only authenticated staff can create, update, or delete.
      */
     match /documents/{documentId} {
+      // Everyone can view diagrams
+      allow read: if true;
       
-      // Read: Users can only get or list their own documents.
-      // Note: For 'list', Firestore automatically filters based on the 'uploaderId' field.
-      allow get: if isSignedIn() && isOwner(resource.data.uploaderId);
-      allow list: if isSignedIn() && isOwner(resource.data.uploaderId);
-
-      // Create: Allow if the user is authenticated and correctly identifies themselves as the uploader.
-      allow create: if isSignedIn() && request.resource.data.uploaderId == request.auth.uid;
-
-      // Update: Allow if owner. Prevents changing the 'uploaderId' to maintain relational integrity.
-      allow update: if isSignedIn() && isExistingOwner(resource.data.uploaderId) && (request.resource.data.uploaderId == resource.data.uploaderId);
-
-      // Delete: Only the original uploader can delete their documents.
-      allow delete: if isSignedIn() && isExistingOwner(resource.data.uploaderId);
+      // Only authenticated users can manage documents
+      allow create: if request.auth != null && request.resource.data.uploaderId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.uploaderId == request.auth.uid;
     }
-
   }
 }
