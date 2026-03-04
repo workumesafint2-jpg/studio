@@ -154,7 +154,7 @@ const CATEGORIES = {
 };
 
 const SECTORS = ['ቴክኖሎጂ ዘርፍ', 'ኢኖቬሽን ዘርፍ', 'አስተዳደርና ፋይናንስ', 'ሪፎርም ዘርፍ'];
-const DIRECTORATES = {
+const DIRECTORATES: Record<string, string[]> = {
   'ቴክኖሎጂ ዘርፍ': ['ሶፍትዌር ልማት', 'መሰረተ ልማት', 'ሳይበር ደህንነት'],
   'ኢኖቬሽን ዘርፍ': ['ጥናትና ምርምር', 'ቴክኖሎጂ ሽግግር', 'ኢንኩቤሽን'],
   'አስተዳደርና ፋይናንስ': ['ሰው ሀብት', 'ፋይናንስ', 'ግዥና ንብረት'],
@@ -227,7 +227,7 @@ export function BPMNFlowForgeApp() {
       else if (file.category === 'ሪፖርቶች (Reports)') metrics[baseName].actual = 85;
     });
 
-    return Object.entries(metrics).map(([name, data]) => {
+    const result = Object.entries(metrics).map(([name, data]) => {
       const execution = data.planned > 0 ? (data.actual / data.planned) * 100 : 0;
       return {
         serviceName: name,
@@ -236,7 +236,9 @@ export function BPMNFlowForgeApp() {
         execution: Math.round(execution) || 75,
         color: execution >= 90 ? '#22c55e' : execution >= 50 ? '#eab308' : '#ef4444'
       } as PerformanceMetric;
-    }).slice(0, 6);
+    });
+
+    return result.length > 0 ? result.slice(0, 6) : [];
   }, [uploadedFiles]);
 
   const filteredDocuments = useMemo(() => {
@@ -331,7 +333,8 @@ export function BPMNFlowForgeApp() {
         uploaderId: user.uid,
         uploaderName: user.displayName || user.email || "ያልታወቀ ሰራተኛ",
         createdAt: Timestamp.now(),
-        expertName: user.displayName || "ባለሙያ"
+        expertName: user.displayName || "ባለሙያ",
+        sector: "General"
       };
       await addDocumentNonBlocking(collection(db, 'documents'), newFile);
       toast({ title: "ተቀምጧል", description: "ዲያግራሙ በመዝገብ ቤት ተመዝግቧል።" });
@@ -354,9 +357,9 @@ export function BPMNFlowForgeApp() {
         name: finalName,
         category: uploadCategory,
         subCategory: uploadSubCategory,
-        sector: uploadSector,
-        directorate: uploadDirectorate,
-        team: uploadTeam,
+        sector: uploadSector || "General",
+        directorate: uploadDirectorate || "General",
+        team: uploadTeam || "General",
         expertName: user.displayName || user.email || "ባለሙያ",
         fileName: selectedFile.name,
         fileSize: (selectedFile.size / 1024).toFixed(1) + " KB",
@@ -396,9 +399,22 @@ export function BPMNFlowForgeApp() {
     }
   };
 
-  const handleApprove = (id: string) => updateDocumentNonBlocking(doc(db!, 'documents', id), { status: 'የጸደቀ' });
-  const handleDelete = (id: string) => deleteDocumentNonBlocking(doc(db!, 'documents', id));
-  const handleOpenFile = (url: string) => window.open(url, '_blank', 'noopener,noreferrer');
+  const handleApprove = (id: string) => {
+    if (!db) return;
+    updateDocumentNonBlocking(doc(db, 'documents', id), { status: 'የጸደቀ' });
+    toast({ title: "ጸድቋል", description: "ሰነዱ በይፋ እንዲታይ ተደርጓል።" });
+  };
+
+  const handleDelete = (id: string) => {
+    if (!db) return;
+    deleteDocumentNonBlocking(doc(db, 'documents', id));
+    toast({ title: "ተሰርዟል", description: "ሰነዱ ከመዝገብ ቤት ተወግዷል።" });
+  };
+
+  const handleOpenFile = (url: string) => {
+    if (!url) return;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
@@ -409,7 +425,7 @@ export function BPMNFlowForgeApp() {
           </div>
           <div>
             <h1 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-              ወርቁ (Worku) <Badge className="bg-primary/10 text-primary border-none text-[10px]">Enterprise v3.3.0</Badge>
+              ወርቁ (Worku) <Badge className="bg-primary/10 text-primary border-none text-[10px]">Enterprise v3.3.1</Badge>
             </h1>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Innovation & Technology Development Bureau</p>
           </div>
@@ -562,7 +578,7 @@ export function BPMNFlowForgeApp() {
                             <Select value={uploadDirectorate} onValueChange={setUploadDirectorate} disabled={!uploadSector}>
                               <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="ዳይሬክቶሬት ይምረጡ..." /></SelectTrigger>
                               <SelectContent>
-                                {uploadSector && DIRECTORATES[uploadSector as keyof typeof DIRECTORATES].map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                                {uploadSector && DIRECTORATES[uploadSector] && DIRECTORATES[uploadSector].map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                               </SelectContent>
                             </Select>
                           </div>
@@ -585,7 +601,7 @@ export function BPMNFlowForgeApp() {
                               <Select value={uploadSubCategory} onValueChange={setUploadSubCategory}>
                                 <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="ንዑስ ምድብ ይምረጡ..." /></SelectTrigger>
                                 <SelectContent>
-                                  {CATEGORIES[uploadCategory as keyof typeof CATEGORIES].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                  {(CATEGORIES as any)[uploadCategory].map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                                 </SelectContent>
                               </Select>
                             </div>
@@ -601,7 +617,7 @@ export function BPMNFlowForgeApp() {
                         </div>
                       </div>
                       <DialogFooter>
-                        <Button className="w-full h-12 bg-primary font-bold rounded-xl shadow-lg" onClick={processUpload} disabled={isUploading || !selectedFile || !uploadCategory || !uploadSector}>
+                        <Button className="w-full h-12 bg-primary text-white font-bold rounded-xl shadow-lg" onClick={processUpload} disabled={isUploading || !selectedFile || !uploadCategory || !uploadSector}>
                           {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4 mr-2" />}
                           አጽድቅና መዝግብ
                         </Button>
@@ -637,10 +653,10 @@ export function BPMNFlowForgeApp() {
                               <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100"><MoreVertical className="w-3 h-3" /></Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-40 p-1">
-                              <DropdownMenuItem onClick={() => handleOpenFile(file.fileUrl)} className="text-[10px]"><Eye className="w-3 h-3 mr-2" /> ክፈት</DropdownMenuItem>
-                              {file.status !== 'የጸደቀ' && <DropdownMenuItem onClick={() => handleApprove(file.id)} className="text-[10px]"><CheckCircle2 className="w-3 h-3 mr-2" /> አጽድቅ</DropdownMenuItem>}
-                              <DropdownMenuItem asChild><a href={file.fileUrl} download={file.fileName} className="text-[10px] flex items-center"><Download className="w-3 h-3 mr-2" /> አውርድ</a></DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDelete(file.id)} className="text-[10px] text-red-600 font-bold"><Trash2 className="w-3 h-3 mr-2" /> ሰርዝ</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenFile(file.fileUrl)} className="text-[10px] cursor-pointer"><Eye className="w-3 h-3 mr-2" /> ክፈት</DropdownMenuItem>
+                              {file.status !== 'የጸደቀ' && <DropdownMenuItem onClick={() => handleApprove(file.id)} className="text-[10px] cursor-pointer"><CheckCircle2 className="w-3 h-3 mr-2" /> አጽድቅ</DropdownMenuItem>}
+                              <DropdownMenuItem asChild><a href={file.fileUrl} download={file.fileName} className="text-[10px] flex items-center cursor-pointer"><Download className="w-3 h-3 mr-2" /> አውርድ</a></DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDelete(file.id)} className="text-[10px] text-red-600 font-bold cursor-pointer"><Trash2 className="w-3 h-3 mr-2" /> ሰርዝ</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -721,7 +737,7 @@ export function BPMNFlowForgeApp() {
                             <div key={i} className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 hover:border-primary/20 transition-all group">
                               <div className="flex items-center justify-between mb-3">
                                 <span className="text-[11px] font-black text-slate-900 group-hover:text-primary transition-colors">{metric.serviceName}</span>
-                                <Badge className="text-[8px] border-none px-2 h-4" style={{ backgroundColor: metric.color }}>{metric.execution}%</Badge>
+                                <Badge className="text-[8px] border-none px-2 h-4 text-white" style={{ backgroundColor: metric.color }}>{metric.execution}%</Badge>
                               </div>
                               <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
                                 <div className="h-full transition-all duration-1000" style={{ width: `${metric.execution}%`, backgroundColor: metric.color }}></div>
@@ -878,7 +894,7 @@ export function BPMNFlowForgeApp() {
 
       <footer className="px-8 py-3 bg-white border-t border-slate-200 flex justify-between items-center shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="flex gap-8 items-center text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">
-          <span className="flex items-center gap-2"><Zap className="w-3 h-3 text-primary" /> ITDB Enterprise v3.3.0</span>
+          <span className="flex items-center gap-2"><Zap className="w-3 h-3 text-primary" /> ITDB Enterprise v3.3.1</span>
           <span className="text-slate-200">|</span>
           <span className="hover:text-primary transition-colors cursor-default">© 2024 Innovation & Tech Bureau</span>
           <Link href="/login" className="flex items-center gap-2 text-primary hover:underline font-black">

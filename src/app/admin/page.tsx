@@ -79,7 +79,7 @@ export default function AdminPage() {
       <div className="p-8 max-w-7xl mx-auto space-y-8 bg-slate-50 min-h-screen">
         <header className="flex flex-col gap-2">
           <p className="text-[10px] font-bold text-primary tracking-widest uppercase">ITDB Management Dashboard</p>
-          <h1 className="text-3xl font-black text-slate-900 uppercase">የተቋም አስተዳዳሪ መቆጣጠሪያ v3.3.0</h1>
+          <h1 className="text-3xl font-black text-slate-900 uppercase">የተቋም አስተዳዳሪ መቆጣጠሪያ v3.3.1</h1>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
