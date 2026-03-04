@@ -9,6 +9,7 @@ import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 interface DocumentRecord {
   id: string;
@@ -35,6 +36,7 @@ interface UserRecord {
 
 export default function AdminPage() {
   const db = useFirestore();
+  const { toast } = useToast();
 
   const docsQuery = useMemoFirebase(() => {
     if (!db) return null;
@@ -71,15 +73,28 @@ export default function AdminPage() {
 
   const handleOpenFile = (url: string) => {
     if (!url) return;
-    window.open(url, '_blank', 'noopener,noreferrer');
+    if (url.startsWith('data:')) {
+      const win = window.open();
+      if (win) {
+        win.document.write(`<iframe src="${url}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+      } else {
+        toast({ title: "Error", description: "Pop-up blocked. Please allow pop-ups to view files.", variant: "destructive" });
+      }
+    } else {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
   };
 
   return (
     <AuthGuard>
       <div className="p-8 max-w-7xl mx-auto space-y-8 bg-slate-50 min-h-screen">
-        <header className="flex flex-col gap-2">
-          <p className="text-[10px] font-bold text-primary tracking-widest uppercase">ITDB Management Dashboard</p>
-          <h1 className="text-3xl font-black text-slate-900 uppercase">የተቋም አስተዳዳሪ መቆጣጠሪያ v3.3.1</h1>
+        <header className="flex flex-col items-center gap-2 mb-12">
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight">ኢኖቬሽንና ቴክኖሎጂ ቢሮ</h2>
+          <span className="text-xl font-black text-primary border-b-2 border-primary pb-1">ITB</span>
+          <p className="text-[12px] font-bold text-slate-400 uppercase tracking-widest">Innovation & Technology Development Bureau</p>
+          <h1 className="text-lg font-black text-slate-800 uppercase mt-4 bg-white px-6 py-2 rounded-full shadow-sm border border-slate-100">
+            የአመራርና የሰራተኞች ዳሽ ቦርድ v3.4.0
+          </h1>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -193,3 +208,4 @@ function StatCard({ title, value, icon }: { title: string, value: string, icon: 
     </Card>
   );
 }
+

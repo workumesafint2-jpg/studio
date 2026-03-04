@@ -38,7 +38,11 @@ import {
   History,
   Building2,
   Send,
-  User
+  User,
+  Bold,
+  Italic,
+  List,
+  Type
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -413,31 +417,50 @@ export function BPMNFlowForgeApp() {
 
   const handleOpenFile = (url: string) => {
     if (!url) return;
-    window.open(url, '_blank', 'noopener,noreferrer');
+    // Check if it's a data URI (BPMN/XML)
+    if (url.startsWith('data:')) {
+      const win = window.open();
+      if (win) {
+        win.document.write(`<iframe src="${url}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+      } else {
+        toast({ title: "Error", description: "Pop-up blocked. Please allow pop-ups to view files.", variant: "destructive" });
+      }
+    } else {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
   };
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
-      <header className="flex items-center justify-between py-4 px-8 bg-white border-b border-slate-200 shrink-0 shadow-sm z-50">
-        <div className="flex items-center gap-4">
+      {/* ሄደር አሁን ሴንተር ሆኗል */}
+      <header className="flex flex-col items-center py-4 bg-white border-b border-slate-200 shrink-0 shadow-sm z-50">
+        <h2 className="text-xl font-black text-slate-900 tracking-tight">ኢኖቬሽንና ቴክኖሎጂ ቢሮ</h2>
+        <div className="flex items-center gap-3 my-1">
           <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
             <Zap className="w-6 h-6" />
           </div>
-          <div>
-            <h1 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-              ወርቁ (Worku) <Badge className="bg-primary/10 text-primary border-none text-[10px]">Enterprise v3.3.1</Badge>
+          <span className="text-lg font-black text-primary">ITB</span>
+        </div>
+        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest font-body">Innovation & Technology Development Bureau</p>
+      </header>
+
+      {/* ሁለተኛ ሰብ-ሄደር ለፍለጋ እና ለመቆጣጠሪያ */}
+      <div className="flex items-center justify-between px-8 py-3 bg-slate-50 border-b border-slate-200">
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col">
+            <h1 className="text-sm font-black text-slate-900 flex items-center gap-2">
+              ወርቁ ነኝ ምን ልርዳዎት? <Badge className="bg-primary/10 text-primary border-none text-[9px]">Enterprise v3.4.0</Badge>
             </h1>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Innovation & Technology Development Bureau</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 max-w-xl w-full mx-12">
+        <div className="flex items-center gap-4 max-w-lg w-full">
           <div className="relative w-full group">
             <Input 
               value={globalSearch} 
               onChange={(e) => setGlobalSearch(e.target.value)} 
-              placeholder="በመዝገብ ቤት፣ በዘርፍ ወይም በዳይሬክቶሬት ፈልግ..." 
-              className="h-10 text-xs pl-10 bg-slate-50 border-slate-200 rounded-2xl group-hover:border-primary transition-colors focus:bg-white" 
+              placeholder="በመዝገብ ቤት፣ በዘርፍ ወይም በባለሙያ ፈልግ..." 
+              className="h-10 text-xs pl-10 bg-white border-slate-200 rounded-2xl group-hover:border-primary transition-colors focus:bg-white" 
             />
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
           </div>
@@ -464,7 +487,7 @@ export function BPMNFlowForgeApp() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </header>
+      </div>
 
       <main className="flex-1 flex flex-col p-4 gap-4 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-full overflow-hidden">
@@ -474,7 +497,7 @@ export function BPMNFlowForgeApp() {
               <CardContent className="p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xs font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                    <BrainCircuit className="w-4 h-4 text-primary" /> አውቶማቲክ ትንተና
+                    <BrainCircuit className="w-4 h-4 text-primary" /> ወርቁ ነኝ ምን ልርዳዎት?
                   </h2>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -496,12 +519,6 @@ export function BPMNFlowForgeApp() {
                           <span className="text-[10px] text-slate-400">በመዝገብ ቤቱ ያሉ ፋይሎችን በመፈተሽ ክፍተቶችን ይለያል።</span>
                         </div>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleAutoSuggest('report')} className="p-3 cursor-pointer rounded-lg hover:bg-slate-50 mt-1">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-xs font-bold text-slate-900 flex items-center gap-2"><TrendingUp className="w-3.5 h-3.5 text-amber-600" /> Gap Analysis (እቅድ vs ሪፖርት)</span>
-                          <span className="text-[10px] text-slate-400">ተመሳሳይ ስም ያላቸውን እቅዶች እና ሪፖርቶች ያነጻጽራል።</span>
-                        </div>
-                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -517,12 +534,12 @@ export function BPMNFlowForgeApp() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">ዝርዝር ተግባራት / ትንተና</label>
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">ዝርዝር ተግባራት</label>
                     <Textarea 
                       value={input} 
                       onChange={(e) => setInput(e.target.value)} 
-                      placeholder="የስራ ፍሰቱ ዝርዝር ወይም የAI ትንተና ውጤት እዚህ ይቀርባል..." 
-                      className="min-h-[140px] text-xs leading-relaxed rounded-xl bg-slate-50 border-slate-100 shadow-inner" 
+                      placeholder="የስራ ፍሰቱ ዝርዝር እዚህ ይቀርባል..." 
+                      className="min-h-[120px] text-xs leading-relaxed rounded-xl bg-slate-50 border-slate-100 shadow-inner" 
                     />
                   </div>
                   <div className="flex gap-2">
@@ -677,15 +694,8 @@ export function BPMNFlowForgeApp() {
                   <TabsTrigger value="daily-log" className="text-[10px] font-bold px-4 rounded-lg">የቀን ውሎ</TabsTrigger>
                   <TabsTrigger value="feedback" className="text-[10px] font-bold px-4 rounded-lg">አመራር መመሪያ</TabsTrigger>
                 </TabsList>
-                <div className="flex items-center gap-4 pr-2">
-                  <div className="text-right">
-                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">እቅድ/ሪፖርት</p>
-                    <p className="text-[11px] font-black text-slate-900">{stats.totalPlans} / {stats.totalReports}</p>
-                  </div>
-                  <div className="text-right border-l pl-4 border-slate-100">
-                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">አማካይ ውጤት</p>
-                    <p className="text-[11px] font-black text-primary">{stats.avgExecution}%</p>
-                  </div>
+                <div className="pr-4">
+                  <h2 className="text-xs font-black text-slate-900 uppercase tracking-widest">የአመራርና የሰራተኞች ዳሽ ቦርድ</h2>
                 </div>
               </div>
 
@@ -698,7 +708,7 @@ export function BPMNFlowForgeApp() {
                       <div className="h-full flex flex-col items-center justify-center opacity-20 group">
                         <Zap className="w-24 h-24 mb-6 text-slate-300 group-hover:scale-110 group-hover:text-primary transition-all duration-700" />
                         <p className="text-lg font-black uppercase tracking-[0.5em] text-slate-900">ዲያግራም የለም</p>
-                        <p className="text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-widest">ወርቁን AI ትዕዛዝ በመስጠት ስራ ይጀምሩ</p>
+                        <p className="text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-widest">ወርቁ ነኝ ምን ልርዳዎት?</p>
                       </div>
                     )}
                   </Card>
@@ -800,7 +810,7 @@ export function BPMNFlowForgeApp() {
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100" onClick={() => handleOpenFile(file.fileUrl)}>
-                                    <Download className="w-3 h-3" />
+                                    <Eye className="w-3 h-3" />
                                   </Button>
                                 </TableCell>
                               </TableRow>
@@ -817,7 +827,7 @@ export function BPMNFlowForgeApp() {
                     <Card className="md:col-span-2 shadow-sm border-slate-200 rounded-2xl bg-white flex flex-col overflow-hidden">
                       <CardHeader className="border-b border-slate-50 py-4">
                         <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                          <MessageSquare className="w-4 h-4 text-primary" /> የአመራር መመሪያና አስተያየት (Feedback Wall)
+                          <MessageSquare className="w-4 h-4 text-primary" /> የአመራርና የሰራተኞች ዳሽ ቦርድ - መመሪያ ማዕከል
                         </CardTitle>
                       </CardHeader>
                       <ScrollArea className="flex-1 p-6">
@@ -839,8 +849,8 @@ export function BPMNFlowForgeApp() {
                                     </div>
                                     <span className="text-[9px] text-slate-400 font-medium">{new Date(msg.timestamp).toLocaleString('am-ET')}</span>
                                   </div>
-                                  <div className="bg-slate-50 p-4 rounded-2xl rounded-tl-none border border-slate-100">
-                                    <p className="text-xs text-slate-600 leading-relaxed italic">"{msg.content}"</p>
+                                  <div className="bg-slate-50 p-5 rounded-2xl rounded-tl-none border border-slate-100 shadow-sm">
+                                    <p className="text-sm text-slate-700 leading-relaxed font-body whitespace-pre-wrap">{msg.content}</p>
                                   </div>
                                 </div>
                               </div>
@@ -848,17 +858,26 @@ export function BPMNFlowForgeApp() {
                           )}
                         </div>
                       </ScrollArea>
-                      <div className="p-4 bg-slate-50 border-t border-slate-100">
-                        <div className="flex gap-2">
-                          <Input 
-                            value={feedbackInput} 
-                            onChange={(e) => setFeedbackInput(e.target.value)} 
-                            placeholder="አዲስ መመሪያ ወይም አስተያየት እዚህ ይጻፉ..." 
-                            className="bg-white border-slate-200 rounded-xl text-xs h-11"
-                          />
-                          <Button className="h-11 px-6 rounded-xl bg-primary text-white font-bold text-xs" onClick={handleSendFeedback}>
-                            <Send className="w-4 h-4 mr-2" /> ላክ
-                          </Button>
+                      {/* Office-Style Editor Simulation */}
+                      <div className="p-4 bg-white border-t border-slate-100 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]">
+                        <div className="flex flex-col gap-3 max-w-4xl mx-auto">
+                          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg w-fit">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-primary"><Bold className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-primary"><Italic className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-primary"><List className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-primary"><Type className="w-4 h-4" /></Button>
+                          </div>
+                          <div className="relative">
+                            <Textarea 
+                              value={feedbackInput} 
+                              onChange={(e) => setFeedbackInput(e.target.value)} 
+                              placeholder="አዲስ መመሪያ ወይም ዝርዝር አስተያየት እዚህ ይጻፉ (Office-style)..." 
+                              className="bg-white border-slate-200 rounded-xl text-sm min-h-[120px] focus:ring-primary shadow-inner p-4"
+                            />
+                            <Button className="absolute bottom-3 right-3 h-10 px-6 rounded-xl bg-primary text-white font-bold text-xs shadow-lg hover:scale-105 transition-transform" onClick={handleSendFeedback}>
+                              <Send className="w-4 h-4 mr-2" /> መዝግብ (Save)
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </Card>
@@ -894,7 +913,7 @@ export function BPMNFlowForgeApp() {
 
       <footer className="px-8 py-3 bg-white border-t border-slate-200 flex justify-between items-center shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="flex gap-8 items-center text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">
-          <span className="flex items-center gap-2"><Zap className="w-3 h-3 text-primary" /> ITDB Enterprise v3.3.1</span>
+          <span className="flex items-center gap-2"><Zap className="w-3 h-3 text-primary" /> ITDB Enterprise v3.4.0</span>
           <span className="text-slate-200">|</span>
           <span className="hover:text-primary transition-colors cursor-default">© 2024 Innovation & Tech Bureau</span>
           <Link href="/login" className="flex items-center gap-2 text-primary hover:underline font-black">
@@ -912,3 +931,4 @@ export function BPMNFlowForgeApp() {
     </div>
   );
 }
+
