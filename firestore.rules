@@ -2,13 +2,13 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     /**
-     * Institutional Security Rules v3.1.0
-     * - Public Read: Anyone can view diagrams and documents.
-     * - Admin/Owner Write: Only authenticated owners or verified Admins can create/edit.
+     * Institutional Security Rules v3.1.1
+     * - Public Read: Anyone can view diagrams and documents for institutional transparency.
+     * - Public Registration: Any authenticated user can create their own profile.
+     * - Owner/Admin Write: Only owners or verified Admins can modify records.
      */
     
     // Helper to safely check if the user has the 'admin' role
-    // Uses exists() to prevent null pointer errors if a user doc is missing
     function isAdmin() {
       return request.auth != null && 
              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
@@ -16,18 +16,27 @@ service cloud.firestore {
     }
 
     match /documents/{documentId} {
-      // Everyone can view diagrams and bureau documents
+      // Transparency: Everyone can view diagrams and bureau documents
       allow read: if true;
       
-      // Only the uploader or an Admin can create, update, or delete
+      // Control: Only the uploader or an Admin can create, update, or delete
       allow create: if request.auth != null && (request.resource.data.uploaderId == request.auth.uid || isAdmin());
       allow update, delete: if request.auth != null && (resource.data.uploaderId == request.auth.uid || isAdmin());
     }
 
     match /users/{userId} {
-      // Users can only read their own profile; only Admins can manage roles
+      // Users can view their own profile; Admins can view all
       allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
-      allow write: if isAdmin();
+      
+      // Allow any new authenticated user to register their profile
+      allow create: if request.auth != null && request.auth.uid == userId;
+      
+      // Only the user can update their data, but only Admins can change the 'role' field
+      allow update: if request.auth != null && (request.auth.uid == userId || isAdmin()) && 
+                    (request.resource.data.role == resource.data.role || isAdmin());
+      
+      // Only Admins can delete user records
+      allow delete: if isAdmin();
     }
   }
 }
