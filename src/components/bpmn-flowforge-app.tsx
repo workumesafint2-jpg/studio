@@ -1,10 +1,11 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Trash2, 
   MoreVertical, 
@@ -31,7 +32,13 @@ import {
   Filter,
   FileSearch,
   Zap,
-  Eye
+  Eye,
+  Users,
+  MessageSquare,
+  History,
+  Building2,
+  Send,
+  User
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -96,6 +103,7 @@ import {
 } from '@/firebase';
 import { collection, query, doc, Timestamp, orderBy } from 'firebase/firestore';
 import Link from 'next/link';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface UploadedFile {
   id: string;
@@ -112,6 +120,20 @@ interface UploadedFile {
   version: number;
   uploaderId: string;
   uploaderName?: string;
+  createdAt?: any;
+  sector?: string;
+  directorate?: string;
+  team?: string;
+  expertName?: string;
+}
+
+interface FeedbackMessage {
+  id: string;
+  senderName: string;
+  senderRole: string;
+  content: string;
+  timestamp: string;
+  sector?: string;
   createdAt?: any;
 }
 
@@ -131,6 +153,14 @@ const CATEGORIES = {
   'ሌሎች': ['መመሪያዎች', 'ደብዳቤዎች']
 };
 
+const SECTORS = ['ቴክኖሎጂ ዘርፍ', 'ኢኖቬሽን ዘርፍ', 'አስተዳደርና ፋይናንስ', 'ሪፎርም ዘርፍ'];
+const DIRECTORATES = {
+  'ቴክኖሎጂ ዘርፍ': ['ሶፍትዌር ልማት', 'መሰረተ ልማት', 'ሳይበር ደህንነት'],
+  'ኢኖቬሽን ዘርፍ': ['ጥናትና ምርምር', 'ቴክኖሎጂ ሽግግር', 'ኢንኩቤሽን'],
+  'አስተዳደርና ፋይናንስ': ['ሰው ሀብት', 'ፋይናንስ', 'ግዥና ንብረት'],
+  'ሪፎርም ዘርፍ': ['BSC/BPR', 'ቅሬታ ሰሚ', 'ጥራት ቁጥጥር']
+};
+
 export function BPMNFlowForgeApp() {
   const [mounted, setMounted] = useState(false);
   const [input, setInput] = useState("");
@@ -146,9 +176,13 @@ export function BPMNFlowForgeApp() {
   
   const [uploadCategory, setUploadCategory] = useState<string>("");
   const [uploadSubCategory, setUploadSubCategory] = useState<string>("");
+  const [uploadSector, setUploadSector] = useState<string>("");
+  const [uploadDirectorate, setUploadDirectorate] = useState<string>("");
+  const [uploadTeam, setUploadTeam] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [vaultFilter, setVaultFilter] = useState<string>('all');
+  const [feedbackInput, setFeedbackInput] = useState("");
 
   const viewerRef = useRef<BPMNViewerRef>(null);
   const { toast } = useToast();
@@ -169,8 +203,16 @@ export function BPMNFlowForgeApp() {
     return query(collection(db, 'documents'), orderBy('createdAt', 'desc'));
   }, [db]);
 
+  const feedbackQuery = useMemoFirebase(() => {
+    if (!db) return null;
+    return query(collection(db, 'feedback'), orderBy('createdAt', 'desc'));
+  }, [db]);
+
   const { data: uploadedFilesRaw, isLoading: isDocsLoading } = useCollection<UploadedFile>(documentsQuery);
+  const { data: feedbackMessagesRaw } = useCollection<FeedbackMessage>(feedbackQuery);
+  
   const uploadedFiles = uploadedFilesRaw || [];
+  const feedbackMessages = feedbackMessagesRaw || [];
 
   const performanceData = useMemo(() => {
     if (!uploadedFiles || uploadedFiles.length === 0) return [];
@@ -189,8 +231,8 @@ export function BPMNFlowForgeApp() {
       const execution = data.planned > 0 ? (data.actual / data.planned) * 100 : 0;
       return {
         serviceName: name,
-        planned: data.planned || 100, // Default for visualization
-        actual: data.actual || Math.floor(Math.random() * 40) + 50, // Simulated actual if missing
+        planned: data.planned || 100,
+        actual: data.actual || Math.floor(Math.random() * 40) + 50,
         execution: Math.round(execution) || 75,
         color: execution >= 90 ? '#22c55e' : execution >= 50 ? '#eab308' : '#ef4444'
       } as PerformanceMetric;
@@ -208,7 +250,8 @@ export function BPMNFlowForgeApp() {
         item && (
           (item.name && item.name.toLowerCase().includes(q)) || 
           (item.category && item.category.toLowerCase().includes(q)) ||
-          (item.subCategory && item.subCategory.toLowerCase().includes(q))
+          (item.sector && item.sector.toLowerCase().includes(q)) ||
+          (item.directorate && item.directorate.toLowerCase().includes(q))
         )
       );
     }
@@ -287,7 +330,8 @@ export function BPMNFlowForgeApp() {
         version: 1,
         uploaderId: user.uid,
         uploaderName: user.displayName || user.email || "ያልታወቀ ሰራተኛ",
-        createdAt: Timestamp.now()
+        createdAt: Timestamp.now(),
+        expertName: user.displayName || "ባለሙያ"
       };
       await addDocumentNonBlocking(collection(db, 'documents'), newFile);
       toast({ title: "ተቀምጧል", description: "ዲያግራሙ በመዝገብ ቤት ተመዝግቧል።" });
@@ -310,6 +354,10 @@ export function BPMNFlowForgeApp() {
         name: finalName,
         category: uploadCategory,
         subCategory: uploadSubCategory,
+        sector: uploadSector,
+        directorate: uploadDirectorate,
+        team: uploadTeam,
+        expertName: user.displayName || user.email || "ባለሙያ",
         fileName: selectedFile.name,
         fileSize: (selectedFile.size / 1024).toFixed(1) + " KB",
         uploadDate: new Date().toISOString(),
@@ -329,13 +377,28 @@ export function BPMNFlowForgeApp() {
     reader.readAsDataURL(selectedFile);
   };
 
+  const handleSendFeedback = async () => {
+    if (!feedbackInput.trim() || !user || !db) return;
+    try {
+      const newFeedback: Omit<FeedbackMessage, 'id'> = {
+        senderName: user.displayName || user.email || "ሀላፊ",
+        senderRole: "Admin/Manager",
+        content: feedbackInput,
+        timestamp: new Date().toISOString(),
+        sector: "General",
+        createdAt: Timestamp.now()
+      };
+      await addDocumentNonBlocking(collection(db, 'feedback'), newFeedback);
+      setFeedbackInput("");
+      toast({ title: "ተልኳል", description: "አስተያየቱ ለሰራተኞች ይፋ ሆኗል።" });
+    } catch (err) {
+      toast({ title: "ስህተት", description: "አስተያየቱን መላክ አልተቻለም።", variant: "destructive" });
+    }
+  };
+
   const handleApprove = (id: string) => updateDocumentNonBlocking(doc(db!, 'documents', id), { status: 'የጸደቀ' });
   const handleDelete = (id: string) => deleteDocumentNonBlocking(doc(db!, 'documents', id));
-  
-  const handleOpenFile = (url: string) => {
-    if (!url) return;
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
+  const handleOpenFile = (url: string) => window.open(url, '_blank', 'noopener,noreferrer');
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
@@ -346,7 +409,7 @@ export function BPMNFlowForgeApp() {
           </div>
           <div>
             <h1 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-              ወርቁ (Worku) <Badge className="bg-primary/10 text-primary border-none text-[10px]">Enterprise v3.2.0</Badge>
+              ወርቁ (Worku) <Badge className="bg-primary/10 text-primary border-none text-[10px]">Enterprise v3.3.0</Badge>
             </h1>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Innovation & Technology Development Bureau</p>
           </div>
@@ -357,7 +420,7 @@ export function BPMNFlowForgeApp() {
             <Input 
               value={globalSearch} 
               onChange={(e) => setGlobalSearch(e.target.value)} 
-              placeholder="በመዝገብ ቤት ውስጥ ፈልግ (ስም፣ ምድብ፣ ሁኔታ...)" 
+              placeholder="በመዝገብ ቤት፣ በዘርፍ ወይም በዳይሬክቶሬት ፈልግ..." 
               className="h-10 text-xs pl-10 bg-slate-50 border-slate-200 rounded-2xl group-hover:border-primary transition-colors focus:bg-white" 
             />
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
@@ -443,7 +506,7 @@ export function BPMNFlowForgeApp() {
                       value={input} 
                       onChange={(e) => setInput(e.target.value)} 
                       placeholder="የስራ ፍሰቱ ዝርዝር ወይም የAI ትንተና ውጤት እዚህ ይቀርባል..." 
-                      className="min-h-[160px] text-xs leading-relaxed rounded-xl bg-slate-50 border-slate-100 shadow-inner" 
+                      className="min-h-[140px] text-xs leading-relaxed rounded-xl bg-slate-50 border-slate-100 shadow-inner" 
                     />
                   </div>
                   <div className="flex gap-2">
@@ -466,7 +529,7 @@ export function BPMNFlowForgeApp() {
                 </h3>
                 <div className="flex items-center gap-2">
                   <Select value={vaultFilter} onValueChange={setVaultFilter}>
-                    <SelectTrigger className="h-8 text-[9px] w-32 rounded-lg bg-white border-slate-200">
+                    <SelectTrigger className="h-8 text-[9px] w-28 rounded-lg bg-white border-slate-200">
                       <Filter className="w-3 h-3 mr-1" /> <SelectValue placeholder="ምድብ" />
                     </SelectTrigger>
                     <SelectContent>
@@ -480,41 +543,65 @@ export function BPMNFlowForgeApp() {
                         <Upload className="w-3 h-3 mr-1" /> ፋይል መዝግብ
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-md rounded-3xl p-8">
+                    <DialogContent className="max-w-2xl rounded-3xl p-8 overflow-y-auto max-h-[90vh]">
                       <DialogHeader>
-                        <DialogTitle className="text-xl font-black text-slate-900">አዲስ ፋይል መመዝገቢያ</DialogTitle>
-                        <DialogDescription className="text-xs">እባክዎን ፋይሉን በቢሮው ምደባ መሰረት በትክክል ይመዝግቡ።</DialogDescription>
+                        <DialogTitle className="text-xl font-black text-slate-900">አዲስ ፋይል መመዝገቢያ (ተቋማዊ ሰንሰለት)</DialogTitle>
+                        <DialogDescription className="text-xs">እባክዎን ፋይሉን በቢሮው መዋቅር መሰረት በትክክል ይመዝግቡ።</DialogDescription>
                       </DialogHeader>
-                      <div className="grid gap-6 py-4">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ዋና ምድብ</label>
-                          <Select value={uploadCategory} onValueChange={(val) => { setUploadCategory(val); setUploadSubCategory(""); }}>
-                            <SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="ምድብ ይምረጡ..." /></SelectTrigger>
-                            <SelectContent>{Object.keys(CATEGORIES).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                          </Select>
-                        </div>
-                        {uploadCategory && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+                        <div className="space-y-4">
                           <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ንዑስ ምድብ</label>
-                            <Select value={uploadSubCategory} onValueChange={setUploadSubCategory}>
-                              <SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="ንዑስ ምድብ ይምረጡ..." /></SelectTrigger>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ዘርፍ (Sector)</label>
+                            <Select value={uploadSector} onValueChange={setUploadSector}>
+                              <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="ዘርፍ ይምረጡ..." /></SelectTrigger>
+                              <SelectContent>{SECTORS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ዳይሬክቶሬት</label>
+                            <Select value={uploadDirectorate} onValueChange={setUploadDirectorate} disabled={!uploadSector}>
+                              <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="ዳይሬክቶሬት ይምረጡ..." /></SelectTrigger>
                               <SelectContent>
-                                {CATEGORIES[uploadCategory as keyof typeof CATEGORIES].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                {uploadSector && DIRECTORATES[uploadSector as keyof typeof DIRECTORATES].map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                               </SelectContent>
                             </Select>
                           </div>
-                        )}
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ፋይል</label>
-                          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-all">
-                            <Upload className="w-8 h-8 text-slate-300 mb-2" />
-                            <span className="text-[10px] font-bold text-slate-500">{selectedFile ? selectedFile.name : "ፋይል ይምረጡ"}</span>
-                            <input type="file" className="hidden" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
-                          </label>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">የቡድን ስም</label>
+                            <Input value={uploadTeam} onChange={(e) => setUploadTeam(e.target.value)} placeholder="ቡድን 1..." className="h-11 rounded-xl" />
+                          </div>
+                        </div>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ዋና ምድብ</label>
+                            <Select value={uploadCategory} onValueChange={(val) => { setUploadCategory(val); setUploadSubCategory(""); }}>
+                              <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="ምድብ ይምረጡ..." /></SelectTrigger>
+                              <SelectContent>{Object.keys(CATEGORIES).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                            </Select>
+                          </div>
+                          {uploadCategory && (
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ንዑስ ምድብ</label>
+                              <Select value={uploadSubCategory} onValueChange={setUploadSubCategory}>
+                                <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="ንዑስ ምድብ ይምረጡ..." /></SelectTrigger>
+                                <SelectContent>
+                                  {CATEGORIES[uploadCategory as keyof typeof CATEGORIES].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ፋይል</label>
+                            <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-all">
+                              <Upload className="w-6 h-6 text-slate-300 mb-1" />
+                              <span className="text-[9px] font-bold text-slate-500">{selectedFile ? selectedFile.name : "ፋይል ይምረጡ"}</span>
+                              <input type="file" className="hidden" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
+                            </label>
+                          </div>
                         </div>
                       </div>
                       <DialogFooter>
-                        <Button className="w-full h-12 bg-primary font-bold rounded-xl shadow-lg" onClick={processUpload} disabled={isUploading || !selectedFile || !uploadCategory}>
+                        <Button className="w-full h-12 bg-primary font-bold rounded-xl shadow-lg" onClick={processUpload} disabled={isUploading || !selectedFile || !uploadCategory || !uploadSector}>
                           {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4 mr-2" />}
                           አጽድቅና መዝግብ
                         </Button>
@@ -538,7 +625,7 @@ export function BPMNFlowForgeApp() {
                           </div>
                           <div className="flex flex-col">
                             <span className="text-[11px] font-bold text-slate-900">{file.name}</span>
-                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{file.subCategory || file.category}</span>
+                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{file.sector} • {file.expertName}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -569,19 +656,19 @@ export function BPMNFlowForgeApp() {
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
               <div className="bg-white border-slate-200 border rounded-2xl p-1.5 shadow-sm shrink-0 flex items-center justify-between">
                 <TabsList className="bg-slate-100 rounded-xl h-9 p-1">
-                  <TabsTrigger value="diagram" className="text-[10px] font-bold px-6 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">ዲያግራም</TabsTrigger>
-                  <TabsTrigger value="dashboard" className="text-[10px] font-bold px-6 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">አፈጻጸም ትንተና</TabsTrigger>
+                  <TabsTrigger value="diagram" className="text-[10px] font-bold px-4 rounded-lg">ዲያግራም</TabsTrigger>
+                  <TabsTrigger value="dashboard" className="text-[10px] font-bold px-4 rounded-lg">አፈጻጸም</TabsTrigger>
+                  <TabsTrigger value="daily-log" className="text-[10px] font-bold px-4 rounded-lg">የቀን ውሎ</TabsTrigger>
+                  <TabsTrigger value="feedback" className="text-[10px] font-bold px-4 rounded-lg">አመራር መመሪያ</TabsTrigger>
                 </TabsList>
-                <div className="flex items-center gap-3 pr-2">
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">እቅድ/ሪፖርት</p>
-                      <p className="text-[11px] font-black text-slate-900">{stats.totalPlans} / {stats.totalReports}</p>
-                    </div>
-                    <div className="text-right border-l pl-4 border-slate-100">
-                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">አማካይ ውጤት</p>
-                      <p className="text-[11px] font-black text-primary">{stats.avgExecution}%</p>
-                    </div>
+                <div className="flex items-center gap-4 pr-2">
+                  <div className="text-right">
+                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">እቅድ/ሪፖርት</p>
+                    <p className="text-[11px] font-black text-slate-900">{stats.totalPlans} / {stats.totalReports}</p>
+                  </div>
+                  <div className="text-right border-l pl-4 border-slate-100">
+                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">አማካይ ውጤት</p>
+                    <p className="text-[11px] font-black text-primary">{stats.avgExecution}%</p>
                   </div>
                 </div>
               </div>
@@ -630,27 +717,156 @@ export function BPMNFlowForgeApp() {
                       </h3>
                       <ScrollArea className="flex-1">
                         <div className="space-y-4 pr-4">
-                          {performanceData.length === 0 ? (
-                            <div className="h-64 flex flex-col items-center justify-center text-slate-300 font-black text-[10px] uppercase tracking-widest italic opacity-40">መረጃ የለም</div>
+                          {performanceData.map((metric, i) => (
+                            <div key={i} className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 hover:border-primary/20 transition-all group">
+                              <div className="flex items-center justify-between mb-3">
+                                <span className="text-[11px] font-black text-slate-900 group-hover:text-primary transition-colors">{metric.serviceName}</span>
+                                <Badge className="text-[8px] border-none px-2 h-4" style={{ backgroundColor: metric.color }}>{metric.execution}%</Badge>
+                              </div>
+                              <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                                <div className="h-full transition-all duration-1000" style={{ width: `${metric.execution}%`, backgroundColor: metric.color }}></div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </Card>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="daily-log" className="h-full m-0 overflow-hidden flex flex-col gap-4">
+                  <Card className="flex-1 shadow-sm border-slate-200 rounded-2xl bg-white overflow-hidden flex flex-col">
+                    <CardHeader className="border-b border-slate-50 py-4">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                          <History className="w-4 h-4 text-primary" /> የተቋሙ የቀን ውሎ መመዝገቢያ (Daily Activities)
+                        </CardTitle>
+                        <Badge variant="outline" className="text-[9px] font-bold">{new Date().toLocaleDateString('am-ET')}</Badge>
+                      </div>
+                    </CardHeader>
+                    <ScrollArea className="flex-1">
+                      <div className="p-0">
+                        <Table>
+                          <TableHeader className="bg-slate-50/50">
+                            <TableRow>
+                              <TableHead className="text-[9px] font-black uppercase">ባለሙያ/ሰራተኛ</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase">ዘርፍ/ዳይሬክቶሬት</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase">የተከናወነ ተግባር/ፋይል</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase">ሰዓት</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase text-right">ርክክብ</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {uploadedFiles.map((file) => (
+                              <TableRow key={file.id} className="group">
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-[9px]">
+                                      {file.expertName?.charAt(0) || "U"}
+                                    </div>
+                                    <span className="text-[10px] font-bold text-slate-900">{file.expertName}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex flex-col">
+                                    <span className="text-[10px] font-bold text-slate-700">{file.sector}</span>
+                                    <span className="text-[8px] text-slate-400">{file.directorate}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <FileText className="w-3 h-3 text-slate-400" />
+                                    <span className="text-[10px] font-medium text-slate-600">{file.name}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-[9px] text-slate-400 font-medium">
+                                  {file.uploadDate ? new Date(file.uploadDate).toLocaleTimeString('am-ET') : '--'}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100" onClick={() => handleOpenFile(file.fileUrl)}>
+                                    <Download className="w-3 h-3" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </ScrollArea>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="feedback" className="h-full m-0 overflow-hidden flex flex-col gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
+                    <Card className="md:col-span-2 shadow-sm border-slate-200 rounded-2xl bg-white flex flex-col overflow-hidden">
+                      <CardHeader className="border-b border-slate-50 py-4">
+                        <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                          <MessageSquare className="w-4 h-4 text-primary" /> የአመራር መመሪያና አስተያየት (Feedback Wall)
+                        </CardTitle>
+                      </CardHeader>
+                      <ScrollArea className="flex-1 p-6">
+                        <div className="space-y-6">
+                          {feedbackMessages.length === 0 ? (
+                            <div className="h-64 flex flex-col items-center justify-center text-slate-300 font-black text-[10px] uppercase tracking-widest italic opacity-40">ምንም መመሪያ አልተላለፈም</div>
                           ) : (
-                            performanceData.map((metric, i) => (
-                              <div key={i} className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 hover:border-primary/20 transition-all group">
-                                <div className="flex items-center justify-between mb-3">
-                                  <span className="text-[11px] font-black text-slate-900 group-hover:text-primary transition-colors">{metric.serviceName}</span>
-                                  <Badge className="text-[8px] border-none px-2 h-4" style={{ backgroundColor: metric.color }}>{metric.execution}%</Badge>
-                                </div>
-                                <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-                                  <div className="h-full transition-all duration-1000" style={{ width: `${metric.execution}%`, backgroundColor: metric.color }}></div>
-                                </div>
-                                <div className="flex justify-between mt-2">
-                                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">ሁኔታ፦ {metric.execution >= 90 ? "እጅግ በጣም ጥሩ" : metric.execution >= 75 ? "ጥሩ" : "ድጋፍ ያስፈልገዋል"}</span>
-                                  <span className="text-[9px] text-primary font-black uppercase tracking-widest cursor-pointer hover:underline">ዝርዝር አሳይ</span>
+                            feedbackMessages.map((msg) => (
+                              <div key={msg.id} className="flex gap-4">
+                                <Avatar className="w-10 h-10 border-2 border-primary/10">
+                                  <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${msg.senderName}`} />
+                                  <AvatarFallback>{msg.senderName.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs font-black text-slate-900">{msg.senderName}</span>
+                                      <Badge variant="secondary" className="text-[8px] font-bold px-1.5 h-4 bg-primary/5 text-primary border-none">{msg.senderRole}</Badge>
+                                    </div>
+                                    <span className="text-[9px] text-slate-400 font-medium">{new Date(msg.timestamp).toLocaleString('am-ET')}</span>
+                                  </div>
+                                  <div className="bg-slate-50 p-4 rounded-2xl rounded-tl-none border border-slate-100">
+                                    <p className="text-xs text-slate-600 leading-relaxed italic">"{msg.content}"</p>
+                                  </div>
                                 </div>
                               </div>
                             ))
                           )}
                         </div>
                       </ScrollArea>
+                      <div className="p-4 bg-slate-50 border-t border-slate-100">
+                        <div className="flex gap-2">
+                          <Input 
+                            value={feedbackInput} 
+                            onChange={(e) => setFeedbackInput(e.target.value)} 
+                            placeholder="አዲስ መመሪያ ወይም አስተያየት እዚህ ይጻፉ..." 
+                            className="bg-white border-slate-200 rounded-xl text-xs h-11"
+                          />
+                          <Button className="h-11 px-6 rounded-xl bg-primary text-white font-bold text-xs" onClick={handleSendFeedback}>
+                            <Send className="w-4 h-4 mr-2" /> ላክ
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+
+                    <Card className="shadow-sm border-slate-200 rounded-2xl bg-white flex flex-col p-6 overflow-hidden">
+                      <h3 className="text-xs font-black uppercase tracking-widest text-slate-900 mb-6 flex items-center gap-2">
+                        <Users className="w-4 h-4 text-green-600" /> ንቁ አስተዳዳሪዎች
+                      </h3>
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-green-50/50 border border-green-100">
+                          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold">IT</div>
+                          <div className="flex flex-col">
+                            <span className="text-xs font-black text-slate-900">የቢሮ ሀላፊ</span>
+                            <span className="text-[9px] text-green-600 font-bold">Online</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 opacity-60">
+                          <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center text-slate-400 font-bold">TZ</div>
+                          <div className="flex flex-col">
+                            <span className="text-xs font-black text-slate-900">የቴክኖሎጂ ዘርፍ ሀላፊ</span>
+                            <span className="text-[9px] text-slate-400 font-bold">Offline</span>
+                          </div>
+                        </div>
+                      </div>
                     </Card>
                   </div>
                 </TabsContent>
@@ -662,7 +878,7 @@ export function BPMNFlowForgeApp() {
 
       <footer className="px-8 py-3 bg-white border-t border-slate-200 flex justify-between items-center shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="flex gap-8 items-center text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">
-          <span className="flex items-center gap-2"><Zap className="w-3 h-3 text-primary" /> ITDB Enterprise v3.2.0</span>
+          <span className="flex items-center gap-2"><Zap className="w-3 h-3 text-primary" /> ITDB Enterprise v3.3.0</span>
           <span className="text-slate-200">|</span>
           <span className="hover:text-primary transition-colors cursor-default">© 2024 Innovation & Tech Bureau</span>
           <Link href="/login" className="flex items-center gap-2 text-primary hover:underline font-black">

@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useMemo } from 'react';
 import { AuthGuard } from '@/components/auth-guard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LayoutDashboard, FileText, Users, Activity, Clock, CheckCircle2, Eye, ExternalLink } from 'lucide-react';
+import { LayoutDashboard, FileText, Users, Activity, Clock, CheckCircle2, Eye, ExternalLink, Building2, User } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +19,10 @@ interface DocumentRecord {
   fileUrl: string;
   uploaderId: string;
   uploaderName?: string;
+  sector?: string;
+  directorate?: string;
+  team?: string;
+  expertName?: string;
   createdAt?: any;
 }
 
@@ -31,19 +36,16 @@ interface UserRecord {
 export default function AdminPage() {
   const db = useFirestore();
 
-  // Query for all documents to calculate total count
   const docsQuery = useMemoFirebase(() => {
     if (!db) return null;
     return query(collection(db, 'documents'), orderBy('createdAt', 'desc'));
   }, [db]);
 
-  // Query for recent activities (last 10 for better visibility)
   const recentQuery = useMemoFirebase(() => {
     if (!db) return null;
-    return query(collection(db, 'documents'), orderBy('createdAt', 'desc'), limit(10));
+    return query(collection(db, 'documents'), orderBy('createdAt', 'desc'), limit(15));
   }, [db]);
 
-  // Query for users to count staff and map names
   const usersQuery = useMemoFirebase(() => {
     if (!db) return null;
     return query(collection(db, 'users'));
@@ -56,13 +58,14 @@ export default function AdminPage() {
   const stats = useMemo(() => ({
     totalDocs: allDocs?.length || 0,
     totalUsers: allUsers?.length || 0,
-    status: "Stable",
+    status: "Active",
     activeWorkflows: allDocs?.filter(d => d.status !== 'የጸደቀ').length || 0
   }), [allDocs, allUsers]);
 
-  const getUserName = (uploaderId: string, uploaderName?: string) => {
-    if (uploaderName) return uploaderName;
-    const user = allUsers?.find(u => u.id === uploaderId);
+  const getUserName = (doc: DocumentRecord) => {
+    if (doc.expertName) return doc.expertName;
+    if (doc.uploaderName) return doc.uploaderName;
+    const user = allUsers?.find(u => u.id === doc.uploaderId);
     return user?.displayName || user?.email || "ያልታወቀ ሰራተኛ";
   };
 
@@ -76,7 +79,7 @@ export default function AdminPage() {
       <div className="p-8 max-w-7xl mx-auto space-y-8 bg-slate-50 min-h-screen">
         <header className="flex flex-col gap-2">
           <p className="text-[10px] font-bold text-primary tracking-widest uppercase">ITDB Management Dashboard</p>
-          <h1 className="text-3xl font-black text-slate-900 uppercase">የአስተዳዳሪ መቆጣጠሪያ v3.1.4</h1>
+          <h1 className="text-3xl font-black text-slate-900 uppercase">የተቋም አስተዳዳሪ መቆጣጠሪያ v3.3.0</h1>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -105,7 +108,7 @@ export default function AdminPage() {
         <Card className="shadow-xl border-none">
           <CardHeader className="flex flex-row items-center justify-between border-b border-slate-50 pb-4">
             <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
-              <Clock className="w-4 h-4" /> የቅርብ ጊዜ እንቅስቃሴዎች እና የሰራተኞች ዝርዝር
+              <Clock className="w-4 h-4" /> የቅርብ ጊዜ የተቋም እንቅስቃሴዎች (Daily Log Sync)
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -127,11 +130,15 @@ export default function AdminPage() {
                       </div>
                       <div className="flex flex-col gap-1">
                         <span className="text-sm font-bold text-slate-900 leading-none">{doc.name}</span>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                           <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{doc.category}</span>
                           <span className="text-[9px] text-slate-200">•</span>
                           <span className="text-[10px] text-primary font-black flex items-center gap-1">
-                            <Users className="w-3 h-3" /> {getUserName(doc.uploaderId, doc.uploaderName)}
+                            <User className="w-3 h-3" /> {getUserName(doc)}
+                          </span>
+                          <span className="text-[9px] text-slate-200">•</span>
+                          <span className="text-[10px] text-slate-500 font-bold flex items-center gap-1">
+                            <Building2 className="w-3 h-3" /> {doc.sector || "General"}
                           </span>
                         </div>
                       </div>
@@ -140,7 +147,6 @@ export default function AdminPage() {
                     <div className="flex items-center gap-8">
                       <div className="text-right hidden sm:flex flex-col items-end">
                         <Badge variant="outline" className={`text-[8px] border-none h-5 px-3 mb-1 font-bold ${doc.status === 'የጸደቀ' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
-                          {doc.status === 'የጸደቀ' && <CheckCircle2 className="w-2.5 h-2.5 mr-1" />}
                           {doc.status}
                         </Badge>
                         <span className="text-[9px] text-slate-400 font-medium tabular-nums">
@@ -154,7 +160,7 @@ export default function AdminPage() {
                         className="h-10 px-4 rounded-xl border-slate-200 hover:bg-primary hover:text-white hover:border-primary transition-all group/btn"
                         onClick={() => handleOpenFile(doc.fileUrl)}
                       >
-                        <Eye className="w-4 h-4 mr-2 group-hover/btn:scale-110 transition-transform" />
+                        <Eye className="w-4 h-4 mr-2" />
                         ከፍት
                       </Button>
                     </div>
