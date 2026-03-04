@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -31,7 +30,8 @@ import {
   LogIn,
   Filter,
   FileSearch,
-  Zap
+  Zap,
+  Eye
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -111,6 +111,7 @@ interface UploadedFile {
   status: 'የጸደቀ' | 'በሂደት ላይ';
   version: number;
   uploaderId: string;
+  uploaderName?: string;
   createdAt?: any;
 }
 
@@ -285,6 +286,7 @@ export function BPMNFlowForgeApp() {
         status: 'በሂደት ላይ',
         version: 1,
         uploaderId: user.uid,
+        uploaderName: user.displayName || user.email || "ያልታወቀ ሰራተኛ",
         createdAt: Timestamp.now()
       };
       await addDocumentNonBlocking(collection(db, 'documents'), newFile);
@@ -317,6 +319,7 @@ export function BPMNFlowForgeApp() {
         status: 'በሂደት ላይ',
         version,
         uploaderId: user.uid,
+        uploaderName: user.displayName || user.email || "ያልታወቀ ሰራተኛ",
         createdAt: Timestamp.now()
       };
       addDocumentNonBlocking(collection(db, 'documents'), newFile);
@@ -328,6 +331,11 @@ export function BPMNFlowForgeApp() {
 
   const handleApprove = (id: string) => updateDocumentNonBlocking(doc(db!, 'documents', id), { status: 'የጸደቀ' });
   const handleDelete = (id: string) => deleteDocumentNonBlocking(doc(db!, 'documents', id));
+  
+  const handleOpenFile = (url: string) => {
+    if (!url) return;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
@@ -542,6 +550,7 @@ export function BPMNFlowForgeApp() {
                               <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100"><MoreVertical className="w-3 h-3" /></Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-40 p-1">
+                              <DropdownMenuItem onClick={() => handleOpenFile(file.fileUrl)} className="text-[10px]"><Eye className="w-3 h-3 mr-2" /> ክፈት</DropdownMenuItem>
                               {file.status !== 'የጸደቀ' && <DropdownMenuItem onClick={() => handleApprove(file.id)} className="text-[10px]"><CheckCircle2 className="w-3 h-3 mr-2" /> አጽድቅ</DropdownMenuItem>}
                               <DropdownMenuItem asChild><a href={file.fileUrl} download={file.fileName} className="text-[10px] flex items-center"><Download className="w-3 h-3 mr-2" /> አውርድ</a></DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleDelete(file.id)} className="text-[10px] text-red-600 font-bold"><Trash2 className="w-3 h-3 mr-2" /> ሰርዝ</DropdownMenuItem>
@@ -671,4 +680,3 @@ export function BPMNFlowForgeApp() {
     </div>
   );
 }
-
