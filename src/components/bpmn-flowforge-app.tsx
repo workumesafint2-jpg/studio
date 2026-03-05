@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -123,6 +124,10 @@ interface FeedbackMessage {
   createdAt?: any;
 }
 
+/**
+ * Master Admin Email Configuration
+ * workumesafint2@gmail.com
+ */
 const ADMIN_EMAIL = "workumesafint2@gmail.com";
 
 export function BPMNFlowForgeApp() {
@@ -388,7 +393,6 @@ export function BPMNFlowForgeApp() {
       <main className="flex-1 flex flex-col p-3 gap-3 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full">
           
-          {/* LEFT PANEL: ARCHITECT & VAULT (40%) */}
           <div className="lg:col-span-5 flex flex-col gap-3 overflow-hidden">
             <Card className="shadow-lg border-none rounded-2xl overflow-hidden shrink-0">
               <CardContent className="p-4 space-y-4">
@@ -479,7 +483,6 @@ export function BPMNFlowForgeApp() {
             </Card>
           </div>
 
-          {/* RIGHT PANEL: DASHBOARD & DIAGRAM (60%) */}
           <div className="lg:col-span-7 flex flex-col gap-3 overflow-hidden">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
               <TabsList className="bg-white border p-1 h-10 rounded-2xl shadow-sm shrink-0">
@@ -650,7 +653,7 @@ export function BPMNFlowForgeApp() {
 
       <footer className="px-6 py-2 bg-white border-t flex justify-between items-center shrink-0">
         <div className="flex gap-4 items-center text-[9px] font-black text-slate-400 uppercase tracking-widest">
-          <span>ITB Enterprise v4.3.0</span>
+          <span>ITB Enterprise v4.3.5</span>
           <span className="text-slate-200">|</span>
           <Link href="/admin" className="text-[#1e3a8a] hover:underline">MASTER CONTROL</Link>
         </div>

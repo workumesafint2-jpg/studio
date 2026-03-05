@@ -14,6 +14,10 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Image from 'next/image';
 
+/**
+ * (ወርቁ) Pro - Institutional Login Page v4.3.5
+ * Stable Deployment Sync
+ */
 export default function LoginPage() {
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
@@ -35,8 +39,10 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if Firebase is actually configured
     if (!auth) {
-      setErrorMessage("የቢሮው የደመና አገልግሎት (Firebase) አልተገናኘም። እባክዎን የFirebase Console መዋቀሩን ያረጋግጡ።");
+      setErrorMessage("የቢሮው የደመና አገልግሎት (Firebase) አልተገናኘም። እባክዎን በ Deployment Platform (Vercel/Netlify) ላይ Environment Variables መዋቀራቸውን ያረጋግጡ።");
       return;
     }
     
@@ -57,10 +63,14 @@ export default function LoginPage() {
     } catch (err: any) {
       console.error("Auth Error:", err);
       let msg = "መግባት አልተቻለም። እባክዎን የኢሜይል እና የይለፍ ቃልዎን ያረጋግጡ።";
+      
+      // Detailed error feedback for users
       if (err.code === 'auth/email-already-in-use') msg = "ይህ ኢሜይል ቀድሞ ተመዝግቧል።";
       if (err.code === 'auth/weak-password') msg = "የይለፍ ቃሉ ቢያንስ 6 ፊደላት መሆን አለበት።";
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') msg = "ኢሜይል ወይም የይለፍ ቃል ተሳስቷል።";
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') msg = "ኢሜይል ወይም የይለፍ ቃል ተሳስቷል።";
       if (err.code === 'auth/operation-not-allowed') msg = "በFirebase Console ላይ Email/Password አልተፈቀደም። እባክዎን ያብሩት።";
+      if (err.code === 'auth/network-request-failed') msg = "የኢንተርኔት ግንኙነት የለም ወይም የFirebase Config ተሳስቷል።";
+      
       setErrorMessage(msg);
     } finally {
       setLoading(false);
@@ -75,7 +85,7 @@ export default function LoginPage() {
           <div className="mx-auto w-20 h-20 bg-blue-50 rounded-2xl flex items-center justify-center mb-2 shadow-sm border border-blue-100 relative overflow-hidden">
             <Image 
               src="https://picsum.photos/seed/addis-ababa-logo/400/400" 
-              alt="Logo" 
+              alt="Addis Ababa Logo" 
               fill 
               className="object-contain p-2"
               data-ai-hint="Addis Ababa City logo"
@@ -93,7 +103,7 @@ export default function LoginPage() {
             <Alert variant="destructive" className="mb-6 border-none bg-red-50 text-red-900 rounded-2xl">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle className="text-xs font-black uppercase">ስህተት</AlertTitle>
-              <AlertDescription className="text-[11px] leading-relaxed font-bold">
+              <AlertDescription className="text-[11px] font-bold leading-relaxed">
                 {errorMessage}
               </AlertDescription>
             </Alert>
@@ -102,8 +112,8 @@ export default function LoginPage() {
           {successMessage && (
             <Alert className="mb-6 border-none bg-green-50 text-green-900 rounded-2xl">
               <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <AlertTitle className="text-xs font-black uppercase">መልካም ዜና</AlertTitle>
-              <AlertDescription className="text-[11px] leading-relaxed font-bold">
+              <AlertTitle className="text-xs font-black uppercase">ተሳክቷል</AlertTitle>
+              <AlertDescription className="text-[11px] font-bold leading-relaxed">
                 {successMessage}
               </AlertDescription>
             </Alert>

@@ -8,17 +8,19 @@ import { getFirestore } from 'firebase/firestore';
 
 /**
  * Institutional Firebase Initializer.
- * v4.3.0 - Stable Production Sync
+ * v4.3.5 - Resilient Production Sync
  */
 export function initializeFirebase() {
   if (typeof window === 'undefined') {
     return { firebaseApp: null, auth: null, firestore: null };
   }
 
+  // If already initialized, return existing SDKs
   if (getApps().length > 0) {
     return getSdks(getApp());
   }
 
+  // Validate critical config presence
   const isConfigValid = !!(
     firebaseConfig.apiKey && 
     firebaseConfig.apiKey !== 'undefined' && 
@@ -37,7 +39,8 @@ export function initializeFirebase() {
     }
   }
 
-  console.warn('Firebase config missing. Running in Standalone mode.');
+  // If not configured, we run in a restricted "local-only" state
+  console.warn('(ወርቁ) Warning: Firebase config missing. Environment variables must be set for cloud features.');
   return { firebaseApp: null, auth: null, firestore: null };
 }
 
