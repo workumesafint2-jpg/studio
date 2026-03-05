@@ -42,7 +42,9 @@ import {
   Bold,
   Italic,
   List,
-  Type
+  Type,
+  XCircle,
+  Briefcase
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -265,14 +267,6 @@ export function BPMNFlowForgeApp() {
     return list;
   }, [uploadedFiles, vaultFilter, globalSearch]);
 
-  const stats = useMemo(() => ({
-    totalPlans: uploadedFiles.filter(f => f?.category === 'እቅዶች (Plans)').length,
-    totalReports: uploadedFiles.filter(f => f?.category === 'ሪፖርቶች (Reports)').length,
-    avgExecution: performanceData.length > 0 
-      ? Math.round(performanceData.reduce((acc, curr) => acc + curr.execution, 0) / performanceData.length)
-      : 0
-  }), [uploadedFiles, performanceData]);
-
   if (!mounted) return null;
 
   const handleGenerate = () => {
@@ -286,6 +280,12 @@ export function BPMNFlowForgeApp() {
       setActiveTab("diagram");
       toast({ title: "ተሳክቷል", description: "ዲያግራሙ በአውቶማቲክ ኢንጂኑ ተሰርቷል።" });
     }
+  };
+
+  const handleClearInputs = () => {
+    setInput("");
+    setTitle("");
+    toast({ title: "ተሰርዟል", description: "የጽሑፍ ሳጥኖቹ ጸድተዋል።" });
   };
 
   const handleAutoSuggest = async (docType: 'reform' | 'report' | 'guideline' | 'diagram' | 'analysis' = 'reform') => {
@@ -349,19 +349,23 @@ export function BPMNFlowForgeApp() {
   };
 
   const processUpload = () => {
-    if (!selectedFile || !uploadCategory || !user || !db) return;
+    if (!selectedFile || !uploadCategory || !user || !db) {
+      toast({ title: "ስህተት", description: "እባክዎን ፋይል እና ምድብ በትክክል ይምረጡ።", variant: "destructive" });
+      return;
+    }
     setIsUploading(true);
     const reader = new FileReader();
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string;
       const displayName = selectedFile.name.split('.').slice(0, -1).join('.') || selectedFile.name;
-      const version = (uploadedFiles.filter(f => f.name.startsWith(displayName)).length) + 1;
+      const existing = uploadedFiles.filter(f => f.name.startsWith(displayName));
+      const version = existing.length + 1;
       const finalName = version > 1 ? `${displayName} V${version}` : displayName;
 
       const newFile: Omit<UploadedFile, 'id'> = {
         name: finalName,
         category: uploadCategory,
-        subCategory: uploadSubCategory,
+        subCategory: uploadSubCategory || "ጠቅላላ",
         sector: uploadSector || "General",
         directorate: uploadDirectorate || "General",
         team: uploadTeam || "General",
@@ -398,9 +402,9 @@ export function BPMNFlowForgeApp() {
       };
       await addDocumentNonBlocking(collection(db, 'feedback'), newFeedback);
       setFeedbackInput("");
-      toast({ title: "ተልኳል", description: "አስተያየቱ ለሰራተኞች ይፋ ሆኗል።" });
+      toast({ title: "ተልኳል", description: "መረጃው በዳሽቦርዱ ላይ ተመዝግቧል።" });
     } catch (err) {
-      toast({ title: "ስህተት", description: "አስተያየቱን መላክ አልተቻለም።", variant: "destructive" });
+      toast({ title: "ስህተት", description: "ማስቀመጥ አልተቻለም።", variant: "destructive" });
     }
   };
 
@@ -418,15 +422,15 @@ export function BPMNFlowForgeApp() {
 
   const handleOpenFile = (url: string) => {
     if (!url) return;
-    if (url.startsWith('data:')) {
-      const win = window.open();
-      if (win) {
+    const win = window.open();
+    if (win) {
+      if (url.startsWith('data:')) {
         win.document.write(`<iframe src="${url}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
       } else {
-        toast({ title: "Error", description: "Pop-up blocked. Please allow pop-ups to view files.", variant: "destructive" });
+        win.location.href = url;
       }
     } else {
-      window.open(url, '_blank', 'noopener,noreferrer');
+      toast({ title: "Error", description: "Pop-up blocked. Please allow pop-ups to view files.", variant: "destructive" });
     }
   };
 
@@ -452,7 +456,7 @@ export function BPMNFlowForgeApp() {
 
       <div className="flex items-center justify-between px-8 py-3 bg-slate-50 border-b border-slate-200">
         <div className="flex items-center gap-4">
-          {/* Worku AI badge removed as requested */}
+           {/* Worku AI badge removed */}
         </div>
 
         <div className="flex items-center gap-4 max-w-lg w-full">
@@ -498,30 +502,35 @@ export function BPMNFlowForgeApp() {
               <CardContent className="p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xs font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                    <BrainCircuit className="w-4 h-4 text-[#1e3a8a]" /> {/* Worku AI text removed */}
+                    <BrainCircuit className="w-4 h-4 text-[#1e3a8a]" /> AI ረዳት
                   </h2>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 text-[10px] font-bold text-[#1e3a8a] bg-[#1e3a8a]/5 hover:bg-[#1e3a8a]/10 rounded-xl px-4">
-                        {isSuggesting ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <BrainCircuit className="w-4 h-4 mr-2" />}
-                        AI ረዳት <ChevronDown className="w-3 h-3 ml-2" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-72 p-2">
-                      <DropdownMenuItem onClick={() => handleAutoSuggest('diagram')} className="p-3 cursor-pointer rounded-lg hover:bg-slate-50">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-xs font-bold text-slate-900 flex items-center gap-2"><LayoutIcon className="w-3.5 h-3.5 text-[#1e3a8a]" /> አዲስ የስራ ፍሰት አመንጭ</span>
-                          <span className="text-[10px] text-slate-400">ከአገልግሎት ስሙ ተነስቶ ዝርዝር ተግባራትን ይዘረዝራል።</span>
-                        </div>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleAutoSuggest('analysis')} className="p-3 cursor-pointer rounded-lg hover:bg-slate-50 mt-1">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-xs font-bold text-slate-900 flex items-center gap-2"><FileSearch className="w-3.5 h-3.5 text-green-600" /> መዝገብ ቤት ትንተና</span>
-                          <span className="text-[10px] text-slate-400">በመዝገብ ቤቱ ያሉ ፋይሎችን በመፈተሽ ክፍተቶችን ይለያል።</span>
-                        </div>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" className="h-8 text-[10px] font-bold text-red-500 hover:bg-red-50 rounded-xl" onClick={handleClearInputs}>
+                      <XCircle className="w-3.5 h-3.5 mr-1" /> አጥፋ (Clear)
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 text-[10px] font-bold text-[#1e3a8a] bg-[#1e3a8a]/5 hover:bg-[#1e3a8a]/10 rounded-xl px-4">
+                          {isSuggesting ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <BrainCircuit className="w-4 h-4 mr-2" />}
+                          አመንጭ <ChevronDown className="w-3 h-3 ml-2" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-72 p-2">
+                        <DropdownMenuItem onClick={() => handleAutoSuggest('diagram')} className="p-3 cursor-pointer rounded-lg hover:bg-slate-50">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-xs font-bold text-slate-900 flex items-center gap-2"><LayoutIcon className="w-3.5 h-3.5 text-[#1e3a8a]" /> አዲስ የስራ ፍሰት</span>
+                            <span className="text-[10px] text-slate-400">ከአገልግሎት ስሙ ተነስቶ ዝርዝር ተግባራትን ይዘረዝራል።</span>
+                          </div>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleAutoSuggest('analysis')} className="p-3 cursor-pointer rounded-lg hover:bg-slate-50 mt-1">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-xs font-bold text-slate-900 flex items-center gap-2"><FileSearch className="w-3.5 h-3.5 text-green-600" /> መዝገብ ቤት ትንተና</span>
+                            <span className="text-[10px] text-slate-400">በመዝገብ ቤቱ ያሉ ፋይሎችን በመፈተሽ ክፍተቶችን ይለያል።</span>
+                          </div>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
                 
                 <div className="space-y-4">
@@ -577,39 +586,46 @@ export function BPMNFlowForgeApp() {
                         <Upload className="w-3 h-3 mr-1" /> ፋይል መዝግብ
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-2xl rounded-3xl p-8 overflow-y-auto max-h-[90vh]">
+                    <DialogContent className="max-w-3xl rounded-3xl p-8 overflow-y-auto max-h-[90vh]">
                       <DialogHeader>
                         <DialogTitle className="text-xl font-black text-slate-900">አዲስ ፋይል መመዝገቢያ (ተቋማዊ ሰንሰለት)</DialogTitle>
                         <DialogDescription className="text-xs">እባክዎን ፋይሉን በቢሮው መዋቅር መሰረት በትክክል ይመዝግቡ።</DialogDescription>
                       </DialogHeader>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-6">
                         <div className="space-y-4">
                           <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ዘርፍ (Sector)</label>
-                            <Select value={uploadSector} onValueChange={setUploadSector}>
-                              <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="ዘርፍ ይምረጡ..." /></SelectTrigger>
-                              <SelectContent>{SECTORS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                            </Select>
+                            <Input 
+                              value={uploadSector} 
+                              onChange={(e) => setUploadSector(e.target.value)} 
+                              placeholder="ለምሳሌ፡ ቴክኖሎጂ ዘርፍ..." 
+                              className="h-12 rounded-xl"
+                            />
                           </div>
                           <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ዳይሬክቶሬት</label>
-                            <Select value={uploadDirectorate} onValueChange={setUploadDirectorate} disabled={!uploadSector}>
-                              <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="ዳይሬክቶሬት ይምረጡ..." /></SelectTrigger>
-                              <SelectContent>
-                                {uploadSector && DIRECTORATES[uploadSector] && DIRECTORATES[uploadSector].map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
+                            <Input 
+                              value={uploadDirectorate} 
+                              onChange={(e) => setUploadDirectorate(e.target.value)} 
+                              placeholder="ለምሳሌ፡ ሶፍትዌር ልማት..." 
+                              className="h-12 rounded-xl"
+                            />
                           </div>
                           <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">የቡድን ስም</label>
-                            <Input value={uploadTeam} onChange={(e) => setUploadTeam(e.target.value)} placeholder="ቡድን 1..." className="h-11 rounded-xl" />
+                            <Input 
+                              value={uploadTeam} 
+                              onChange={(e) => setUploadTeam(e.target.value)} 
+                              placeholder="ለምሳሌ፡ የልማት ቡድን 1..." 
+                              className="h-12 rounded-xl" 
+                            />
                           </div>
                         </div>
                         <div className="space-y-4">
                           <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ዋና ምድብ</label>
                             <Select value={uploadCategory} onValueChange={(val) => { setUploadCategory(val); setUploadSubCategory(""); }}>
-                              <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="ምድብ ይምረጡ..." /></SelectTrigger>
+                              <SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="ምድብ ይምረጡ..." /></SelectTrigger>
                               <SelectContent>{Object.keys(CATEGORIES).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                             </Select>
                           </div>
@@ -617,7 +633,7 @@ export function BPMNFlowForgeApp() {
                             <div className="space-y-2">
                               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ንዑስ ምድብ</label>
                               <Select value={uploadSubCategory} onValueChange={setUploadSubCategory}>
-                                <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="ንዑስ ምድብ ይምረጡ..." /></SelectTrigger>
+                                <SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="ንዑስ ምድብ ይምረጡ..." /></SelectTrigger>
                                 <SelectContent>
                                   {(CATEGORIES as any)[uploadCategory].map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                                 </SelectContent>
@@ -628,16 +644,16 @@ export function BPMNFlowForgeApp() {
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ፋይል</label>
                             <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-all">
                               <Upload className="w-6 h-6 text-slate-300 mb-1" />
-                              <span className="text-[9px] font-bold text-slate-500">{selectedFile ? selectedFile.name : "ፋይል ይምረጡ"}</span>
+                              <span className="text-[10px] font-bold text-slate-500">{selectedFile ? selectedFile.name : "ፋይል ይምረጡ"}</span>
                               <input type="file" className="hidden" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
                             </label>
                           </div>
                         </div>
                       </div>
                       <DialogFooter>
-                        <Button className="w-full h-12 bg-[#1e3a8a] text-white font-bold rounded-xl shadow-lg" onClick={processUpload} disabled={isUploading || !selectedFile || !uploadCategory || !uploadSector}>
-                          {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4 mr-2" />}
-                          አጽድቅና መዝግብ
+                        <Button className="w-full h-14 bg-[#1e3a8a] text-white font-black text-lg rounded-xl shadow-lg hover:scale-[1.01] transition-transform" onClick={processUpload} disabled={isUploading || !selectedFile || !uploadCategory}>
+                          {isUploading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <ShieldCheck className="w-6 h-6 mr-2" />}
+                          አጽድቅና በመዝገብ ቤት መዝግብ
                         </Button>
                       </DialogFooter>
                     </DialogContent>
@@ -671,9 +687,9 @@ export function BPMNFlowForgeApp() {
                               <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100"><MoreVertical className="w-3 h-3" /></Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-40 p-1">
-                              <DropdownMenuItem onClick={() => handleOpenFile(file.fileUrl)} className="text-[10px] cursor-pointer"><Eye className="w-3 h-3 mr-2" /> ክፈት</DropdownMenuItem>
-                              {file.status !== 'የጸደቀ' && <DropdownMenuItem onClick={() => handleApprove(file.id)} className="text-[10px] cursor-pointer"><CheckCircle2 className="w-3 h-3 mr-2" /> አጽድቅ</DropdownMenuItem>}
-                              <DropdownMenuItem asChild><a href={file.fileUrl} download={file.fileName} className="text-[10px] flex items-center cursor-pointer"><Download className="w-3 h-3 mr-2" /> አውርድ</a></DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenFile(file.fileUrl)} className="text-[10px] cursor-pointer font-bold"><Eye className="w-3 h-3 mr-2 text-blue-600" /> ክፈት</DropdownMenuItem>
+                              {file.status !== 'የጸደቀ' && <DropdownMenuItem onClick={() => handleApprove(file.id)} className="text-[10px] cursor-pointer font-bold"><CheckCircle2 className="w-3 h-3 mr-2 text-green-600" /> አጽድቅ</DropdownMenuItem>}
+                              <DropdownMenuItem asChild><a href={file.fileUrl} download={file.fileName} className="text-[10px] flex items-center cursor-pointer font-bold"><Download className="w-3 h-3 mr-2 text-primary" /> አውርድ</a></DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleDelete(file.id)} className="text-[10px] text-red-600 font-bold cursor-pointer"><Trash2 className="w-3 h-3 mr-2" /> ሰርዝ</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -693,10 +709,10 @@ export function BPMNFlowForgeApp() {
                   <TabsTrigger value="diagram" className="text-[10px] font-bold px-4 rounded-lg">ዲያግራም</TabsTrigger>
                   <TabsTrigger value="dashboard" className="text-[10px] font-bold px-4 rounded-lg">አፈጻጸም</TabsTrigger>
                   <TabsTrigger value="daily-log" className="text-[10px] font-bold px-4 rounded-lg">የቀን ውሎ</TabsTrigger>
-                  <TabsTrigger value="feedback" className="text-[10px] font-bold px-4 rounded-lg">አመራር መመሪያ</TabsTrigger>
+                  <TabsTrigger value="feedback" className="text-[10px] font-bold px-4 rounded-lg">የአመራርና የሰራተኞች ዳሽ ቦርድ</TabsTrigger>
                 </TabsList>
                 <div className="pr-4">
-                  <h2 className="text-xs font-black text-slate-900 uppercase tracking-widest">የአመራርና የሰራተኞች ዳሽ ቦርድ</h2>
+                  <h2 className="text-xs font-black text-slate-900 uppercase tracking-widest">ITB Enterprise Portal v3.6.0</h2>
                 </div>
               </div>
 
@@ -827,13 +843,13 @@ export function BPMNFlowForgeApp() {
                     <Card className="md:col-span-2 shadow-sm border-slate-200 rounded-2xl bg-white flex flex-col overflow-hidden">
                       <CardHeader className="border-b border-slate-50 py-4">
                         <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                          <MessageSquare className="w-4 h-4 text-[#1e3a8a]" /> የአመራርና የሰራተኞች ዳሽ ቦርድ - መመሪያ ማዕከል
+                          <Briefcase className="w-4 h-4 text-[#1e3a8a]" /> የአመራርና የሰራተኞች ዳሽ ቦርድ
                         </CardTitle>
                       </CardHeader>
                       <ScrollArea className="flex-1 p-6">
                         <div className="space-y-6">
                           {feedbackMessages.length === 0 ? (
-                            <div className="h-64 flex flex-col items-center justify-center text-slate-300 font-black text-[10px] uppercase tracking-widest italic opacity-40">ምንም መመሪያ አልተላለፈም</div>
+                            <div className="h-64 flex flex-col items-center justify-center text-slate-300 font-black text-[10px] uppercase tracking-widest italic opacity-40">ምንም መረጃ አልተመዘገበም</div>
                           ) : (
                             feedbackMessages.map((msg) => (
                               <div key={msg.id} className="flex gap-4">
@@ -870,11 +886,11 @@ export function BPMNFlowForgeApp() {
                             <Textarea 
                               value={feedbackInput} 
                               onChange={(e) => setFeedbackInput(e.target.value)} 
-                              placeholder="አዲስ መመሪያ ወይም ዝርዝር አስተያየት እዚህ ይጻፉ (Office-style)..." 
-                              className="bg-white border-slate-200 rounded-xl text-sm min-h-[120px] focus:ring-[#1e3a8a] shadow-inner p-4"
+                              placeholder="አዲስ መመሪያ፣ እቅድ ወይም ሪፖርት እዚህ ይጻፉ (Office Word Style)..." 
+                              className="bg-white border-slate-200 rounded-xl text-sm min-h-[150px] focus:ring-[#1e3a8a] shadow-inner p-4 font-body leading-relaxed"
                             />
-                            <Button className="absolute bottom-3 right-3 h-10 px-6 rounded-xl bg-[#1e3a8a] text-white font-bold text-xs shadow-lg hover:scale-105 transition-transform" onClick={handleSendFeedback}>
-                              <Send className="w-4 h-4 mr-2" /> መዝግብ (Save)
+                            <Button className="absolute bottom-3 right-3 h-12 px-8 rounded-xl bg-[#1e3a8a] text-white font-black text-xs shadow-lg hover:scale-105 transition-transform" onClick={handleSendFeedback}>
+                              <Save className="w-5 h-5 mr-2" /> መዝግብ (Save)
                             </Button>
                           </div>
                         </div>
@@ -883,21 +899,14 @@ export function BPMNFlowForgeApp() {
 
                     <Card className="shadow-sm border-slate-200 rounded-2xl bg-white flex flex-col p-6 overflow-hidden">
                       <h3 className="text-xs font-black uppercase tracking-widest text-slate-900 mb-6 flex items-center gap-2">
-                        <Users className="w-4 h-4 text-green-600" /> ንቁ አስተዳዳሪዎች
+                        <Users className="w-4 h-4 text-green-600" /> ንቁ ተጠቃሚዎች
                       </h3>
                       <div className="space-y-4">
                         <div className="flex items-center gap-3 p-3 rounded-xl bg-green-50/50 border border-green-100">
                           <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold">IT</div>
                           <div className="flex flex-col">
-                            <span className="text-xs font-black text-slate-900">የቢሮ ሀላፊ</span>
-                            <span className="text-[9px] text-green-600 font-bold">Online</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 opacity-60">
-                          <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center text-slate-400 font-bold">TZ</div>
-                          <div className="flex flex-col">
-                            <span className="text-xs font-black text-slate-900">የቴክኖሎጂ ዘርፍ ሀላፊ</span>
-                            <span className="text-[9px] text-slate-400 font-bold">Offline</span>
+                            <span className="text-xs font-black text-slate-900">{user?.displayName || "ተጠቃሚ"}</span>
+                            <span className="text-[9px] text-green-600 font-bold">Online Now</span>
                           </div>
                         </div>
                       </div>
@@ -912,7 +921,7 @@ export function BPMNFlowForgeApp() {
 
       <footer className="px-8 py-3 bg-white border-t border-slate-200 flex justify-between items-center shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="flex gap-8 items-center text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">
-          <span className="flex items-center gap-2"><Zap className="w-3 h-3 text-[#1e3a8a]" /> ITDB Enterprise v3.5.1</span>
+          <span className="flex items-center gap-2"><Zap className="w-3 h-3 text-[#1e3a8a]" /> ITDB Enterprise v3.6.0</span>
           <span className="text-slate-200">|</span>
           <span className="hover:text-[#1e3a8a] transition-colors cursor-default">© 2024 Innovation & Tech Bureau</span>
           <Link href="/login" className="flex items-center gap-2 text-[#1e3a8a] hover:underline font-black">
@@ -922,7 +931,7 @@ export function BPMNFlowForgeApp() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full border border-green-100">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-            <span className="text-[9px] font-black text-green-600 uppercase tracking-widest">Assistant Online</span>
+            <span className="text-[9px] font-black text-green-600 uppercase tracking-widest">Assistant Active</span>
           </div>
           <span className="text-[11px] font-black text-slate-900 uppercase tracking-widest italic select-none">ወርቁ AI</span>
         </div>
@@ -930,3 +939,4 @@ export function BPMNFlowForgeApp() {
     </div>
   );
 }
+
