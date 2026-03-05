@@ -24,7 +24,8 @@ import {
   useFirestore, 
   useMemoFirebase,
   updateDocumentNonBlocking,
-  deleteDocumentNonBlocking
+  deleteDocumentNonBlocking,
+  useUser
 } from '@/firebase';
 import { collection, query, orderBy, limit, doc } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
@@ -61,9 +62,14 @@ interface UserRecord {
   email?: string;
 }
 
+const ADMIN_EMAIL = "workumesaifnt9@gmail.com";
+
 export default function AdminPage() {
   const db = useFirestore();
   const { toast } = useToast();
+  const { user } = useUser();
+
+  const isAdmin = user?.email === ADMIN_EMAIL;
 
   const docsQuery = useMemoFirebase(() => {
     if (!db) return null;
@@ -113,16 +119,31 @@ export default function AdminPage() {
   };
 
   const handleApprove = (id: string) => {
-    if (!db) return;
+    if (!db || !isAdmin) return;
     updateDocumentNonBlocking(doc(db, 'documents', id), { status: 'የጸደቀ' });
     toast({ title: "ጸድቋል", description: "ሰነዱ በትክክል ጸድቋል።" });
   };
 
   const handleDelete = (id: string) => {
-    if (!db) return;
+    if (!db || !isAdmin) return;
     deleteDocumentNonBlocking(doc(db, 'documents', id));
     toast({ title: "ተሰርዟል", description: "ሰነዱ ከመዝገብ ቤት ተወግዷል።" });
   };
+
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-slate-50">
+        <div className="text-center p-10 bg-white rounded-3xl shadow-xl border border-red-100 max-w-md">
+          <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h1 className="text-xl font-black text-slate-900 mb-2">Unauthorized Access</h1>
+          <p className="text-sm text-slate-500 leading-relaxed">This portal is restricted to the Innovation & Technology Bureau Administrator (workumesaifnt9@gmail.com).</p>
+          <Button asChild className="mt-6 rounded-xl bg-[#1e3a8a] px-8">
+            <Link href="/">ወደ ዋናው ገጽ ይመለሱ</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AuthGuard>
@@ -134,7 +155,7 @@ export default function AdminPage() {
           </div>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Innovation & Technology Bureau</p>
           <h1 className="text-sm font-black text-slate-800 uppercase mt-2 bg-white px-4 py-1.5 rounded-full shadow-sm border border-slate-100">
-            የአስተዳዳሪ መቆጣጠሪያ v3.8.1
+            የአስተዳዳሪ መቆጣጠሪያ v4.1.0
           </h1>
         </header>
 

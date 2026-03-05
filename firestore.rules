@@ -3,10 +3,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     /**
-     * Institutional Security Rules v3.7.0
-     * - Admin: Full access to everything.
-     * - Owner: Can update/delete their own data.
-     * - Public/Auth User: Can read everything (Transparency).
+     * Institutional Security Rules v4.2.0
+     * - Admin (workumesaifnt9@gmail.com): Full access.
+     * - Owner: Can delete their own documents.
+     * - Auth User: Can read, create, and download.
      */
     
     function isAuthenticated() {
@@ -14,9 +14,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isAuthenticated() && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isAuthenticated() && (request.auth.token.email == 'workumesaifnt9@gmail.com');
     }
 
     function isOwner(data) {
@@ -26,7 +24,8 @@ service cloud.firestore {
     match /documents/{documentId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
-      allow update, delete: if isAdmin() || isOwner(resource.data);
+      allow update: if isAdmin() || isOwner(resource.data);
+      allow delete: if isAdmin() || isOwner(resource.data);
     }
 
     match /feedback/{feedbackId} {

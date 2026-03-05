@@ -141,6 +141,7 @@ interface UserProfile {
   id: string;
   role: string;
   displayName?: string;
+  email?: string;
 }
 
 const CATEGORIES = {
@@ -150,6 +151,8 @@ const CATEGORIES = {
   'Service Taxonomy': ['የአገልግሎት ስታንዳርድ', 'የስራ ሂደት ካርታ'],
   'ሌሎች': ['መመሪያዎች', 'ደብዳቤዎች']
 };
+
+const ADMIN_EMAIL = "workumesaifnt9@gmail.com";
 
 export function BPMNFlowForgeApp() {
   const [mounted, setMounted] = useState(false);
@@ -186,7 +189,7 @@ export function BPMNFlowForgeApp() {
   }, [db, user]);
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
-  const isAdmin = userProfile?.role === 'admin';
+  const isAdmin = user?.email === ADMIN_EMAIL || userProfile?.role === 'admin';
 
   useEffect(() => {
     setMounted(true);
@@ -430,27 +433,27 @@ export function BPMNFlowForgeApp() {
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
-      <header className="flex flex-col items-center py-3 bg-white border-b border-slate-200 shrink-0 shadow-sm z-50">
-        <h2 className="text-xl font-black text-slate-900 tracking-tight leading-none mb-2">ኢኖቬሽንና ቴክኖሎጂ ቢሮ</h2>
+      <header className="flex flex-col items-center py-4 bg-white border-b border-slate-200 shrink-0 shadow-md z-50">
+        <h2 className="text-xl font-black text-slate-900 tracking-tight leading-none mb-3">ኢኖቬሽንና ቴክኖሎጂ ቢሮ</h2>
         <div className="flex flex-col items-center">
-          <div className="w-14 h-14 bg-[#1e3a8a] rounded-2xl flex items-center justify-center text-white shadow-xl mb-1 relative overflow-hidden">
+          <div className="w-16 h-16 bg-[#1e3a8a] rounded-2xl flex items-center justify-center text-white shadow-2xl mb-1 relative overflow-hidden border-2 border-white">
              <Image 
-              src="https://picsum.photos/seed/addis-ababa/200/200" 
+              src="https://picsum.photos/seed/addis-ababa-logo/400/400" 
               alt="Addis Ababa Logo" 
               fill
               className="object-contain p-1"
               data-ai-hint="Addis Ababa City Administration logo"
             />
           </div>
-          <span className="text-lg font-black text-[#1e3a8a] tracking-widest leading-none mt-1">ITB</span>
+          <span className="text-xl font-black text-[#1e3a8a] tracking-widest leading-none mt-2">ITB</span>
         </div>
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mt-1">Innovation & Technology Bureau</p>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em] mt-1.5">Innovation & Technology Bureau</p>
       </header>
 
       <div className="flex items-center justify-between px-6 py-2 bg-slate-50 border-b border-slate-200 shrink-0">
         <div className="flex items-center gap-2">
            {isAdmin && (
-             <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200 text-[9px] font-black uppercase">Admin Mode</Badge>
+             <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200 text-[9px] font-black uppercase">Admin Portal Active</Badge>
            )}
         </div>
 
@@ -473,12 +476,12 @@ export function BPMNFlowForgeApp() {
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="rounded-xl border-slate-200 bg-white font-black text-[10px] px-4 h-9">
+              <Button variant="outline" size="sm" className="rounded-xl border-slate-200 bg-white font-black text-[10px] px-4 h-9 shadow-sm hover:shadow-md transition-all">
                 መቆጣጠሪያ <ChevronDown className="w-4 h-4 ml-1" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 p-2">
-              <DropdownMenuLabel className="text-[10px] text-slate-400 uppercase tracking-widest">መቆጣጠሪያ</DropdownMenuLabel>
+              <DropdownMenuLabel className="text-[10px] text-slate-400 uppercase tracking-widest">ተግባራት</DropdownMenuLabel>
               <DropdownMenuItem asChild><Link href="/admin" className="cursor-pointer text-xs"><Activity className="w-4 h-4 mr-2" /> Dashboard</Link></DropdownMenuItem>
               {isAdmin && <DropdownMenuItem asChild><Link href="/admin" className="cursor-pointer text-xs"><Settings className="w-4 h-4 mr-2" /> Admin Tools</Link></DropdownMenuItem>}
               <DropdownMenuSeparator />
@@ -609,7 +612,7 @@ export function BPMNFlowForgeApp() {
                         </div>
                         <div className="space-y-4">
                           <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">የሰነዱ አይነት (File Type)</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">የፋይሉ አይነት (File Type)</label>
                             <Input 
                               value={uploadCategory} 
                               onChange={(e) => setUploadCategory(e.target.value)} 
@@ -692,7 +695,7 @@ export function BPMNFlowForgeApp() {
                   <TabsTrigger value="feedback" className="text-[10px] font-black px-4 rounded-lg">የአመራርና የሰራተኞች ዳሽ ቦርድ</TabsTrigger>
                 </TabsList>
                 <div className="pr-4 hidden sm:block">
-                  <h2 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">ITB v4.0.0</h2>
+                  <h2 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">ITB v4.1.0</h2>
                 </div>
               </div>
 
@@ -839,13 +842,13 @@ export function BPMNFlowForgeApp() {
                           <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-slate-50"><Italic className="w-5 h-5 text-slate-600" /></Button>
                           <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-slate-50"><List className="w-5 h-5 text-slate-600" /></Button>
                           <div className="w-px h-5 bg-slate-200 mx-2" />
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Office Editor v4.0</span>
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Office Hub v4.1</span>
                         </div>
                         <div className="relative">
                           <Textarea 
                             value={feedbackInput} 
                             onChange={(e) => setFeedbackInput(e.target.value)} 
-                            placeholder="አዲስ መመሪያ ወይም ሪፖርት እዚህ ይጻፉ... (Office Style)" 
+                            placeholder="አዲስ መመሪያ ወይም ሪፖርት እዚህ ይጻፉ... (Institutional Editor)" 
                             className="bg-slate-50 border-none rounded-2xl text-xs min-h-[160px] shadow-inner p-5 font-medium focus:ring-0 focus:bg-white transition-colors"
                           />
                           <Button className="absolute bottom-4 right-4 h-10 px-8 rounded-xl bg-[#1e3a8a] text-white font-black text-[11px] shadow-xl hover:scale-105 transition-transform" onClick={handleSendFeedback}>
@@ -882,11 +885,11 @@ export function BPMNFlowForgeApp() {
         </div>
       </main>
 
-      <footer className="px-6 py-1.5 bg-white border-t border-slate-200 flex justify-between items-center shrink-0">
+      <footer className="px-6 py-2 bg-white border-t border-slate-200 flex justify-between items-center shrink-0 shadow-inner">
         <div className="flex gap-5 items-center text-[9px] font-black uppercase text-slate-400 tracking-widest">
-          <span>ITB Enterprise v4.0.0</span>
+          <span>ITB Enterprise v4.1.0</span>
           <span className="text-slate-200">|</span>
-          <Link href="/admin" className="text-[#1e3a8a] hover:underline transition-colors">Admin Dashboard</Link>
+          <Link href="/admin" className="text-[#1e3a8a] hover:underline transition-colors">ADMIN DASHBOARD</Link>
         </div>
         <div className="flex items-center gap-2.5">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
