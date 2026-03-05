@@ -2,11 +2,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuth, useUser, initiateEmailSignIn, initiateEmailSignUp } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ShieldCheck, Loader2, ArrowLeft, UserPlus, LogIn, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Loader2, ArrowLeft, UserPlus, LogIn, AlertCircle, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
@@ -28,19 +29,14 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!isUserLoading && user) {
-      setLoading(false);
-      toast({
-        title: "እንኳን ደህና መጡ",
-        description: "ወርቁ ነኝ፣ ወደ መቆጣጠሪያ ገጹ በመግባት ላይ ነዎት።",
-      });
       router.push('/');
     }
-  }, [user, isUserLoading, router, toast]);
+  }, [user, isUserLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auth) {
-      setErrorMessage("የቢሮው የደመና አገልግሎት (Firebase) አልተገናኘም። እባክዎን የኢንቫይሮመንት ቫሪያብል በትክክል መዋቀሩን ያረጋግጡ።");
+      setErrorMessage("የቢሮው የደመና አገልግሎት (Firebase) አልተገናኘም። እባክዎን የFirebase Console መዋቀሩን ያረጋግጡ።");
       return;
     }
     
@@ -50,24 +46,24 @@ export default function LoginPage() {
     
     try {
       if (isSignUp) {
-        initiateEmailSignUp(auth, email, password);
-        setSuccessMessage("የምዝገባ ጥያቄዎ ተልኳል። እባክዎን ጥቂት ሰከንዶች ይጠብቁ...");
+        await createUserWithEmailAndPassword(auth, email, password);
+        setSuccessMessage("የምዝገባ ጥያቄዎ ተሳክቷል። አሁን መግባት ይችላሉ።");
+        toast({ title: "ተመዝግበዋል", description: "አካውንትዎ በትክክል ተከፍቷል።" });
+        setIsSignUp(false);
       } else {
-        initiateEmailSignIn(auth, email, password);
+        await signInWithEmailAndPassword(auth, email, password);
+        toast({ title: "እንኳን ደህና መጡ", description: "ወርቁ ነኝ፣ ወደ መቆጣጠሪያ ገጹ በመግባት ላይ ነዎት።" });
       }
-      
-      // Safety timeout to reset loading state if no auth change happens
-      setTimeout(() => {
-        setLoading(false);
-        if (!user) {
-          setErrorMessage("መግባት አልተቻለም። እባክዎን የኢሜይል እና የይለፍ ቃልዎን ትክክለኛነት ያረጋግጡ ወይም 'አዲስ ተጠቃሚ' በሚለው ይመዝገቡ። እንዲሁም በFirebase Console ላይ Email/Password መፈቀዱን ያረጋግጡ።");
-        }
-      }, 5000);
-
     } catch (err: any) {
-      console.error("Login Error Catch:", err);
+      console.error("Auth Error:", err);
+      let msg = "መግባት አልተቻለም። እባክዎን የኢሜይል እና የይለፍ ቃልዎን ያረጋግጡ።";
+      if (err.code === 'auth/email-already-in-use') msg = "ይህ ኢሜይል ቀድሞ ተመዝግቧል።";
+      if (err.code === 'auth/weak-password') msg = "የይለፍ ቃሉ ቢያንስ 6 ፊደላት መሆን አለበት።";
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') msg = "ኢሜይል ወይም የይለፍ ቃል ተሳስቷል።";
+      if (err.code === 'auth/operation-not-allowed') msg = "በFirebase Console ላይ Email/Password አልተፈቀደም። እባክዎን ያብሩት።";
+      setErrorMessage(msg);
+    } finally {
       setLoading(false);
-      setErrorMessage("የቴክኒክ ስህተት አጋጥሟል። እባክዎን ቆይተው ይሞክሩ።");
     }
   };
 

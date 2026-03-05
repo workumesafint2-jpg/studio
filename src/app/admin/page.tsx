@@ -19,8 +19,7 @@ import {
   Trash2,
   ArrowLeft,
   ShieldAlert,
-  Search,
-  XCircle
+  Loader2
 } from 'lucide-react';
 import { 
   useCollection, 
@@ -44,6 +43,10 @@ import {
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 
+/**
+ * Master Admin Email Configuration
+ * v4.3.0 - Stable Production Sync
+ */
 const ADMIN_EMAIL = "workumesafint2@gmail.com";
 
 interface DocumentRecord {
@@ -119,8 +122,8 @@ export default function AdminPage() {
           <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mx-auto mb-6">
             <ShieldAlert className="w-10 h-10 text-red-500" />
           </div>
-          <h1 className="text-2xl font-black text-slate-900 mb-3 uppercase tracking-tight">Unauthorized Access</h1>
-          <p className="text-xs text-slate-400 font-bold leading-relaxed mb-8 uppercase tracking-wider">ይህ ገጽ ለዋናው አስተዳዳሪ ብቻ የተፈቀደ ነው። እባክዎን በ workumesafint2@gmail.com ይግቡ።</p>
+          <h1 className="text-2xl font-black text-slate-900 mb-3 uppercase tracking-tight">Access Denied</h1>
+          <p className="text-xs text-slate-400 font-bold leading-relaxed mb-8 uppercase tracking-wider">ይህ ገጽ ለዋናው አስተዳዳሪ ብቻ የተፈቀደ ነው። እባክዎን በ {ADMIN_EMAIL} ይግቡ።</p>
           <div className="flex flex-col gap-3">
             <Button asChild className="rounded-2xl bg-[#1e3a8a] h-14 font-black shadow-lg hover:bg-[#1e3a8a]/90 uppercase text-xs">
               <Link href="/login">ወደ መግቢያ ገጽ (Login)</Link>
@@ -202,33 +205,35 @@ export default function AdminPage() {
                       <Badge variant="outline" className={`text-[8px] border-none px-3 h-6 flex items-center font-black uppercase rounded-full ${docItem.status === 'የጸደቀ' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
                         {docItem.status}
                       </Badge>
-                      <Button variant="outline" size="sm" onClick={() => handleOpenFile(docItem.fileUrl)} className="h-10 px-4 text-[10px] font-black rounded-xl hover:bg-[#1e3a8a] hover:text-white transition-all border-slate-200">
-                        <Eye className="w-4 h-4 mr-2" /> ክፈት
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-slate-100 rounded-xl">
-                            <MoreVertical className="w-5 h-5 text-slate-400" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-60 p-2 rounded-2xl shadow-2xl border-none">
-                          <DropdownMenuLabel className="text-[9px] uppercase text-slate-400 px-3 py-2">የአስተዳዳሪ ተግባራት</DropdownMenuLabel>
-                          {docItem.status !== 'የጸደቀ' && (
-                            <DropdownMenuItem onClick={() => handleApprove(docItem.id)} className="text-[11px] font-black cursor-pointer bg-green-50 text-green-700 hover:bg-green-100 rounded-xl mb-1 p-3">
-                              <CheckCircle2 className="w-4 h-4 mr-2" /> አፅድቅ (Approve)
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleOpenFile(docItem.fileUrl)} className="h-10 px-4 text-[10px] font-black rounded-xl hover:bg-[#1e3a8a] hover:text-white transition-all border-slate-200">
+                          <Eye className="w-4 h-4 mr-2" /> ክፈት
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-slate-100 rounded-xl">
+                              <MoreVertical className="w-5 h-5 text-slate-400" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-60 p-2 rounded-2xl shadow-2xl border-none">
+                            <DropdownMenuLabel className="text-[9px] uppercase text-slate-400 px-3 py-2">የአስተዳዳሪ ተግባራት</DropdownMenuLabel>
+                            {docItem.status !== 'የጸደቀ' && (
+                              <DropdownMenuItem onClick={() => handleApprove(docItem.id)} className="text-[11px] font-black cursor-pointer bg-green-50 text-green-700 hover:bg-green-100 rounded-xl mb-1 p-3">
+                                <CheckCircle2 className="w-4 h-4 mr-2" /> አፅድቅ (Approve)
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem asChild className="text-[11px] font-black cursor-pointer rounded-xl p-3">
+                              <a href={docItem.fileUrl} download={docItem.fileName || "document"} className="flex items-center w-full">
+                                <Download className="w-4 h-4 mr-2 text-[#1e3a8a]" /> አውርድ (Download)
+                              </a>
                             </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem asChild className="text-[11px] font-black cursor-pointer rounded-xl p-3">
-                            <a href={docItem.fileUrl} download={docItem.fileName || "document"} className="flex items-center w-full">
-                              <Download className="w-4 h-4 mr-2 text-[#1e3a8a]" /> አውርድ (Download)
-                            </a>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator className="my-2" />
-                          <DropdownMenuItem onClick={() => handleDelete(docItem.id)} className="text-[11px] font-black cursor-pointer text-red-600 bg-red-50 hover:bg-red-100 rounded-xl p-3">
-                            <Trash2 className="w-4 h-4 mr-2" /> ሰርዝ (Master Delete)
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                            <DropdownMenuSeparator className="my-2" />
+                            <DropdownMenuItem onClick={() => handleDelete(docItem.id)} className="text-[11px] font-black cursor-pointer text-red-600 bg-red-50 hover:bg-red-100 rounded-xl p-3">
+                              <Trash2 className="w-4 h-4 mr-2" /> ሰርዝ (Master Delete)
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
                   </div>
                 ))}

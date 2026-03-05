@@ -8,46 +8,36 @@ import { getFirestore } from 'firebase/firestore';
 
 /**
  * Institutional Firebase Initializer.
- * Enhanced for Vercel build resilience and Zero-Failure initialization.
- * v2.7.7 - Zero-Failure logic for production synchronization.
+ * v4.3.0 - Stable Production Sync
  */
 export function initializeFirebase() {
-  // Never initialize during server-side rendering or static export
   if (typeof window === 'undefined') {
     return { firebaseApp: null, auth: null, firestore: null };
   }
 
-  // Check for existing app to avoid re-initialization errors
   if (getApps().length > 0) {
     return getSdks(getApp());
   }
 
-  // CRITICAL RESILIENCE: 
-  // We check if the config is not just present, but also valid.
-  // Next.js static exports sometimes inject 'undefined' as a string.
-  const isConfigValid = (
+  const isConfigValid = !!(
     firebaseConfig.apiKey && 
     firebaseConfig.apiKey !== 'undefined' && 
-    firebaseConfig.apiKey !== '' &&
     firebaseConfig.projectId && 
-    firebaseConfig.projectId !== 'undefined' &&
-    firebaseConfig.projectId !== ''
+    firebaseConfig.projectId !== 'undefined'
   );
 
   if (isConfigValid) {
     try {
       const firebaseApp = initializeApp(firebaseConfig);
-      console.log('(ወርቁ) Pro: Firebase Intelligence Activated (v2.7.7).');
+      console.log('(ወርቁ) Pro: Firebase Initialized successfully.');
       return getSdks(firebaseApp);
     } catch (e) {
-      console.warn('Firebase initialization failed. Falling back to Standalone Mode.', e);
+      console.error('Firebase init failed:', e);
       return { firebaseApp: null, auth: null, firestore: null };
     }
   }
 
-  // If no config is present, we return null services. 
-  // The app is designed to handle this state and keep the Modeler functional.
-  console.warn('Firebase credentials missing or invalid. (ወርቁ) Pro is running in Standalone Modeler mode.');
+  console.warn('Firebase config missing. Running in Standalone mode.');
   return { firebaseApp: null, auth: null, firestore: null };
 }
 
@@ -59,7 +49,7 @@ export function getSdks(firebaseApp: FirebaseApp) {
       firestore: getFirestore(firebaseApp)
     };
   } catch (e) {
-    console.error('Failed to retrieve Firebase SDKs:', e);
+    console.error('Failed to retrieve SDKs:', e);
     return { firebaseApp: null, auth: null, firestore: null };
   }
 }
