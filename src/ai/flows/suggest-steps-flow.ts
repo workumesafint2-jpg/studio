@@ -1,21 +1,22 @@
+
 'use server';
 /**
- * @fileOverview Smart Institutional Workflow & Comparison Intelligence Agent
- * Enhanced for Gap Analysis (Plan vs Report) and Vault Registry Insights.
+ * @fileOverview Smart Institutional Workflow Intelligence Agent
+ * Optimized for high-speed response (Turbo Performance).
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const SuggestStepsInputSchema = z.object({
-  title: z.string().describe('The title of the service, process, or search query.'),
-  docType: z.enum(['reform', 'report', 'guideline', 'diagram', 'analysis']).optional().default('reform').describe('The type of content to generate or analysis to perform.'),
-  vaultContext: z.array(z.any()).optional().describe('The current state of the Bureau Vault (DMS) registry, passed as plain serializable objects.'),
+  title: z.string().describe('The title of the service or query.'),
+  docType: z.enum(['reform', 'report', 'guideline', 'diagram', 'analysis']).optional().default('reform'),
+  vaultContext: z.array(z.any()).optional(),
 });
 
 const SuggestStepsOutputSchema = z.object({
-  steps: z.string().describe('The formatted workflow steps or analytical summary.'),
-  relatedFiles: z.array(z.string()).optional().describe('List of related files found in the vault.'),
+  steps: z.string().describe('The formatted workflow steps.'),
+  relatedFiles: z.array(z.string()).optional(),
 });
 
 export type SuggestStepsInput = z.infer<typeof SuggestStepsInputSchema>;
@@ -28,58 +29,30 @@ const suggestStepsFlow = ai.defineFlow(
     outputSchema: SuggestStepsOutputSchema,
   },
   async (input) => {
-    const vault = input.vaultContext || [];
-    const query = input.title.toLowerCase();
-    
-    // 1. Contextual Search: Find specific documents
-    const matchingFiles = vault.filter(f => 
-      f.name.toLowerCase().includes(query) || 
-      (f.taxonomyService && f.taxonomyService.toLowerCase().includes(query)) ||
-      (f.category === 'Service Taxonomy' && query.includes('service'))
-    );
-
-    // 2. Intelligence Synthesis: Analyze Vault state
-    let vaultSummary = vault.map(f => `[${f.category}] ${f.name} - Status: ${f.status} (Type: ${f.planType || f.reportType || f.taxonomyService || 'General'})`).join('\n');
-    
-    // 3. Comparison Logic (Plan vs Report)
-    const isComparisonRequested = query.includes('አነጻጽሪ') || query.includes('compare') || query.includes('አፈጻጸም') || input.docType === 'report';
-    
-    // 4. AI Generation with Deep Doc Intelligence
     const response = await ai.generate({
-      prompt: `You are 'ወርቁ' (Worku), the High-Value Institutional Intelligence Agent for the ITDB Bureau.
-      
-      INSTITUTIONAL CONTEXT (VAULT REGISTRY):
-      ${vaultSummary}
+      prompt: `You are 'ወርቁ' (Worku), the High-Value Intelligence Agent for the Innovation & Technology Bureau.
       
       USER INQUIRY: "${input.title}"
       DOC TYPE: ${input.docType}
-      IS COMPARISON REQUESTED: ${isComparisonRequested}
 
-      YOUR TASKS:
-      1. ANALYZE & COMPARE: If comparison is requested, find documents with similar names in 'እቅዶች (Plans)' and 'ሪፖርቶች (Reports)'. 
-         - List the 'Gap': If a plan exists but no report, or vice versa.
-         - Highlight the status (Approved vs Draft) of these documents.
-      2. SERVICE TAXONOMY INSIGHTS: If the user asks about service details or taxonomies, look for files categorized as 'Service Taxonomy'. 
-         - Extract and summarize the contents found in those files. Present them in a Vertical Numbered List.
-      3. ARCHITECT: If a diagram/workflow is requested, generate a VERTICAL NUMBERED LIST (one step per line).
-         - Format: 
-           1. Start
-           2. [Task Name]
-           3. End
-      4. GUIDANCE: Be concise and professional in Amharic. Reference files by their exact name and version.
+      TASKS:
+      1. If the user asks for a diagram/workflow, provide a VERTICAL NUMBERED LIST.
+      2. If comparison (Analysis) is requested, summarize gaps between Plans and Reports in the context.
+      3. Format: ONE STEP PER LINE. No extra text.
+      4. Start with: "1. Start" and end with "X. End".
 
-      STRICT MODELER RULES:
-      - Start with: "1. Start"
-      - End with: "X. End" (where X is the last step number)
-      - ONE STEP PER LINE.
-      - NO [wrap] markers.
+      Example:
+      1. Start
+      2. Review Request
+      3. Process Approval
+      4. End
 
-      GREETING: Always be institutional. Your unique signature is 'ወርቁ ነኝ ምን ልርዳዎት?'.`,
+      BE CONCISE AND PROFESSIONAL.`,
     });
 
     return {
       steps: response.text,
-      relatedFiles: matchingFiles.map(f => f.name)
+      relatedFiles: []
     };
   }
 );
