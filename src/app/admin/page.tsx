@@ -18,7 +18,10 @@ import {
   MoreVertical,
   Download,
   Trash2,
-  XCircle
+  XCircle,
+  ArrowLeft,
+  Settings,
+  ShieldAlert
 } from 'lucide-react';
 import { 
   useCollection, 
@@ -80,7 +83,7 @@ export default function AdminPage() {
 
   const recentQuery = useMemoFirebase(() => {
     if (!db) return null;
-    return query(collection(db, 'documents'), orderBy('createdAt', 'desc'), limit(20));
+    return query(collection(db, 'documents'), orderBy('createdAt', 'desc'), limit(50));
   }, [db]);
 
   const usersQuery = useMemoFirebase(() => {
@@ -102,8 +105,8 @@ export default function AdminPage() {
   const getUserName = (doc: DocumentRecord) => {
     if (doc.expertName) return doc.expertName;
     if (doc.uploaderName) return doc.uploaderName;
-    const user = allUsers?.find(u => u.id === doc.uploaderId);
-    return user?.displayName || user?.email || "ያልታወቀ ሰራተኛ";
+    const foundUser = allUsers?.find(u => u.id === doc.uploaderId);
+    return foundUser?.displayName || foundUser?.email || "ያልታወቀ ሰራተኛ";
   };
 
   const handleOpenFile = (url: string) => {
@@ -136,12 +139,17 @@ export default function AdminPage() {
     return (
       <div className="flex items-center justify-center h-screen bg-slate-50">
         <div className="text-center p-10 bg-white rounded-3xl shadow-xl border border-red-100 max-w-md">
-          <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h1 className="text-xl font-black text-slate-900 mb-2">Unauthorized Access</h1>
-          <p className="text-sm text-slate-500 leading-relaxed">This portal is restricted to the Innovation & Technology Bureau Administrator (workumesaifnt9@gmail.com).</p>
-          <Button asChild className="mt-6 rounded-xl bg-[#1e3a8a] px-8">
-            <Link href="/">ወደ ዋናው ገጽ ይመለሱ</Link>
-          </Button>
+          <ShieldAlert className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h1 className="text-xl font-black text-slate-900 mb-2">የተገደበ መዳረሻ (Unauthorized)</h1>
+          <p className="text-sm text-slate-500 leading-relaxed">ይህ ገጽ ለአስተዳዳሪው (workumesaifnt9@gmail.com) ብቻ የተፈቀደ ነው። እባክዎን በትክክለኛው አካውንት ይግቡ።</p>
+          <div className="flex flex-col gap-3 mt-8">
+            <Button asChild className="rounded-xl bg-[#1e3a8a] px-8 py-6 font-bold">
+              <Link href="/login">ወደ መግቢያ ገጽ (Login)</Link>
+            </Button>
+            <Button asChild variant="ghost" className="rounded-xl px-8 font-bold text-slate-400">
+              <Link href="/">ወደ ዋናው ገጽ ተመለስ</Link>
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -150,16 +158,20 @@ export default function AdminPage() {
   return (
     <AuthGuard>
       <div className="p-6 max-w-7xl mx-auto space-y-6 bg-slate-50 min-h-screen">
-        <header className="flex flex-col items-center gap-1 mb-8">
-          <h2 className="text-xl font-black text-slate-900 tracking-tight">ኢኖቬሽንና ቴክኖሎጂ ቢሮ</h2>
-          <div className="w-12 h-12 bg-[#1e3a8a] rounded-xl flex items-center justify-center text-white shadow-lg mb-1">
-             <span className="font-black text-sm">ITB</span>
-          </div>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Innovation & Technology Bureau</p>
-          <h1 className="text-sm font-black text-slate-800 uppercase mt-2 bg-white px-4 py-1.5 rounded-full shadow-sm border border-slate-100">
-            የአስተዳዳሪ መቆጣጠሪያ v4.1.0
-          </h1>
-        </header>
+        <div className="flex items-center justify-between mb-8">
+          <Button asChild variant="ghost" className="rounded-xl text-slate-500 hover:text-primary">
+            <Link href="/"><ArrowLeft className="w-4 h-4 mr-2" /> ተመለስ</Link>
+          </Button>
+          <header className="flex flex-col items-center gap-1">
+            <div className="w-12 h-12 bg-[#1e3a8a] rounded-xl flex items-center justify-center text-white shadow-lg mb-1">
+               <span className="font-black text-sm">ITB</span>
+            </div>
+            <h1 className="text-xs font-black text-slate-800 uppercase bg-white px-4 py-1.5 rounded-full shadow-sm border border-slate-100">
+              የአስተዳዳሪ መቆጣጠሪያ ማዕከል (Admin)
+            </h1>
+          </header>
+          <div className="w-24" /> {/* Spacer */}
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard 
@@ -185,10 +197,11 @@ export default function AdminPage() {
         </div>
 
         <Card className="shadow-lg border-none overflow-hidden">
-          <CardHeader className="bg-white border-b border-slate-50 py-4">
+          <CardHeader className="bg-white border-b border-slate-50 py-4 flex flex-row items-center justify-between">
             <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-              <Clock className="w-4 h-4" /> የቅርብ ጊዜ የተቋም እንቅስቃሴዎች (Real-Time Sync)
+              <Clock className="w-4 h-4" /> የቅርብ ጊዜ የተቋም እንቅስቃሴዎች (Master Stream)
             </CardTitle>
+            <Badge className="bg-[#1e3a8a] text-[8px] font-black">Live Update</Badge>
           </CardHeader>
           <CardContent className="p-0">
             {recentLoading ? (
@@ -243,10 +256,11 @@ export default function AdminPage() {
                               <MoreVertical className="w-4 h-4 text-slate-400" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48 p-1">
+                          <DropdownMenuContent align="end" className="w-56 p-1.5">
+                            <DropdownMenuLabel className="text-[9px] uppercase text-slate-400">የአስተዳዳሪ ተግባራት</DropdownMenuLabel>
                             {docItem.status !== 'የጸደቀ' && (
-                              <DropdownMenuItem onClick={() => handleApprove(docItem.id)} className="text-[10px] font-black cursor-pointer">
-                                <CheckCircle2 className="w-3.5 h-3.5 mr-2 text-green-500" /> አፅድቅ (Approve)
+                              <DropdownMenuItem onClick={() => handleApprove(docItem.id)} className="text-[10px] font-black cursor-pointer bg-green-50 text-green-700 hover:bg-green-100">
+                                <CheckCircle2 className="w-3.5 h-3.5 mr-2" /> አፅድቅ (Approve)
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuItem asChild className="text-[10px] font-black cursor-pointer">
@@ -254,8 +268,9 @@ export default function AdminPage() {
                                 <Download className="w-3.5 h-3.5 mr-2 text-primary" /> አውርድ (Download)
                               </a>
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDelete(docItem.id)} className="text-[10px] font-black cursor-pointer text-red-600">
-                              <Trash2 className="w-3.5 h-3.5 mr-2" /> ሰርዝ (Delete)
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleDelete(docItem.id)} className="text-[10px] font-black cursor-pointer text-red-600 bg-red-50 hover:bg-red-100">
+                              <Trash2 className="w-3.5 h-3.5 mr-2" /> ሰርዝ (Master Delete)
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
