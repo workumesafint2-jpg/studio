@@ -180,6 +180,7 @@ export function BPMNFlowForgeApp() {
   const [uploadSector, setUploadSector] = useState<string>("");
   const [uploadDirectorate, setUploadDirectorate] = useState<string>("");
   const [uploadTeam, setUploadTeam] = useState<string>("");
+  const [uploadExpertName, setUploadExpertName] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [vaultFilter, setVaultFilter] = useState<string>('all');
@@ -192,7 +193,6 @@ export function BPMNFlowForgeApp() {
   const db = useFirestore();
   const auth = useAuth();
 
-  // Get current user profile for role-based access
   const userProfileRef = useMemoFirebase(() => {
     if (!db || !user) return null;
     return doc(db, 'users', user.uid);
@@ -260,7 +260,7 @@ export function BPMNFlowForgeApp() {
           (item.name && item.name.toLowerCase().includes(q)) || 
           (item.category && item.category.toLowerCase().includes(q)) ||
           (item.sector && item.sector.toLowerCase().includes(q)) ||
-          (item.directorate && item.directorate.toLowerCase().includes(q))
+          (item.expertName && item.expertName.toLowerCase().includes(q))
         )
       );
     }
@@ -359,7 +359,7 @@ export function BPMNFlowForgeApp() {
     }
     setIsUploading(true);
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const dataUrl = e.target?.result as string;
       const displayName = selectedFile.name.split('.').slice(0, -1).join('.') || selectedFile.name;
       
@@ -370,7 +370,7 @@ export function BPMNFlowForgeApp() {
         sector: uploadSector || "አልተጠቀሰም",
         directorate: uploadDirectorate || "አልተጠቀሰም",
         team: uploadTeam || "አልተጠቀሰም",
-        expertName: user.displayName || user.email || "ባለሙያ",
+        expertName: uploadExpertName || user.displayName || user.email || "ባለሙያ",
         fileName: selectedFile.name,
         fileSize: (selectedFile.size / 1024).toFixed(1) + " KB",
         uploadDate: new Date().toISOString(),
@@ -383,9 +383,20 @@ export function BPMNFlowForgeApp() {
         uploaderName: user.displayName || user.email || "ተጠቃሚ",
         createdAt: Timestamp.now()
       };
-      addDocumentNonBlocking(collection(db, 'documents'), newFile);
-      setIsUploading(false); setIsUploadOpen(false); setSelectedFile(null);
-      toast({ title: "ተመዝግቧል", description: "መዝገብ ቤት ገብቷል።" });
+      
+      try {
+        await addDocumentNonBlocking(collection(db, 'documents'), newFile);
+        setIsUploading(false); 
+        setIsUploadOpen(false); 
+        setSelectedFile(null);
+        setUploadCategory("");
+        setUploadSubCategory("");
+        setUploadExpertName("");
+        toast({ title: "ተመዝግቧል", description: "መዝገብ ቤት ገብቷል።" });
+      } catch (err) {
+        setIsUploading(false);
+        toast({ title: "ስህተት", description: "መመዝገብ አልተቻለም።", variant: "destructive" });
+      }
     };
     reader.readAsDataURL(selectedFile);
   };
@@ -606,22 +617,26 @@ export function BPMNFlowForgeApp() {
                         <div className="space-y-4">
                           <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ዘርፍ (Sector)</label>
-                            <Input value={uploadSector} onChange={(e) => setUploadSector(e.target.value)} placeholder="ዘርፍ ያስገቡ..." className="h-12 rounded-xl" />
+                            <Input value={uploadSector} onChange={(e) => setUploadSector(e.target.value)} placeholder="ዘርፍ ያስገቡ..." className="h-12 rounded-xl shadow-sm" />
                           </div>
                           <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ዳይሬክቶሬት</label>
-                            <Input value={uploadDirectorate} onChange={(e) => setUploadDirectorate(e.target.value)} placeholder="ዳይሬክቶሬት ያስገቡ..." className="h-12 rounded-xl" />
+                            <Input value={uploadDirectorate} onChange={(e) => setUploadDirectorate(e.target.value)} placeholder="ዳይሬክቶሬት ያስገቡ..." className="h-12 rounded-xl shadow-sm" />
                           </div>
                           <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">የቡድን ስም</label>
-                            <Input value={uploadTeam} onChange={(e) => setUploadTeam(e.target.value)} placeholder="የቡድን ስም ያስገቡ..." className="h-12 rounded-xl" />
+                            <Input value={uploadTeam} onChange={(e) => setUploadTeam(e.target.value)} placeholder="የቡድን ስም ያስገቡ..." className="h-12 rounded-xl shadow-sm" />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">የሰነዱ ባለቤት ስም (Expert Name)</label>
+                            <Input value={uploadExpertName} onChange={(e) => setUploadExpertName(e.target.value)} placeholder="የባለሙያ ስም ያስገቡ..." className="h-12 rounded-xl shadow-sm" />
                           </div>
                         </div>
                         <div className="space-y-4">
                           <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ዋና ምድብ</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">የሰነዱ ዋና ምድብ</label>
                             <Select value={uploadCategory} onValueChange={(val) => { setUploadCategory(val); setUploadSubCategory(""); }}>
-                              <SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="ምድብ ይምረጡ..." /></SelectTrigger>
+                              <SelectTrigger className="h-12 rounded-xl shadow-sm"><SelectValue placeholder="ምድብ ይምረጡ..." /></SelectTrigger>
                               <SelectContent>{Object.keys(CATEGORIES).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                             </Select>
                           </div>
@@ -629,7 +644,7 @@ export function BPMNFlowForgeApp() {
                             <div className="space-y-2">
                               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ንዑስ ምድብ</label>
                               <Select value={uploadSubCategory} onValueChange={setUploadSubCategory}>
-                                <SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="ንዑስ ምድብ ይምረጡ..." /></SelectTrigger>
+                                <SelectTrigger className="h-12 rounded-xl shadow-sm"><SelectValue placeholder="ንዑስ ምድብ ይምረጡ..." /></SelectTrigger>
                                 <SelectContent>
                                   {(CATEGORIES as any)[uploadCategory].map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                                 </SelectContent>
@@ -638,7 +653,7 @@ export function BPMNFlowForgeApp() {
                           )}
                           <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ፋይል</label>
-                            <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-all">
+                            <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-all shadow-sm">
                               <Upload className="w-6 h-6 text-slate-300 mb-1" />
                               <span className="text-[10px] font-bold text-slate-500">{selectedFile ? selectedFile.name : "ፋይል ይምረጡ"}</span>
                               <input type="file" className="hidden" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
@@ -680,7 +695,7 @@ export function BPMNFlowForgeApp() {
                           </Badge>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100"><MoreVertical className="w-3 h-3" /></Button>
+                              <Button variant="ghost" size="icon" className="h-6 w-6"><MoreVertical className="w-3 h-3" /></Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-40 p-1">
                               <DropdownMenuItem onClick={() => handleOpenFile(file.fileUrl)} className="text-[10px] cursor-pointer font-bold"><Eye className="w-3 h-3 mr-2 text-blue-600" /> ክፈት</DropdownMenuItem>
@@ -710,7 +725,7 @@ export function BPMNFlowForgeApp() {
                   <TabsTrigger value="feedback" className="text-[10px] font-bold px-4 rounded-lg">የአመራርና የሰራተኞች ዳሽ ቦርድ</TabsTrigger>
                 </TabsList>
                 <div className="pr-4 hidden sm:block">
-                  <h2 className="text-xs font-black text-slate-900 uppercase tracking-widest">ITB Portal v3.7.0</h2>
+                  <h2 className="text-xs font-black text-slate-900 uppercase tracking-widest">ITB Portal v3.8.0</h2>
                 </div>
               </div>
 
@@ -822,7 +837,7 @@ export function BPMNFlowForgeApp() {
                                 {file.uploadDate ? new Date(file.uploadDate).toLocaleTimeString('am-ET') : '--'}
                               </TableCell>
                               <TableCell className="text-right">
-                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100" onClick={() => handleOpenFile(file.fileUrl)}>
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleOpenFile(file.fileUrl)}>
                                   <Eye className="w-3 h-3" />
                                 </Button>
                               </TableCell>
@@ -930,7 +945,7 @@ export function BPMNFlowForgeApp() {
 
       <footer className="px-8 py-3 bg-white border-t border-slate-200 flex justify-between items-center shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="flex gap-8 items-center text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">
-          <span className="flex items-center gap-2">ITB Enterprise v3.7.0</span>
+          <span className="flex items-center gap-2">ITB Enterprise v3.8.0</span>
           <span className="text-slate-200">|</span>
           <Link href="/admin" className="flex items-center gap-2 text-[#1e3a8a] hover:underline font-black">
             <LogIn className="w-4 h-4" /> የአስተዳዳሪ መቆጣጠሪያ

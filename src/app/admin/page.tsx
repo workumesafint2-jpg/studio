@@ -73,15 +73,15 @@ export default function AdminPage() {
 
   const handleOpenFile = (url: string) => {
     if (!url) return;
-    if (url.startsWith('data:')) {
-      const win = window.open();
-      if (win) {
+    const win = window.open();
+    if (win) {
+      if (url.startsWith('data:')) {
         win.document.write(`<iframe src="${url}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
       } else {
-        toast({ title: "Error", description: "Pop-up blocked. Please allow pop-ups to view files.", variant: "destructive" });
+        win.location.href = url;
       }
     } else {
-      window.open(url, '_blank', 'noopener,noreferrer');
+      toast({ title: "Error", description: "Pop-up blocked. Please allow pop-ups to view files.", variant: "destructive" });
     }
   };
 
@@ -90,10 +90,10 @@ export default function AdminPage() {
       <div className="p-8 max-w-7xl mx-auto space-y-8 bg-slate-50 min-h-screen">
         <header className="flex flex-col items-center gap-2 mb-12">
           <h2 className="text-2xl font-black text-slate-900 tracking-tight">ኢኖቬሽንና ቴክኖሎጂ ቢሮ</h2>
-          <span className="text-xl font-black text-primary border-b-2 border-primary pb-1">ITB</span>
+          <span className="text-xl font-black text-[#1e3a8a] border-b-2 border-[#1e3a8a] pb-1">ITB</span>
           <p className="text-[12px] font-bold text-slate-400 uppercase tracking-widest">Innovation & Technology Development Bureau</p>
           <h1 className="text-lg font-black text-slate-800 uppercase mt-4 bg-white px-6 py-2 rounded-full shadow-sm border border-slate-100">
-            የአመራርና የሰራተኞች ዳሽ ቦርድ v3.4.0
+            የአመራርና የሰራተኞች ዳሽ ቦርድ v3.8.0
           </h1>
         </header>
 
@@ -172,11 +172,11 @@ export default function AdminPage() {
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="h-10 px-4 rounded-xl border-slate-200 hover:bg-primary hover:text-white hover:border-primary transition-all group/btn"
+                        className="h-10 px-4 rounded-xl border-slate-200 hover:bg-[#1e3a8a] hover:text-white hover:border-[#1e3a8a] transition-all group/btn"
                         onClick={() => handleOpenFile(doc.fileUrl)}
                       >
                         <Eye className="w-4 h-4 mr-2" />
-                        ከፍት
+                        ክፈት
                       </Button>
                     </div>
                   </div>
@@ -201,11 +201,10 @@ function StatCard({ title, value, icon }: { title: string, value: string, icon: 
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{title}</p>
           <h3 className="text-2xl font-black text-slate-900">{value}</h3>
         </div>
-        <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center group-hover:bg-primary/5 transition-colors">
+        <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center group-hover:bg-[#1e3a8a]/5 transition-colors">
           {icon}
         </div>
       </CardContent>
     </Card>
   );
 }
-
