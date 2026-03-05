@@ -17,7 +17,8 @@ import {
   User,
   MoreVertical,
   Download,
-  Trash2
+  Trash2,
+  XCircle
 } from 'lucide-react';
 import { 
   useCollection, 
@@ -31,6 +32,7 @@ import { collection, query, orderBy, limit, doc } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -231,31 +233,33 @@ export default function AdminPage() {
                         </span>
                       </div>
                       
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-slate-100 rounded-xl">
-                            <MoreVertical className="w-4 h-4 text-slate-400" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48 p-1">
-                          <DropdownMenuItem onClick={() => handleOpenFile(docItem.fileUrl)} className="text-[10px] font-black cursor-pointer">
-                            <Eye className="w-3.5 h-3.5 mr-2 text-blue-500" /> ክፈት (Open)
-                          </DropdownMenuItem>
-                          {docItem.status !== 'የጸደቀ' && (
-                            <DropdownMenuItem onClick={() => handleApprove(docItem.id)} className="text-[10px] font-black cursor-pointer">
-                              <CheckCircle2 className="w-3.5 h-3.5 mr-2 text-green-500" /> አፅድቅ (Approve)
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => handleOpenFile(docItem.fileUrl)} className="h-9 px-3 text-[10px] font-black rounded-xl hover:bg-blue-50 text-blue-600 border border-blue-100">
+                          <Eye className="w-3.5 h-3.5 mr-1.5" /> ክፈት (Open)
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-slate-100 rounded-xl">
+                              <MoreVertical className="w-4 h-4 text-slate-400" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48 p-1">
+                            {docItem.status !== 'የጸደቀ' && (
+                              <DropdownMenuItem onClick={() => handleApprove(docItem.id)} className="text-[10px] font-black cursor-pointer">
+                                <CheckCircle2 className="w-3.5 h-3.5 mr-2 text-green-500" /> አፅድቅ (Approve)
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem asChild className="text-[10px] font-black cursor-pointer">
+                              <a href={docItem.fileUrl} download={docItem.fileName || "document"} className="flex items-center w-full">
+                                <Download className="w-3.5 h-3.5 mr-2 text-primary" /> አውርድ (Download)
+                              </a>
                             </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem asChild className="text-[10px] font-black cursor-pointer">
-                            <a href={docItem.fileUrl} download={docItem.fileName || "document"} className="flex items-center w-full">
-                              <Download className="w-3.5 h-3.5 mr-2 text-primary" /> አውርድ (Download)
-                            </a>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDelete(docItem.id)} className="text-[10px] font-black cursor-pointer text-red-600">
-                            <Trash2 className="w-3.5 h-3.5 mr-2" /> ሰርዝ (Delete)
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                            <DropdownMenuItem onClick={() => handleDelete(docItem.id)} className="text-[10px] font-black cursor-pointer text-red-600">
+                              <Trash2 className="w-3.5 h-3.5 mr-2" /> ሰርዝ (Delete)
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
                   </div>
                 ))}
