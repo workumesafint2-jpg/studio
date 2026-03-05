@@ -3,35 +3,42 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     /**
-     * Institutional Security Rules v3.3.0
-     * - Public Read: Transparency for institutional progress.
-     * - Public Registration: Users can create their own profiles.
-     * - Owner/Admin Write: Only owners or Admins can modify records.
-     * - Feedback: Authenticated users can read/create feedback messages.
+     * Institutional Security Rules v3.7.0
+     * - Admin: Full access to everything.
+     * - Owner: Can update/delete their own data.
+     * - Public/Auth User: Can read everything (Transparency).
      */
     
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
     function isAdmin() {
-      return request.auth != null && 
+      return isAuthenticated() && 
              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
+    function isOwner(data) {
+      return isAuthenticated() && (request.auth.uid == data.uploaderId);
+    }
+
     match /documents/{documentId} {
-      allow read: if true;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && (resource.data.uploaderId == request.auth.uid || isAdmin());
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin() || isOwner(resource.data);
     }
 
     match /feedback/{feedbackId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin() || isOwner(resource.data);
     }
 
     match /users/{userId} {
-      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
-      allow create: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
       allow delete: if isAdmin();
     }
   }
