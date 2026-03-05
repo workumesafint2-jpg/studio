@@ -1,12 +1,11 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     /**
      * Institutional Security Rules v4.3.0
-     * - Master Admin (workumesafint2@gmail.com): Full access.
+     * - Master Admin (workumesafint2@gmail.com): Full access (Read, Create, Update, Delete).
      * - Owner: Can delete their own documents.
-     * - Auth User: Can read, create, and download.
+     * - Auth User: Can read, create, and download all public documents.
      */
     
     function isAuthenticated() {
