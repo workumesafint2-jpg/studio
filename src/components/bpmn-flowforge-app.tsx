@@ -452,7 +452,7 @@ export function BPMNFlowForgeApp() {
 
       <div className="flex items-center justify-between px-8 py-3 bg-slate-50 border-b border-slate-200">
         <div className="flex items-center gap-4">
-          <Badge className="bg-[#1e3a8a]/10 text-[#1e3a8a] border-none text-[10px] font-bold px-3 py-1">ወርቁ AI v3.5.0</Badge>
+          {/* Worku AI badge removed as requested */}
         </div>
 
         <div className="flex items-center gap-4 max-w-lg w-full">
@@ -498,13 +498,13 @@ export function BPMNFlowForgeApp() {
               <CardContent className="p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xs font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                    <BrainCircuit className="w-4 h-4 text-[#1e3a8a]" /> ወርቁ AI
+                    <BrainCircuit className="w-4 h-4 text-[#1e3a8a]" /> {/* Worku AI text removed */}
                   </h2>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm" className="h-8 text-[10px] font-bold text-[#1e3a8a] bg-[#1e3a8a]/5 hover:bg-[#1e3a8a]/10 rounded-xl px-4">
                         {isSuggesting ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <BrainCircuit className="w-4 h-4 mr-2" />}
-                        ወርቁ AI <ChevronDown className="w-3 h-3 ml-2" />
+                        AI ረዳት <ChevronDown className="w-3 h-3 ml-2" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-72 p-2">
@@ -709,7 +709,6 @@ export function BPMNFlowForgeApp() {
                       <div className="h-full flex flex-col items-center justify-center opacity-20 group">
                         <Zap className="w-24 h-24 mb-6 text-slate-300 group-hover:scale-110 group-hover:text-[#1e3a8a] transition-all duration-700" />
                         <p className="text-lg font-black uppercase tracking-[0.5em] text-slate-900">ዲያግራም የለም</p>
-                        <p className="text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-widest">ወርቁ AI</p>
                       </div>
                     )}
                   </Card>
@@ -913,7 +912,7 @@ export function BPMNFlowForgeApp() {
 
       <footer className="px-8 py-3 bg-white border-t border-slate-200 flex justify-between items-center shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="flex gap-8 items-center text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">
-          <span className="flex items-center gap-2"><Zap className="w-3 h-3 text-[#1e3a8a]" /> ITDB Enterprise v3.5.0</span>
+          <span className="flex items-center gap-2"><Zap className="w-3 h-3 text-[#1e3a8a]" /> ITDB Enterprise v3.5.1</span>
           <span className="text-slate-200">|</span>
           <span className="hover:text-[#1e3a8a] transition-colors cursor-default">© 2024 Innovation & Tech Bureau</span>
           <Link href="/login" className="flex items-center gap-2 text-[#1e3a8a] hover:underline font-black">
