@@ -41,6 +41,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 
 interface DocumentRecord {
@@ -67,7 +69,7 @@ interface UserRecord {
   email?: string;
 }
 
-const ADMIN_EMAIL = "workumesaifnt9@gmail.com";
+const ADMIN_EMAIL = "workumesafint2@gmail.com";
 
 export default function AdminPage() {
   const db = useFirestore();
@@ -141,7 +143,7 @@ export default function AdminPage() {
         <div className="text-center p-10 bg-white rounded-3xl shadow-xl border border-red-100 max-w-md">
           <ShieldAlert className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h1 className="text-xl font-black text-slate-900 mb-2">የተገደበ መዳረሻ (Unauthorized)</h1>
-          <p className="text-sm text-slate-500 leading-relaxed">ይህ ገጽ ለአስተዳዳሪው (workumesaifnt9@gmail.com) ብቻ የተፈቀደ ነው። እባክዎን በትክክለኛው አካውንት ይግቡ።</p>
+          <p className="text-sm text-slate-500 leading-relaxed">ይህ ገጽ ለአስተዳዳሪው (workumesafint2@gmail.com) ብቻ የተፈቀደ ነው። እባክዎን በትክክለኛው አካውንት ይግቡ።</p>
           <div className="flex flex-col gap-3 mt-8">
             <Button asChild className="rounded-xl bg-[#1e3a8a] px-8 py-6 font-bold">
               <Link href="/login">ወደ መግቢያ ገጽ (Login)</Link>
@@ -169,6 +171,7 @@ export default function AdminPage() {
             <h1 className="text-xs font-black text-slate-800 uppercase bg-white px-4 py-1.5 rounded-full shadow-sm border border-slate-100">
               የአስተዳዳሪ መቆጣጠሪያ ማዕከል (Admin)
             </h1>
+            <p className="text-[8px] font-bold text-slate-400">innovate.smart.app | Master Panel</p>
           </header>
           <div className="w-24" /> {/* Spacer */}
         </div>

@@ -158,7 +158,7 @@ const CATEGORIES = {
   'ሌሎች': ['መመሪያዎች', 'ደብዳቤዎች']
 };
 
-const ADMIN_EMAIL = "workumesaifnt9@gmail.com";
+const ADMIN_EMAIL = "workumesafint2@gmail.com";
 
 export function BPMNFlowForgeApp() {
   const [mounted, setMounted] = useState(false);
@@ -928,7 +928,7 @@ export function BPMNFlowForgeApp() {
 
       <footer className="px-6 py-2 bg-white border-t border-slate-200 flex justify-between items-center shrink-0 shadow-inner">
         <div className="flex gap-5 items-center text-[9px] font-black uppercase text-slate-400 tracking-widest">
-          <span>ITB Enterprise v4.2.0</span>
+          <span>ITB Enterprise v4.3.0</span>
           <span className="text-slate-200">|</span>
           <Link href="/admin" className="text-[#1e3a8a] hover:underline transition-colors">ADMIN CONTROL CENTER</Link>
         </div>

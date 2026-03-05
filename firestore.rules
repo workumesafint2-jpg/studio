@@ -3,8 +3,8 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     /**
-     * Institutional Security Rules v4.2.0
-     * - Admin (workumesaifnt9@gmail.com): Full access.
+     * Institutional Security Rules v4.3.0
+     * - Master Admin (workumesafint2@gmail.com): Full access.
      * - Owner: Can delete their own documents.
      * - Auth User: Can read, create, and download.
      */
@@ -14,7 +14,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isAuthenticated() && (request.auth.token.email == 'workumesaifnt9@gmail.com');
+      return isAuthenticated() && (request.auth.token.email == 'workumesafint2@gmail.com');
     }
 
     function isOwner(data) {
