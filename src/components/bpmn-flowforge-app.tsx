@@ -108,6 +108,7 @@ import {
 import { collection, query, doc, Timestamp, orderBy } from 'firebase/firestore';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Image from 'next/image';
 
 interface UploadedFile {
   id: string;
@@ -417,7 +418,6 @@ export function BPMNFlowForgeApp() {
 
   const handleOpenFile = (url: string) => {
     if (!url) return;
-    // Check if it's a data URI (BPMN/XML)
     if (url.startsWith('data:')) {
       const win = window.open();
       if (win) {
@@ -432,26 +432,27 @@ export function BPMNFlowForgeApp() {
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
-      {/* ሄደር አሁን ሴንተር ሆኗል */}
-      <header className="flex flex-col items-center py-4 bg-white border-b border-slate-200 shrink-0 shadow-sm z-50">
-        <h2 className="text-xl font-black text-slate-900 tracking-tight">ኢኖቬሽንና ቴክኖሎጂ ቢሮ</h2>
-        <div className="flex items-center gap-3 my-1">
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
-            <Zap className="w-6 h-6" />
+      <header className="flex flex-col items-center py-6 bg-white border-b border-slate-200 shrink-0 shadow-sm z-50">
+        <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">ኢኖቬሽንና ቴክኖሎጂ ቢሮ</h2>
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-16 h-16 bg-[#1e3a8a] rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-900/20 mb-1">
+            <Image 
+              src="https://picsum.photos/seed/itdb-tech/200/200" 
+              alt="ITB Logo" 
+              width={48} 
+              height={48} 
+              className="rounded-lg object-contain"
+              data-ai-hint="technology logo"
+            />
           </div>
-          <span className="text-lg font-black text-primary">ITB</span>
+          <span className="text-xl font-black text-[#1e3a8a] tracking-widest">ITB</span>
         </div>
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest font-body">Innovation & Technology Development Bureau</p>
+        <p className="text-[11px] font-medium text-slate-400 uppercase tracking-[0.3em] font-body mt-2">Innovation & Technology Development Bureau</p>
       </header>
 
-      {/* ሁለተኛ ሰብ-ሄደር ለፍለጋ እና ለመቆጣጠሪያ */}
       <div className="flex items-center justify-between px-8 py-3 bg-slate-50 border-b border-slate-200">
         <div className="flex items-center gap-4">
-          <div className="flex flex-col">
-            <h1 className="text-sm font-black text-slate-900 flex items-center gap-2">
-              ወርቁ ነኝ ምን ልርዳዎት? <Badge className="bg-primary/10 text-primary border-none text-[9px]">Enterprise v3.4.0</Badge>
-            </h1>
-          </div>
+          <Badge className="bg-[#1e3a8a]/10 text-[#1e3a8a] border-none text-[10px] font-bold px-3 py-1">ወርቁ AI v3.5.0</Badge>
         </div>
 
         <div className="flex items-center gap-4 max-w-lg w-full">
@@ -460,14 +461,14 @@ export function BPMNFlowForgeApp() {
               value={globalSearch} 
               onChange={(e) => setGlobalSearch(e.target.value)} 
               placeholder="በመዝገብ ቤት፣ በዘርፍ ወይም በባለሙያ ፈልግ..." 
-              className="h-10 text-xs pl-10 bg-white border-slate-200 rounded-2xl group-hover:border-primary transition-colors focus:bg-white" 
+              className="h-10 text-xs pl-10 bg-white border-slate-200 rounded-2xl group-hover:border-[#1e3a8a] transition-colors focus:bg-white" 
             />
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#1e3a8a] transition-colors" />
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="relative text-slate-400 hover:text-primary transition-colors">
+          <Button variant="ghost" size="icon" className="relative text-slate-400 hover:text-[#1e3a8a] transition-colors">
             <Bell className="w-5 h-5" />
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
           </Button>
@@ -497,11 +498,11 @@ export function BPMNFlowForgeApp() {
               <CardContent className="p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xs font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                    <BrainCircuit className="w-4 h-4 text-primary" /> ወርቁ ነኝ ምን ልርዳዎት?
+                    <BrainCircuit className="w-4 h-4 text-[#1e3a8a]" /> ወርቁ AI
                   </h2>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 text-[10px] font-bold text-primary bg-primary/5 hover:bg-primary/10 rounded-xl px-4">
+                      <Button variant="ghost" size="sm" className="h-8 text-[10px] font-bold text-[#1e3a8a] bg-[#1e3a8a]/5 hover:bg-[#1e3a8a]/10 rounded-xl px-4">
                         {isSuggesting ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <BrainCircuit className="w-4 h-4 mr-2" />}
                         ወርቁ AI <ChevronDown className="w-3 h-3 ml-2" />
                       </Button>
@@ -509,7 +510,7 @@ export function BPMNFlowForgeApp() {
                     <DropdownMenuContent className="w-72 p-2">
                       <DropdownMenuItem onClick={() => handleAutoSuggest('diagram')} className="p-3 cursor-pointer rounded-lg hover:bg-slate-50">
                         <div className="flex flex-col gap-1">
-                          <span className="text-xs font-bold text-slate-900 flex items-center gap-2"><LayoutIcon className="w-3.5 h-3.5 text-primary" /> አዲስ የስራ ፍሰት አመንጭ</span>
+                          <span className="text-xs font-bold text-slate-900 flex items-center gap-2"><LayoutIcon className="w-3.5 h-3.5 text-[#1e3a8a]" /> አዲስ የስራ ፍሰት አመንጭ</span>
                           <span className="text-[10px] text-slate-400">ከአገልግሎት ስሙ ተነስቶ ዝርዝር ተግባራትን ይዘረዝራል።</span>
                         </div>
                       </DropdownMenuItem>
@@ -543,10 +544,10 @@ export function BPMNFlowForgeApp() {
                     />
                   </div>
                   <div className="flex gap-2">
-                    <Button className="flex-1 h-12 bg-primary text-white font-bold text-xs rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform" onClick={handleGenerate}>
+                    <Button className="flex-1 h-12 bg-[#1e3a8a] text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-900/20 hover:scale-[1.02] transition-transform" onClick={handleGenerate}>
                       ካርታውን አሳይ (Render)
                     </Button>
-                    <Button variant="outline" className="flex-1 h-12 border-primary text-primary font-bold text-xs rounded-xl hover:bg-primary/5" onClick={handleSaveToVault} disabled={isSaving}>
+                    <Button variant="outline" className="flex-1 h-12 border-[#1e3a8a] text-[#1e3a8a] font-bold text-xs rounded-xl hover:bg-[#1e3a8a]/5" onClick={handleSaveToVault} disabled={isSaving}>
                       {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                       መዝግብ (Save)
                     </Button>
@@ -634,7 +635,7 @@ export function BPMNFlowForgeApp() {
                         </div>
                       </div>
                       <DialogFooter>
-                        <Button className="w-full h-12 bg-primary text-white font-bold rounded-xl shadow-lg" onClick={processUpload} disabled={isUploading || !selectedFile || !uploadCategory || !uploadSector}>
+                        <Button className="w-full h-12 bg-[#1e3a8a] text-white font-bold rounded-xl shadow-lg" onClick={processUpload} disabled={isUploading || !selectedFile || !uploadCategory || !uploadSector}>
                           {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4 mr-2" />}
                           አጽድቅና መዝግብ
                         </Button>
@@ -653,7 +654,7 @@ export function BPMNFlowForgeApp() {
                     {filteredDocuments.map(file => (
                       <div key={file.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors group">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                          <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-[#1e3a8a]/10 group-hover:text-[#1e3a8a] transition-colors">
                             <FileText className="w-4 h-4" />
                           </div>
                           <div className="flex flex-col">
@@ -699,16 +700,16 @@ export function BPMNFlowForgeApp() {
                 </div>
               </div>
 
-              <div className="flex-1 min-h-0 pt-4">
+              <div className="flex-1 min-0 pt-4">
                 <TabsContent value="diagram" className="h-full m-0 relative">
                   <Card className="h-full shadow-md border-slate-200 rounded-3xl overflow-hidden bg-white">
                     {xmlResult ? (
                       <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
                     ) : (
                       <div className="h-full flex flex-col items-center justify-center opacity-20 group">
-                        <Zap className="w-24 h-24 mb-6 text-slate-300 group-hover:scale-110 group-hover:text-primary transition-all duration-700" />
+                        <Zap className="w-24 h-24 mb-6 text-slate-300 group-hover:scale-110 group-hover:text-[#1e3a8a] transition-all duration-700" />
                         <p className="text-lg font-black uppercase tracking-[0.5em] text-slate-900">ዲያግራም የለም</p>
-                        <p className="text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-widest">ወርቁ ነኝ ምን ልርዳዎት?</p>
+                        <p className="text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-widest">ወርቁ AI</p>
                       </div>
                     )}
                   </Card>
@@ -718,7 +719,7 @@ export function BPMNFlowForgeApp() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
                     <Card className="shadow-sm border-slate-200 rounded-2xl bg-white flex flex-col p-6">
                       <h3 className="text-xs font-black uppercase tracking-widest text-slate-900 mb-8 flex items-center gap-2">
-                        <BarChart className="w-5 h-5 text-primary" /> የተቋሙ አጠቃላይ አፈጻጸም
+                        <BarChart className="w-5 h-5 text-[#1e3a8a]" /> የተቋሙ አጠቃላይ አፈጻጸም
                       </h3>
                       <div className="flex-1">
                         <ResponsiveContainer width="100%" height="100%">
@@ -744,9 +745,9 @@ export function BPMNFlowForgeApp() {
                       <ScrollArea className="flex-1">
                         <div className="space-y-4 pr-4">
                           {performanceData.map((metric, i) => (
-                            <div key={i} className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 hover:border-primary/20 transition-all group">
+                            <div key={i} className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 hover:border-[#1e3a8a]/20 transition-all group">
                               <div className="flex items-center justify-between mb-3">
-                                <span className="text-[11px] font-black text-slate-900 group-hover:text-primary transition-colors">{metric.serviceName}</span>
+                                <span className="text-[11px] font-black text-slate-900 group-hover:text-[#1e3a8a] transition-colors">{metric.serviceName}</span>
                                 <Badge className="text-[8px] border-none px-2 h-4 text-white" style={{ backgroundColor: metric.color }}>{metric.execution}%</Badge>
                               </div>
                               <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
@@ -765,7 +766,7 @@ export function BPMNFlowForgeApp() {
                     <CardHeader className="border-b border-slate-50 py-4">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                          <History className="w-4 h-4 text-primary" /> የተቋሙ የቀን ውሎ መመዝገቢያ (Daily Activities)
+                          <History className="w-4 h-4 text-[#1e3a8a]" /> የተቋሙ የቀን ውሎ መመዝገቢያ (Daily Activities)
                         </CardTitle>
                         <Badge variant="outline" className="text-[9px] font-bold">{new Date().toLocaleDateString('am-ET')}</Badge>
                       </div>
@@ -787,7 +788,7 @@ export function BPMNFlowForgeApp() {
                               <TableRow key={file.id} className="group">
                                 <TableCell>
                                   <div className="flex items-center gap-2">
-                                    <div className="w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-[9px]">
+                                    <div className="w-7 h-7 bg-[#1e3a8a]/10 rounded-full flex items-center justify-center text-[#1e3a8a] font-bold text-[9px]">
                                       {file.expertName?.charAt(0) || "U"}
                                     </div>
                                     <span className="text-[10px] font-bold text-slate-900">{file.expertName}</span>
@@ -827,7 +828,7 @@ export function BPMNFlowForgeApp() {
                     <Card className="md:col-span-2 shadow-sm border-slate-200 rounded-2xl bg-white flex flex-col overflow-hidden">
                       <CardHeader className="border-b border-slate-50 py-4">
                         <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                          <MessageSquare className="w-4 h-4 text-primary" /> የአመራርና የሰራተኞች ዳሽ ቦርድ - መመሪያ ማዕከል
+                          <MessageSquare className="w-4 h-4 text-[#1e3a8a]" /> የአመራርና የሰራተኞች ዳሽ ቦርድ - መመሪያ ማዕከል
                         </CardTitle>
                       </CardHeader>
                       <ScrollArea className="flex-1 p-6">
@@ -837,7 +838,7 @@ export function BPMNFlowForgeApp() {
                           ) : (
                             feedbackMessages.map((msg) => (
                               <div key={msg.id} className="flex gap-4">
-                                <Avatar className="w-10 h-10 border-2 border-primary/10">
+                                <Avatar className="w-10 h-10 border-2 border-[#1e3a8a]/10">
                                   <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${msg.senderName}`} />
                                   <AvatarFallback>{msg.senderName.charAt(0)}</AvatarFallback>
                                 </Avatar>
@@ -845,7 +846,7 @@ export function BPMNFlowForgeApp() {
                                   <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                       <span className="text-xs font-black text-slate-900">{msg.senderName}</span>
-                                      <Badge variant="secondary" className="text-[8px] font-bold px-1.5 h-4 bg-primary/5 text-primary border-none">{msg.senderRole}</Badge>
+                                      <Badge variant="secondary" className="text-[8px] font-bold px-1.5 h-4 bg-[#1e3a8a]/5 text-[#1e3a8a] border-none">{msg.senderRole}</Badge>
                                     </div>
                                     <span className="text-[9px] text-slate-400 font-medium">{new Date(msg.timestamp).toLocaleString('am-ET')}</span>
                                   </div>
@@ -858,23 +859,22 @@ export function BPMNFlowForgeApp() {
                           )}
                         </div>
                       </ScrollArea>
-                      {/* Office-Style Editor Simulation */}
                       <div className="p-4 bg-white border-t border-slate-100 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]">
                         <div className="flex flex-col gap-3 max-w-4xl mx-auto">
                           <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg w-fit">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-primary"><Bold className="w-4 h-4" /></Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-primary"><Italic className="w-4 h-4" /></Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-primary"><List className="w-4 h-4" /></Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-primary"><Type className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-[#1e3a8a]"><Bold className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-[#1e3a8a]"><Italic className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-[#1e3a8a]"><List className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-[#1e3a8a]"><Type className="w-4 h-4" /></Button>
                           </div>
                           <div className="relative">
                             <Textarea 
                               value={feedbackInput} 
                               onChange={(e) => setFeedbackInput(e.target.value)} 
                               placeholder="አዲስ መመሪያ ወይም ዝርዝር አስተያየት እዚህ ይጻፉ (Office-style)..." 
-                              className="bg-white border-slate-200 rounded-xl text-sm min-h-[120px] focus:ring-primary shadow-inner p-4"
+                              className="bg-white border-slate-200 rounded-xl text-sm min-h-[120px] focus:ring-[#1e3a8a] shadow-inner p-4"
                             />
-                            <Button className="absolute bottom-3 right-3 h-10 px-6 rounded-xl bg-primary text-white font-bold text-xs shadow-lg hover:scale-105 transition-transform" onClick={handleSendFeedback}>
+                            <Button className="absolute bottom-3 right-3 h-10 px-6 rounded-xl bg-[#1e3a8a] text-white font-bold text-xs shadow-lg hover:scale-105 transition-transform" onClick={handleSendFeedback}>
                               <Send className="w-4 h-4 mr-2" /> መዝግብ (Save)
                             </Button>
                           </div>
@@ -913,10 +913,10 @@ export function BPMNFlowForgeApp() {
 
       <footer className="px-8 py-3 bg-white border-t border-slate-200 flex justify-between items-center shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="flex gap-8 items-center text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">
-          <span className="flex items-center gap-2"><Zap className="w-3 h-3 text-primary" /> ITDB Enterprise v3.4.0</span>
+          <span className="flex items-center gap-2"><Zap className="w-3 h-3 text-[#1e3a8a]" /> ITDB Enterprise v3.5.0</span>
           <span className="text-slate-200">|</span>
-          <span className="hover:text-primary transition-colors cursor-default">© 2024 Innovation & Tech Bureau</span>
-          <Link href="/login" className="flex items-center gap-2 text-primary hover:underline font-black">
+          <span className="hover:text-[#1e3a8a] transition-colors cursor-default">© 2024 Innovation & Tech Bureau</span>
+          <Link href="/login" className="flex items-center gap-2 text-[#1e3a8a] hover:underline font-black">
             <LogIn className="w-4 h-4" /> የአስተዳዳሪ መግቢያ
           </Link>
         </div>
@@ -925,10 +925,9 @@ export function BPMNFlowForgeApp() {
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
             <span className="text-[9px] font-black text-green-600 uppercase tracking-widest">Assistant Online</span>
           </div>
-          <span className="text-[11px] font-black text-slate-900 uppercase tracking-widest italic select-none">ወርቁ ነኝ ምን ልርዳዎት?</span>
+          <span className="text-[11px] font-black text-slate-900 uppercase tracking-widest italic select-none">ወርቁ AI</span>
         </div>
       </footer>
     </div>
   );
 }
-
