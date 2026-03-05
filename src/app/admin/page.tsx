@@ -4,12 +4,38 @@
 import { useMemo } from 'react';
 import { AuthGuard } from '@/components/auth-guard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LayoutDashboard, FileText, Users, Activity, Clock, CheckCircle2, Eye, ExternalLink, Building2, User } from 'lucide-react';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { 
+  LayoutDashboard, 
+  FileText, 
+  Users, 
+  Activity, 
+  Clock, 
+  CheckCircle2, 
+  Eye, 
+  ExternalLink, 
+  Building2, 
+  User,
+  MoreVertical,
+  Download,
+  Trash2
+} from 'lucide-react';
+import { 
+  useCollection, 
+  useFirestore, 
+  useMemoFirebase,
+  updateDocumentNonBlocking,
+  deleteDocumentNonBlocking
+} from '@/firebase';
+import { collection, query, orderBy, limit, doc } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface DocumentRecord {
   id: string;
@@ -25,6 +51,7 @@ interface DocumentRecord {
   team?: string;
   expertName?: string;
   createdAt?: any;
+  fileName?: string;
 }
 
 interface UserRecord {
@@ -45,7 +72,7 @@ export default function AdminPage() {
 
   const recentQuery = useMemoFirebase(() => {
     if (!db) return null;
-    return query(collection(db, 'documents'), orderBy('createdAt', 'desc'), limit(15));
+    return query(collection(db, 'documents'), orderBy('createdAt', 'desc'), limit(20));
   }, [db]);
 
   const usersQuery = useMemoFirebase(() => {
@@ -81,23 +108,37 @@ export default function AdminPage() {
         win.location.href = url;
       }
     } else {
-      toast({ title: "Error", description: "Pop-up blocked. Please allow pop-ups to view files.", variant: "destructive" });
+      toast({ title: "Error", description: "Pop-up blocked. Please allow pop-ups.", variant: "destructive" });
     }
+  };
+
+  const handleApprove = (id: string) => {
+    if (!db) return;
+    updateDocumentNonBlocking(doc(db, 'documents', id), { status: 'የጸደቀ' });
+    toast({ title: "ጸድቋል", description: "ሰነዱ በትክክል ጸድቋል።" });
+  };
+
+  const handleDelete = (id: string) => {
+    if (!db) return;
+    deleteDocumentNonBlocking(doc(db, 'documents', id));
+    toast({ title: "ተሰርዟል", description: "ሰነዱ ከመዝገብ ቤት ተወግዷል።" });
   };
 
   return (
     <AuthGuard>
-      <div className="p-8 max-w-7xl mx-auto space-y-8 bg-slate-50 min-h-screen">
-        <header className="flex flex-col items-center gap-2 mb-12">
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">ኢኖቬሽንና ቴክኖሎጂ ቢሮ</h2>
-          <span className="text-xl font-black text-[#1e3a8a] border-b-2 border-[#1e3a8a] pb-1">ITB</span>
-          <p className="text-[12px] font-bold text-slate-400 uppercase tracking-widest">Innovation & Technology Development Bureau</p>
-          <h1 className="text-lg font-black text-slate-800 uppercase mt-4 bg-white px-6 py-2 rounded-full shadow-sm border border-slate-100">
-            የአመራርና የሰራተኞች ዳሽ ቦርድ v3.8.0
+      <div className="p-6 max-w-7xl mx-auto space-y-6 bg-slate-50 min-h-screen">
+        <header className="flex flex-col items-center gap-1 mb-8">
+          <h2 className="text-xl font-black text-slate-900 tracking-tight">ኢኖቬሽንና ቴክኖሎጂ ቢሮ</h2>
+          <div className="w-12 h-12 bg-[#1e3a8a] rounded-xl flex items-center justify-center text-white shadow-lg mb-1">
+             <span className="font-black text-sm">ITB</span>
+          </div>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Innovation & Technology Bureau</p>
+          <h1 className="text-sm font-black text-slate-800 uppercase mt-2 bg-white px-4 py-1.5 rounded-full shadow-sm border border-slate-100">
+            የአስተዳዳሪ መቆጣጠሪያ v3.8.1
           </h1>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard 
             title="ጠቅላላ ሰነዶች" 
             value={docsLoading ? "..." : stats.totalDocs.toString()} 
@@ -120,10 +161,10 @@ export default function AdminPage() {
           />
         </div>
 
-        <Card className="shadow-xl border-none">
-          <CardHeader className="flex flex-row items-center justify-between border-b border-slate-50 pb-4">
-            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
-              <Clock className="w-4 h-4" /> የቅርብ ጊዜ የተቋም እንቅስቃሴዎች (Daily Log Sync)
+        <Card className="shadow-lg border-none overflow-hidden">
+          <CardHeader className="bg-white border-b border-slate-50 py-4">
+            <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+              <Clock className="w-4 h-4" /> የቅርብ ጊዜ የተቋም እንቅስቃሴዎች (Real-Time Sync)
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -133,51 +174,67 @@ export default function AdminPage() {
               </div>
             ) : !recentDocs || recentDocs.length === 0 ? (
               <div className="bg-white rounded-lg p-24 text-center border-2 border-dashed border-slate-100 m-6">
-                <p className="text-slate-300 text-[10px] font-bold uppercase tracking-[0.3em]">እንኳን ደህና መጡ! ምንም እንቅስቃሴ አልተመዘገበም።</p>
+                <p className="text-slate-300 text-[10px] font-black uppercase tracking-[0.3em]">እንቅስቃሴ አልተመዘገበም</p>
               </div>
             ) : (
               <div className="divide-y divide-slate-50">
-                {recentDocs.map((doc) => (
-                  <div key={doc.id} className="flex items-center justify-between p-6 hover:bg-slate-50/50 transition-colors group">
-                    <div className="flex items-center gap-6">
-                      <div className="w-12 h-12 bg-white border border-slate-100 rounded-2xl flex items-center justify-center group-hover:border-primary/20 transition-colors shadow-sm">
-                        <FileText className="w-6 h-6 text-slate-400 group-hover:text-primary transition-colors" />
+                {recentDocs.map((docItem) => (
+                  <div key={docItem.id} className="flex items-center justify-between p-4 hover:bg-slate-50/50 transition-colors group">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-white border border-slate-100 rounded-xl flex items-center justify-center group-hover:border-primary/20 transition-colors shadow-sm">
+                        <FileText className="w-5 h-5 text-slate-400 group-hover:text-primary transition-colors" />
                       </div>
-                      <div className="flex flex-col gap-1">
-                        <span className="text-sm font-bold text-slate-900 leading-none">{doc.name}</span>
-                        <div className="flex items-center gap-3">
-                          <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{doc.category}</span>
-                          <span className="text-[9px] text-slate-200">•</span>
-                          <span className="text-[10px] text-primary font-black flex items-center gap-1">
-                            <User className="w-3 h-3" /> {getUserName(doc)}
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs font-black text-slate-900 leading-none">{docItem.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">{docItem.category}</span>
+                          <span className="text-[8px] text-slate-200">•</span>
+                          <span className="text-[9px] text-primary font-black flex items-center gap-1">
+                            <User className="w-3 h-3" /> {getUserName(docItem)}
                           </span>
-                          <span className="text-[9px] text-slate-200">•</span>
-                          <span className="text-[10px] text-slate-500 font-bold flex items-center gap-1">
-                            <Building2 className="w-3 h-3" /> {doc.sector || "General"}
+                          <span className="text-[8px] text-slate-200">•</span>
+                          <span className="text-[9px] text-slate-500 font-bold flex items-center gap-1">
+                            <Building2 className="w-3 h-3" /> {docItem.sector || "General"}
                           </span>
                         </div>
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-8">
+                    <div className="flex items-center gap-4">
                       <div className="text-right hidden sm:flex flex-col items-end">
-                        <Badge variant="outline" className={`text-[8px] border-none h-5 px-3 mb-1 font-bold ${doc.status === 'የጸደቀ' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
-                          {doc.status}
+                        <Badge variant="outline" className={`text-[7px] border-none h-4 px-2 mb-0.5 font-black ${docItem.status === 'የጸደቀ' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
+                          {docItem.status}
                         </Badge>
-                        <span className="text-[9px] text-slate-400 font-medium tabular-nums">
-                          {doc.uploadDate ? new Date(doc.uploadDate).toLocaleString('am-ET') : '--'}
+                        <span className="text-[8px] text-slate-400 font-medium tabular-nums">
+                          {docItem.uploadDate ? new Date(docItem.uploadDate).toLocaleString('am-ET') : '--'}
                         </span>
                       </div>
                       
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-10 px-4 rounded-xl border-slate-200 hover:bg-[#1e3a8a] hover:text-white hover:border-[#1e3a8a] transition-all group/btn"
-                        onClick={() => handleOpenFile(doc.fileUrl)}
-                      >
-                        <Eye className="w-4 h-4 mr-2" />
-                        ክፈት
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-slate-100 rounded-xl">
+                            <MoreVertical className="w-4 h-4 text-slate-400" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48 p-1">
+                          <DropdownMenuItem onClick={() => handleOpenFile(docItem.fileUrl)} className="text-[10px] font-black cursor-pointer">
+                            <Eye className="w-3.5 h-3.5 mr-2 text-blue-500" /> ክፈት (Open)
+                          </DropdownMenuItem>
+                          {docItem.status !== 'የጸደቀ' && (
+                            <DropdownMenuItem onClick={() => handleApprove(docItem.id)} className="text-[10px] font-black cursor-pointer">
+                              <CheckCircle2 className="w-3.5 h-3.5 mr-2 text-green-500" /> አፅድቅ (Approve)
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem asChild className="text-[10px] font-black cursor-pointer">
+                            <a href={docItem.fileUrl} download={docItem.fileName || "document"} className="flex items-center w-full">
+                              <Download className="w-3.5 h-3.5 mr-2 text-primary" /> አውርድ (Download)
+                            </a>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDelete(docItem.id)} className="text-[10px] font-black cursor-pointer text-red-600">
+                            <Trash2 className="w-3.5 h-3.5 mr-2" /> ሰርዝ (Delete)
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 ))}
@@ -192,16 +249,16 @@ export default function AdminPage() {
 
 function StatCard({ title, value, icon }: { title: string, value: string, icon: React.ReactNode }) {
   return (
-    <Card className="border-none shadow-md hover:shadow-lg transition-shadow bg-white overflow-hidden relative group">
-      <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+    <Card className="border-none shadow-md hover:shadow-lg transition-all bg-white overflow-hidden relative group rounded-2xl">
+      <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
         {icon}
       </div>
-      <CardContent className="p-6 flex items-center justify-between relative z-10">
+      <CardContent className="p-5 flex items-center justify-between relative z-10">
         <div>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{title}</p>
-          <h3 className="text-2xl font-black text-slate-900">{value}</h3>
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{title}</p>
+          <h3 className="text-xl font-black text-slate-900">{value}</h3>
         </div>
-        <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center group-hover:bg-[#1e3a8a]/5 transition-colors">
+        <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center group-hover:bg-[#1e3a8a]/5 transition-colors">
           {icon}
         </div>
       </CardContent>
