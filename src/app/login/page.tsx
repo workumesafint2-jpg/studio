@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import Image from 'next/image';
 
 export default function LoginPage() {
   const auth = useAuth();
@@ -25,7 +26,6 @@ export default function LoginPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Institutional Redirect: Watch for auth state changes
   useEffect(() => {
     if (!isUserLoading && user) {
       setLoading(false);
@@ -40,7 +40,7 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auth) {
-      setErrorMessage("የቢሮው የደመና አገልግሎት አልተገናኘም። እባክዎን የFirebase ኢንቫይሮመንት ቫሪያብል በትክክል መዋቀሩን ያረጋግጡ።");
+      setErrorMessage("የቢሮው የደመና አገልግሎት (Firebase) አልተገናኘም። እባክዎን የኢንቫይሮመንት ቫሪያብል በትክክል መዋቀሩን ያረጋግጡ።");
       return;
     }
     
@@ -51,22 +51,18 @@ export default function LoginPage() {
     try {
       if (isSignUp) {
         initiateEmailSignUp(auth, email, password);
-        setSuccessMessage("የምዝገባ ጥያቄዎ ተልኳል። እባክዎን ለጥቂት ሰከንዶች ይታገሱ...");
+        setSuccessMessage("የምዝገባ ጥያቄዎ ተልኳል። እባክዎን ጥቂት ሰከንዶች ይጠብቁ...");
       } else {
         initiateEmailSignIn(auth, email, password);
       }
       
-      // Safety timeout to check for success or failure
+      // Safety timeout to reset loading state if no auth change happens
       setTimeout(() => {
+        setLoading(false);
         if (!user) {
-          setLoading(false);
-          if (isSignUp) {
-            setErrorMessage("መመዝገብ አልተቻለም። ኢሜይሉ አስቀድሞ ተመዝግቦ ሊሆን ይችላል ወይም ደግሞ በFirebase Console ላይ Email/Password አልተፈቀደም።");
-          } else {
-            setErrorMessage("መግባት አልተቻለም። እባክዎን የኢሜይል እና የይለፍ ቃልዎን ትክክለኛነት ያረጋግጡ ወይም መጀመሪያ 'አዲስ ተጠቃሚ' በሚለው ይመዝገቡ።");
-          }
+          setErrorMessage("መግባት አልተቻለም። እባክዎን የኢሜይል እና የይለፍ ቃልዎን ትክክለኛነት ያረጋግጡ ወይም 'አዲስ ተጠቃሚ' በሚለው ይመዝገቡ። እንዲሁም በFirebase Console ላይ Email/Password መፈቀዱን ያረጋግጡ።");
         }
-      }, 6000);
+      }, 5000);
 
     } catch (err: any) {
       console.error("Login Error Catch:", err);
@@ -80,8 +76,14 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-2xl border-none overflow-hidden rounded-[2rem]">
         <div className="h-2 bg-[#1e3a8a] w-full" />
         <CardHeader className="text-center space-y-2 pt-10">
-          <div className="mx-auto w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-2 shadow-sm border border-blue-100">
-            {isSignUp ? <UserPlus className="w-8 h-8 text-[#1e3a8a]" /> : <ShieldCheck className="w-8 h-8 text-[#1e3a8a]" />}
+          <div className="mx-auto w-20 h-20 bg-blue-50 rounded-2xl flex items-center justify-center mb-2 shadow-sm border border-blue-100 relative overflow-hidden">
+            <Image 
+              src="https://picsum.photos/seed/addis-ababa-logo/400/400" 
+              alt="Logo" 
+              fill 
+              className="object-contain p-2"
+              data-ai-hint="Addis Ababa City logo"
+            />
           </div>
           <CardTitle className="text-2xl font-black uppercase tracking-tight text-[#1e3a8a]">
             {isSignUp ? 'አዲስ አካውንት መመዝገቢያ' : 'የቢሮ መግቢያ (PORTAL LOGIN)'}
@@ -92,7 +94,7 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent className="px-8 pb-10">
           {errorMessage && (
-            <Alert variant="destructive" className="mb-6 border-none bg-red-50 text-red-900 rounded-2xl animate-in fade-in slide-in-from-top-2">
+            <Alert variant="destructive" className="mb-6 border-none bg-red-50 text-red-900 rounded-2xl">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle className="text-xs font-black uppercase">ስህተት</AlertTitle>
               <AlertDescription className="text-[11px] leading-relaxed font-bold">
@@ -102,7 +104,7 @@ export default function LoginPage() {
           )}
 
           {successMessage && (
-            <Alert className="mb-6 border-none bg-green-50 text-green-900 rounded-2xl animate-in fade-in slide-in-from-top-2">
+            <Alert className="mb-6 border-none bg-green-50 text-green-900 rounded-2xl">
               <CheckCircle2 className="h-4 w-4 text-green-600" />
               <AlertTitle className="text-xs font-black uppercase">መልካም ዜና</AlertTitle>
               <AlertDescription className="text-[11px] leading-relaxed font-bold">
@@ -162,12 +164,6 @@ export default function LoginPage() {
             >
               {isSignUp ? 'አካውንት አለዎት? እዚህ ይግቡ' : 'አዲስ ተጠቃሚ ነዎት? እዚህ ይመዝገቡ'}
             </button>
-            
-            <div className="flex items-center gap-4">
-              <div className="h-px bg-slate-100 flex-1" />
-              <span className="text-[8px] font-black text-slate-300 uppercase">ወርቁ Pro</span>
-              <div className="h-px bg-slate-100 flex-1" />
-            </div>
             
             <Link href="/" className="inline-flex items-center justify-center text-[10px] font-black text-slate-400 hover:text-[#1e3a8a] transition-colors uppercase tracking-[0.2em]">
               <ArrowLeft className="w-3 h-3 mr-2" /> ወደ ዋናው ገጽ ተመለስ
