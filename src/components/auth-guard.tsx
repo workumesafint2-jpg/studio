@@ -1,19 +1,34 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { Loader2 } from 'lucide-react';
 
+/**
+ * (ወርቁ) Pro - AuthGuard v4.6.0
+ * Fixed Hydration Mismatch by ensuring client-side only mount before rendering auth state.
+ */
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!isUserLoading && !user) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && !isUserLoading && !user) {
       router.push('/login');
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, router, mounted]);
+
+  // Prevent hydration mismatch by returning null during server-side rendering
+  // and initial client-side hydration pass.
+  if (!mounted) {
+    return null;
+  }
 
   if (isUserLoading) {
     return (

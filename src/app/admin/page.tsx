@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { AuthGuard } from '@/components/auth-guard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
@@ -45,7 +44,7 @@ import {
 
 /**
  * Master Admin Email Configuration
- * v4.3.8 - Relaxed Access for All Logged-in Users
+ * v4.6.0 - Locked for workumesafint2@gmail.com
  */
 const ADMIN_EMAIL = "workumesafint2@gmail.com";
 
@@ -68,9 +67,12 @@ export default function AdminPage() {
   const db = useFirestore();
   const { toast } = useToast();
   const { user } = useUser();
+  const [mounted, setMounted] = useState(false);
 
-  // For now, allow any logged in user to see the dashboard to help debug
-  const isAuthorized = !!user;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const isMasterAdmin = user?.email === ADMIN_EMAIL;
 
   const docsQuery = useMemoFirebase(() => {
@@ -106,7 +108,7 @@ export default function AdminPage() {
   };
 
   const handleApprove = (id: string) => {
-    if (!db) return;
+    if (!db || !isMasterAdmin) return;
     updateDocumentNonBlocking(doc(db, 'documents', id), { status: 'የጸደቀ' });
     toast({ title: "ጸድቋል", description: "ሰነዱ በትክክል ጸድቋል" });
   };
@@ -121,6 +123,8 @@ export default function AdminPage() {
       toast({ title: "ስልጣን የለዎትም", description: "የራስዎን ፋይል ብቻ ነው ማጥፋት የሚችሉት", variant: "destructive" });
     }
   };
+
+  if (!mounted) return null;
 
   return (
     <AuthGuard>
@@ -202,7 +206,7 @@ export default function AdminPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-60 p-2 rounded-2xl shadow-2xl border-none">
                             <DropdownMenuLabel className="text-[9px] uppercase text-slate-400 px-3 py-2">ተግባራት</DropdownMenuLabel>
-                            {docItem.status !== 'የጸደቀ' && (
+                            {(isMasterAdmin && docItem.status !== 'የጸደቀ') && (
                               <DropdownMenuItem onClick={() => handleApprove(docItem.id)} className="text-[11px] font-black cursor-pointer bg-green-50 text-green-700 hover:bg-green-100 rounded-xl mb-1 p-3">
                                 <CheckCircle2 className="w-4 h-4 mr-2" /> አፅድቅ (Approve)
                               </DropdownMenuItem>
