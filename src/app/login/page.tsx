@@ -67,7 +67,9 @@ export default function LoginPage() {
       // Detailed error feedback for users
       if (err.code === 'auth/email-already-in-use') msg = "ይህ ኢሜይል ቀድሞ ተመዝግቧል።";
       if (err.code === 'auth/weak-password') msg = "የይለፍ ቃሉ ቢያንስ 6 ፊደላት መሆን አለበት።";
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') msg = "ኢሜይል ወይም የይለፍ ቃል ተሳስቷል።";
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        msg = isSignUp ? "መመዝገብ አልተቻለም። እባክዎን መረጃዎን ያረጋግጡ።" : "ኢሜይል ወይም የይለፍ ቃል ተሳስቷል። መጀመሪያ ካልተመዘገቡ 'እዚህ ይመዝገቡ' የሚለውን ይጫኑ።";
+      }
       if (err.code === 'auth/operation-not-allowed') msg = "በFirebase Console ላይ Email/Password አልተፈቀደም። እባክዎን ያብሩት።";
       if (err.code === 'auth/network-request-failed') msg = "የኢንተርኔት ግንኙነት የለም ወይም የFirebase Config ተሳስቷል።";
       
