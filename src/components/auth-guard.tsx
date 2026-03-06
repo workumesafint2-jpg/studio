@@ -21,6 +21,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, isUserLoading, router, mounted]);
 
+  // Ensure consistent SSR/CSR output
   if (!mounted) {
     return null;
   }

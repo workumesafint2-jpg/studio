@@ -124,19 +124,18 @@ export default function AdminPage() {
 
   return (
     <AuthGuard>
-      <div className="p-6 max-w-7xl mx-auto space-y-6 bg-slate-50 min-h-screen pb-20">
+      <div className="p-6 max-w-7xl mx-auto space-y-6 bg-slate-50 min-h-screen">
         <div className="flex items-center justify-between mb-8">
-          <Button asChild variant="ghost" className="rounded-2xl text-slate-500 hover:text-[#1e3a8a] hover:bg-blue-50 font-black text-[10px] uppercase h-12 px-6">
+          <Button asChild variant="ghost" className="rounded-2xl text-slate-500 hover:text-[#1e3a8a] font-black text-[10px] uppercase h-12 px-6">
             <Link href="/"><ArrowLeft className="w-4 h-4 mr-2" /> ወደ ዋናው ገጽ</Link>
           </Button>
-          <header className="flex flex-col items-center gap-1">
-            <h1 className="text-xs font-black text-slate-800 uppercase bg-white px-10 py-4 rounded-full shadow-lg border border-slate-100 tracking-widest flex items-center gap-3">
-              <ShieldCheck className="w-5 h-5 text-green-500" /> የቢሮ መቆጣጠሪያ ማዕከል (MASTER DASHBOARD)
+          <header className="flex flex-col items-center">
+            <h1 className="text-xs font-black text-slate-800 uppercase bg-white px-10 py-4 rounded-full shadow-lg border flex items-center gap-3">
+              <ShieldCheck className="w-5 h-5 text-green-500" /> የቢሮ መቆጣጠሪያ ማዕከል
             </h1>
-            <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.4em] mt-2">Innovation & Technology Bureau | Official Control</p>
           </header>
-          <div className="w-32 h-10 flex justify-end">
-            {isMasterAdmin && <Badge className="bg-green-500 text-white font-black text-[8px] h-8 px-4 rounded-xl uppercase">Master Identity</Badge>}
+          <div className="w-32 flex justify-end">
+            {isMasterAdmin && <Badge className="bg-green-500 text-white font-black text-[8px] h-8 px-4 rounded-xl uppercase shadow-sm">Master Access</Badge>}
           </div>
         </div>
 
@@ -150,40 +149,35 @@ export default function AdminPage() {
         <Card className="shadow-2xl border-none overflow-hidden rounded-[2.5rem] bg-white">
           <CardHeader className="bg-white border-b border-slate-50 py-8 px-10 flex flex-row items-center justify-between">
             <CardTitle className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-3">
-              <Clock className="w-5 h-5" /> የቅርብ ጊዜ የተቋም እንቅስቃሴዎች (Master Stream)
+              <Clock className="w-5 h-5" /> የቅርብ ጊዜ የተቋም እንቅስቃሴዎች
             </CardTitle>
-            <div className="flex items-center gap-2">
-              <Badge className="bg-[#1e3a8a] text-[9px] font-black uppercase px-4 py-1.5 rounded-full shadow-md">Live Monitor</Badge>
-            </div>
           </CardHeader>
           <CardContent className="p-0">
             {docsLoading ? (
               <div className="flex flex-col items-center justify-center py-40 gap-6">
                 <Loader2 className="w-12 h-12 animate-spin text-[#1e3a8a]/20" />
-                <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">መረጃዎችን በመጫን ላይ...</p>
+                <p className="text-[10px] font-black text-slate-300 uppercase">መረጃዎችን በመጫን ላይ...</p>
               </div>
             ) : !allDocs || allDocs.length === 0 ? (
               <div className="bg-white p-40 text-center">
-                <div className="w-24 h-24 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto mb-8">
-                  <FileText className="w-10 h-10 text-slate-200" />
-                </div>
-                <p className="text-slate-300 text-[11px] font-black uppercase tracking-[0.3em]">ምንም እንቅስቃሴ አልተመዘገበም</p>
+                <FileText className="w-10 h-10 text-slate-200 mx-auto mb-8" />
+                <p className="text-slate-300 text-[11px] font-black uppercase">ምንም እንቅስቃሴ አልተመዘገበም</p>
               </div>
             ) : (
               <div className="divide-y divide-slate-50">
                 {allDocs.map((docItem) => (
-                  <div key={docItem.id} className="flex items-center justify-between p-8 hover:bg-slate-50/80 transition-all group border-l-4 border-l-transparent hover:border-l-[#1e3a8a]">
+                  <div key={docItem.id} className="flex items-center justify-between p-8 hover:bg-slate-50/80 transition-all group">
                     <div className="flex items-center gap-6">
-                      <div className="w-14 h-14 bg-white border border-slate-100 rounded-2xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                      <div className="w-14 h-14 bg-white border rounded-2xl flex items-center justify-center shadow-md">
                         <FileText className="w-7 h-7 text-slate-400 group-hover:text-[#1e3a8a] transition-colors" />
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <span className="text-sm font-black text-slate-900 group-hover:text-[#1e3a8a] transition-colors">{docItem.name}</span>
+                        <span className="text-sm font-black text-slate-900">{docItem.name}</span>
                         <div className="flex items-center gap-4">
-                          <span className="text-[10px] text-[#1e3a8a] font-black flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-lg">
-                            <User className="w-3.5 h-3.5" /> {docItem.expertName || docItem.uploaderName || "ያልታወቀ"}
+                          <span className="text-[10px] text-[#1e3a8a] font-black flex items-center gap-2">
+                            <User className="w-3.5 h-3.5" /> {docItem.expertName || docItem.uploaderName || "ባለሙያ"}
                           </span>
-                          <span className="text-[10px] text-slate-500 font-bold flex items-center gap-2">
+                          <span className="text-[10px] text-slate-500 font-bold">
                             <Building2 className="w-3.5 h-3.5 text-slate-300" /> {docItem.sector || "አጠቃላይ"}
                           </span>
                         </div>
@@ -195,7 +189,7 @@ export default function AdminPage() {
                         {docItem.status}
                       </Badge>
                       <div className="flex items-center gap-3">
-                        <Button variant="outline" size="sm" onClick={() => handleOpenFile(docItem.fileUrl)} className="h-12 px-6 text-[11px] font-black rounded-2xl hover:bg-[#1e3a8a] hover:text-white transition-all border-slate-200 shadow-sm">
+                        <Button variant="outline" size="sm" onClick={() => handleOpenFile(docItem.fileUrl)} className="h-12 px-6 text-[11px] font-black rounded-2xl border-slate-200 shadow-sm">
                           <Eye className="w-4 h-4 mr-2" /> ክፈት
                         </Button>
                         <DropdownMenu>
@@ -204,22 +198,22 @@ export default function AdminPage() {
                               <MoreVertical className="w-6 h-6 text-slate-400" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-64 p-3 rounded-[2rem] shadow-2xl border-none animate-in fade-in zoom-in-95">
+                          <DropdownMenuContent align="end" className="w-64 p-3 rounded-[2rem] shadow-2xl border-none">
                             <DropdownMenuLabel className="text-[10px] uppercase text-slate-400 px-4 py-3 font-black">ተግባራት</DropdownMenuLabel>
                             {(isMasterAdmin && docItem.status !== 'የጸደቀ') && (
                               <DropdownMenuItem onClick={() => handleApprove(docItem.id)} className="text-[12px] font-black cursor-pointer bg-green-50 text-green-700 hover:bg-green-100 rounded-2xl mb-2 p-4">
-                                <CheckCircle2 className="w-4 h-4 mr-2" /> አፅድቅ (Approve)
+                                <CheckCircle2 className="w-4 h-4 mr-2" /> አፅድቅ
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuItem asChild className="text-[12px] font-black cursor-pointer rounded-2xl p-4 hover:bg-slate-50 mb-2">
                               <a href={docItem.fileUrl} download={docItem.fileName || "document"} className="flex items-center w-full">
-                                <Download className="w-4 h-4 mr-2 text-[#1e3a8a]" /> አውርድ (Download)
+                                <Download className="w-4 h-4 mr-2 text-[#1e3a8a]" /> አውርድ
                               </a>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="my-2 bg-slate-50" />
                             {(isMasterAdmin || user?.uid === docItem.uploaderId) && (
                               <DropdownMenuItem onClick={() => handleDelete(docItem.id, docItem.uploaderId)} className="text-[12px] font-black cursor-pointer text-red-600 bg-red-50 hover:bg-red-100 rounded-2xl p-4">
-                                <Trash2 className="w-4 h-4 mr-2" /> ሰርዝ (Delete)
+                                <Trash2 className="w-4 h-4 mr-2" /> ሰርዝ
                               </DropdownMenuItem>
                             )}
                           </DropdownMenuContent>
@@ -239,13 +233,13 @@ export default function AdminPage() {
 
 function StatCard({ title, value, icon }: { title: string, value: string, icon: React.ReactNode }) {
   return (
-    <Card className="border-none shadow-xl hover:shadow-2xl transition-all bg-white overflow-hidden relative group rounded-[2rem]">
+    <Card className="border-none shadow-xl bg-white overflow-hidden rounded-[2rem]">
       <CardContent className="p-8 flex items-center justify-between">
         <div>
           <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">{title}</p>
           <h3 className="text-3xl font-black text-slate-900 tracking-tight">{value}</h3>
         </div>
-        <div className="w-16 h-16 bg-slate-50 rounded-[1.5rem] flex items-center justify-center group-hover:bg-[#1e3a8a]/5 group-hover:scale-110 transition-all duration-300">
+        <div className="w-16 h-16 bg-slate-50 rounded-[1.5rem] flex items-center justify-center">
           {icon}
         </div>
       </CardContent>

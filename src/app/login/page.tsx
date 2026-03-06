@@ -7,14 +7,14 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'fire
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, ArrowLeft, UserPlus, LogIn, AlertCircle, CheckCircle2, ShieldCheck } from 'lucide-react';
-import Link from 'next/link';
+import { Loader2, UserPlus, LogIn, AlertCircle, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Image from 'next/image';
 
 const ADMIN_EMAIL = "workumesafint2@gmail.com";
+const MASTER_KEY = "itdb123456";
 
 export default function LoginPage() {
   const auth = useAuth();
@@ -53,12 +53,11 @@ export default function LoginPage() {
       // MASTER ADMIN BYPASS LOGIC
       if (email.toLowerCase() === ADMIN_EMAIL && !isSignUp) {
         try {
-          // Attempt standard login first, fallback to a predefined identity if needed
-          await signInWithEmailAndPassword(auth, email, password || "itdb123456");
+          await signInWithEmailAndPassword(auth, email, password || MASTER_KEY);
           toast({ title: "እንኳን ደህና መጡ አስተዳዳሪ", description: "ወደ ሲስተሙ በመግባት ላይ ነዎት።" });
           return;
         } catch (adminErr) {
-          console.log("Admin identity shortcut active...");
+          console.log("Admin login attempted...");
         }
       }
 
@@ -94,9 +93,9 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-2xl border-none overflow-hidden rounded-[2.5rem] bg-white">
         <div className="h-3 bg-[#1e3a8a] w-full" />
         <CardHeader className="text-center space-y-2 pt-10">
-          <div className="mx-auto w-24 h-24 bg-blue-50 rounded-3xl flex items-center justify-center mb-4 shadow-sm border border-blue-100 relative overflow-hidden group hover:scale-105 transition-transform">
+          <div className="mx-auto w-24 h-24 bg-blue-50 rounded-3xl flex items-center justify-center mb-4 shadow-sm border border-blue-100 relative overflow-hidden">
             <Image 
-              src="https://picsum.photos/seed/addis-ababa-logo/400/400" 
+              src="https://picsum.photos/seed/itb-logo/400/400" 
               alt="Addis Ababa Logo" 
               fill 
               className="object-contain p-3"
@@ -115,7 +114,7 @@ export default function LoginPage() {
             <Alert variant="destructive" className="mb-6 border-none bg-red-50 text-red-900 rounded-2xl animate-in fade-in slide-in-from-top-2">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle className="text-xs font-black uppercase">ስህተት</AlertTitle>
-              <AlertDescription className="text-[11px] font-bold leading-relaxed">
+              <AlertDescription className="text-[11px] font-bold">
                 {errorMessage}
               </AlertDescription>
             </Alert>
@@ -125,7 +124,7 @@ export default function LoginPage() {
             <Alert className="mb-6 border-none bg-green-50 text-green-900 rounded-2xl animate-in fade-in slide-in-from-top-2">
               <CheckCircle2 className="h-4 w-4 text-green-600" />
               <AlertTitle className="text-xs font-black uppercase">ተሳክቷል</AlertTitle>
-              <AlertDescription className="text-[11px] font-bold leading-relaxed">
+              <AlertDescription className="text-[11px] font-bold">
                 {successMessage}
               </AlertDescription>
             </Alert>
@@ -133,51 +132,51 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">ኢሜይል (EMAIL)</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ኢሜይል (EMAIL)</label>
               <Input 
                 type="email" 
                 placeholder="user@itb.gov.et" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner font-bold text-sm focus-visible:ring-2 focus-visible:ring-[#1e3a8a]/20"
+                className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-sm"
                 required
                 disabled={loading}
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">የይለፍ ቃል (PASSWORD)</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">የይለፍ ቃል (PASSWORD)</label>
               <Input 
                 type="password" 
                 placeholder="••••••••" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner font-bold text-sm focus-visible:ring-2 focus-visible:ring-[#1e3a8a]/20"
+                className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-sm"
                 required={!(!isSignUp && email.toLowerCase() === ADMIN_EMAIL)}
                 disabled={loading}
               />
             </div>
             <Button 
               type="submit" 
-              className="w-full h-16 font-black bg-[#1e3a8a] hover:bg-[#1e3a8a]/90 shadow-xl rounded-2xl transition-all active:scale-[0.98] text-xs uppercase" 
+              className="w-full h-16 font-black bg-[#1e3a8a] hover:bg-[#1e3a8a]/90 shadow-xl rounded-2xl text-xs uppercase" 
               disabled={loading}
             >
               {loading ? (
                 <Loader2 className="w-5 h-5 animate-spin mr-2" />
               ) : (
-                isSignUp ? <UserPlus className="w-4 h-4 mr-2" /> : <LogIn className="w-4 h-4 mr-2" />
+                isSignUp ? <ShieldCheck className="w-4 h-4 mr-2" /> : <LogIn className="w-4 h-4 mr-2" />
               )}
               {isSignUp ? 'አሁን ይመዝገቡ (Sign Up)' : (email.toLowerCase() === ADMIN_EMAIL ? 'እንደ አስተዳዳሪ ግባ (Master Access)' : 'ግባ (Login)')}
             </Button>
           </form>
           
-          <div className="mt-10 flex flex-col gap-6 text-center">
+          <div className="mt-8 flex flex-col gap-4 text-center">
             <button 
               onClick={() => {
                 setIsSignUp(!isSignUp);
                 setErrorMessage(null);
                 setSuccessMessage(null);
               }}
-              className="text-[11px] font-black text-[#1e3a8a] hover:underline uppercase tracking-wider bg-blue-50/50 py-4 rounded-2xl border border-blue-50 transition-all hover:bg-blue-100"
+              className="text-[11px] font-black text-[#1e3a8a] uppercase tracking-wider bg-blue-50/50 py-4 rounded-2xl border border-blue-50 hover:bg-blue-100 transition-all"
               disabled={loading}
             >
               {isSignUp ? 'አካውንት አለዎት? እዚህ ይግቡ' : 'አዲስ ተጠቃሚ ነዎት? መጀመሪያ እዚህ ይመዝገቡ'}
