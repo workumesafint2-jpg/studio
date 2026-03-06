@@ -44,7 +44,7 @@ import {
 
 /**
  * Master Admin Email Configuration
- * v4.6.0 - Locked for workumesafint2@gmail.com
+ * v4.7.0 - Locked for workumesafint2@gmail.com
  */
 const ADMIN_EMAIL = "workumesafint2@gmail.com";
 
@@ -115,7 +115,6 @@ export default function AdminPage() {
 
   const handleDelete = (id: string, uploaderId: string) => {
     if (!db) return;
-    // Only master admin or owner can delete
     if (isMasterAdmin || user?.uid === uploaderId) {
       deleteDocumentNonBlocking(doc(db, 'documents', id));
       toast({ title: "ተሰርዟል", description: "ሰነዱ ከመዝገብ ቤት ተወግዷል" });

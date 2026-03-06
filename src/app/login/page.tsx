@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -15,7 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Image from 'next/image';
 
 /**
- * (ወርቁ) Pro - Institutional Login & Signup Portal v4.5.0
+ * (ወርቁ) Pro - Institutional Login & Signup Portal v4.7.0
  */
 export default function LoginPage() {
   const auth = useAuth();
@@ -40,7 +39,7 @@ export default function LoginPage() {
     e.preventDefault();
     
     if (!auth) {
-      setErrorMessage("የቢሮው የደመና አገልግሎት አልተገናኘም። እባክዎን Environment Variables በትክክል መገባታቸውን ያረጋግጡ።");
+      setErrorMessage("የቢሮው የደመና አገልግሎት አልተገናኘም። እባክዎን Vercel Environment Variables በትክክል መገባታቸውን ያረጋግጡ።");
       return;
     }
     
@@ -51,18 +50,18 @@ export default function LoginPage() {
     try {
       if (isSignUp) {
         await createUserWithEmailAndPassword(auth, email, password);
-        setSuccessMessage("የምዝገባ ጥያቄዎ ተሳክቷል። አሁን መግባት ይችላሉ።");
+        setSuccessMessage("የምዝገባ ጥያቄዎ ተሳክቷል። አሁን በከፈቱት ኢሜይል መግባት ይችላሉ።");
         toast({ title: "ተመዝግበዋል", description: "አካውንትዎ በትክክል ተከፍቷል።" });
         setIsSignUp(false);
       } else {
         await signInWithEmailAndPassword(auth, email, password);
-        toast({ title: "እንኳን ደህና መጡ", description: "ወርቁ ነኝ፣ ወደ መቆጣጠሪያ ገጹ በመግባት ላይ ነዎት።" });
+        toast({ title: "እንኳን ደህና መጡ", description: "ወደ ሲስተሙ በመግባት ላይ ነዎት።" });
       }
     } catch (err: any) {
       console.error("Auth Error:", err);
       let msg = "መግባት አልተቻለም። እባክዎን የኢሜይል እና የይለፍ ቃልዎን ያረጋግጡ።";
       
-      if (err.code === 'auth/email-already-in-use') msg = "ይህ ኢሜይል ቀድሞ ተመዝግቧል። እባክዎን በቀጥታ ይግቡ።";
+      if (err.code === 'auth/email-already-in-use') msg = "ይህ ኢሜይል ቀድሞ ተመዝግቧል። እባክዎን 'ግባ' የሚለውን ተጭነው ይግቡ።";
       if (err.code === 'auth/weak-password') msg = "የይለፍ ቃሉ ቢያንስ 6 ፊደላት/ቁጥሮች መሆን አለበት።";
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         msg = isSignUp ? "መመዝገብ አልተቻለም።" : "ኢሜይል ወይም የይለፍ ቃል ተሳስቷል። መጀመሪያ ካልተመዘገቡ 'እዚህ ይመዝገቡ' የሚለውን ተጭነው ይመዝገቡ።";

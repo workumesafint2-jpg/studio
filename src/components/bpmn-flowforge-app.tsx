@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -650,7 +649,7 @@ export function BPMNFlowForgeApp() {
 
       <footer className="px-6 py-2 bg-white border-t flex justify-between items-center shrink-0">
         <div className="flex gap-4 items-center text-[9px] font-black text-slate-400 uppercase tracking-widest">
-          <span>ITB Enterprise v4.5.0</span>
+          <span>ITB Enterprise v4.7.0</span>
           {isAdmin && (
             <>
               <span className="text-slate-200">|</span>
