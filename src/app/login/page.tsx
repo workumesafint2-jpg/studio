@@ -15,8 +15,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Image from 'next/image';
 
 /**
- * (ወርቁ) Pro - Institutional Login Page v4.3.5
- * Stable Deployment Sync
+ * (ወርቁ) Pro - Institutional Login Page v4.3.6
+ * Optimized for Vercel Deployment & Auth Resilience
  */
 export default function LoginPage() {
   const auth = useAuth();
@@ -40,9 +40,8 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check if Firebase is actually configured
     if (!auth) {
-      setErrorMessage("የቢሮው የደመና አገልግሎት (Firebase) አልተገናኘም። እባክዎን በ Deployment Platform (Vercel/Netlify) ላይ Environment Variables መዋቀራቸውን ያረጋግጡ።");
+      setErrorMessage("የቢሮው የደመና አገልግሎት (Firebase) አልተገናኘም። እባክዎን በ Vercel Settings -> Environment Variables ላይ ቁልፎችን ማስገባትዎን ያረጋግጡ።");
       return;
     }
     
@@ -53,7 +52,7 @@ export default function LoginPage() {
     try {
       if (isSignUp) {
         await createUserWithEmailAndPassword(auth, email, password);
-        setSuccessMessage("የምዝገባ ጥያቄዎ ተሳክቷል። አሁን መግባት ይችላሉ።");
+        setSuccessMessage("የምዝገባ ጥያቄዎ ተሳክቷል። አሁን 'ግባ (Login)' የሚለውን ተጭነው ይግቡ።");
         toast({ title: "ተመዝግበዋል", description: "አካውንትዎ በትክክል ተከፍቷል።" });
         setIsSignUp(false);
       } else {
@@ -64,14 +63,12 @@ export default function LoginPage() {
       console.error("Auth Error:", err);
       let msg = "መግባት አልተቻለም። እባክዎን የኢሜይል እና የይለፍ ቃልዎን ያረጋግጡ።";
       
-      // Detailed error feedback for users
-      if (err.code === 'auth/email-already-in-use') msg = "ይህ ኢሜይል ቀድሞ ተመዝግቧል።";
-      if (err.code === 'auth/weak-password') msg = "የይለፍ ቃሉ ቢያንስ 6 ፊደላት መሆን አለበት።";
+      if (err.code === 'auth/email-already-in-use') msg = "ይህ ኢሜይል ቀድሞ ተመዝግቧል። እባክዎን በቀጥታ ይግቡ።";
+      if (err.code === 'auth/weak-password') msg = "የይለፍ ቃሉ ቢያንስ 6 ፊደላት/ቁጥሮች መሆን አለበት።";
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        msg = isSignUp ? "መመዝገብ አልተቻለም። እባክዎን መረጃዎን ያረጋግጡ።" : "ኢሜይል ወይም የይለፍ ቃል ተሳስቷል። መጀመሪያ ካልተመዘገቡ 'እዚህ ይመዝገቡ' የሚለውን ይጫኑ።";
+        msg = isSignUp ? "መመዝገብ አልተቻለም።" : "ኢሜይል ወይም የይለፍ ቃል ተሳስቷል። መጀመሪያ ካልተመዘገቡ 'እዚህ ይመዝገቡ' የሚለውን ይጫኑ።";
       }
-      if (err.code === 'auth/operation-not-allowed') msg = "በFirebase Console ላይ Email/Password አልተፈቀደም። እባክዎን ያብሩት።";
-      if (err.code === 'auth/network-request-failed') msg = "የኢንተርኔት ግንኙነት የለም ወይም የFirebase Config ተሳስቷል።";
+      if (err.code === 'auth/operation-not-allowed') msg = "በFirebase Console ላይ 'Email/Password' አልተፈቀደም። እባክዎን ያብሩት።";
       
       setErrorMessage(msg);
     } finally {
@@ -170,7 +167,7 @@ export default function LoginPage() {
               className="text-[11px] font-black text-[#1e3a8a] hover:underline uppercase tracking-wider bg-blue-50/50 py-3 rounded-xl border border-blue-50 transition-colors"
               disabled={loading}
             >
-              {isSignUp ? 'አካውንት አለዎት? እዚህ ይግቡ' : 'አዲስ ተጠቃሚ ነዎት? እዚህ ይመዝገቡ'}
+              {isSignUp ? 'አካውንት አለዎት? እዚህ ይግቡ' : 'አዲስ ተጠቃሚ ነዎት? መጀመሪያ እዚህ ይመዝገቡ'}
             </button>
             
             <Link href="/" className="inline-flex items-center justify-center text-[10px] font-black text-slate-400 hover:text-[#1e3a8a] transition-colors uppercase tracking-[0.2em]">
