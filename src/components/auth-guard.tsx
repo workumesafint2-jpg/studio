@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -6,8 +7,8 @@ import { useUser } from '@/firebase';
 import { Loader2 } from 'lucide-react';
 
 /**
- * (ወርቁ) Pro - AuthGuard v4.7.0
- * Fixed Hydration Mismatch by ensuring client-side only mount before rendering auth state.
+ * (ወርቁ) Pro - AuthGuard v4.8.0
+ * Fully Fixed Hydration Mismatch for Vercel/Production deployment.
  */
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
@@ -32,8 +33,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   if (isUserLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-slate-50">
-        <Loader2 className="w-8 h-8 text-[#1e3a8a] animate-spin" />
-        <p className="mt-4 text-xs font-bold text-slate-400 uppercase tracking-widest">ማንነትዎን በማረጋገጥ ላይ...</p>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 text-[#1e3a8a] animate-spin" />
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest animate-pulse">ማንነትዎን በማረጋገጥ ላይ...</p>
+        </div>
       </div>
     );
   }
