@@ -15,8 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Image from 'next/image';
 
 /**
- * (ወርቁ) Pro - Institutional Login Page v4.3.8
- * Enhanced for Vercel Deployment & Better UX
+ * (ወርቁ) Pro - Institutional Login & Signup Portal v4.5.0
  */
 export default function LoginPage() {
   const auth = useAuth();
@@ -41,7 +40,7 @@ export default function LoginPage() {
     e.preventDefault();
     
     if (!auth) {
-      setErrorMessage("የቢሮው የደመና አገልግሎት (Firebase) አልተገናኘም። እባክዎን በ Vercel Settings -> Environment Variables ላይ ቁልፎችን በትክክል ማስገባትዎን ያረጋግጡ።");
+      setErrorMessage("የቢሮው የደመና አገልግሎት አልተገናኘም። እባክዎን Environment Variables በትክክል መገባታቸውን ያረጋግጡ።");
       return;
     }
     
@@ -66,7 +65,7 @@ export default function LoginPage() {
       if (err.code === 'auth/email-already-in-use') msg = "ይህ ኢሜይል ቀድሞ ተመዝግቧል። እባክዎን በቀጥታ ይግቡ።";
       if (err.code === 'auth/weak-password') msg = "የይለፍ ቃሉ ቢያንስ 6 ፊደላት/ቁጥሮች መሆን አለበት።";
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        msg = isSignUp ? "መመዝገብ አልተቻለም።" : "ኢሜይል ወይም የይለፍ ቃል ተሳስቷል። መጀመሪያ ካልተመዘገቡ 'እዚህ ይመዝገቡ' የሚለውን ይጫኑ።";
+        msg = isSignUp ? "መመዝገብ አልተቻለም።" : "ኢሜይል ወይም የይለፍ ቃል ተሳስቷል። መጀመሪያ ካልተመዘገቡ 'እዚህ ይመዝገቡ' የሚለውን ተጭነው ይመዝገቡ።";
       }
       
       setErrorMessage(msg);
@@ -175,10 +174,6 @@ export default function LoginPage() {
           </div>
         </CardContent>
       </Card>
-      
-      <p className="fixed bottom-8 text-[10px] font-black text-slate-300 uppercase tracking-[0.5em] pointer-events-none text-center w-full">
-        ወ ር ቁ - ተ ቋ ማ ዊ - መ ረጃ - ማ ዕ ከ ል
-      </p>
     </div>
   );
 }

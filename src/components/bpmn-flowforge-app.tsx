@@ -126,7 +126,6 @@ interface FeedbackMessage {
 
 /**
  * Master Admin Email Configuration
- * workumesafint2@gmail.com
  */
 const ADMIN_EMAIL = "workumesafint2@gmail.com";
 
@@ -260,7 +259,7 @@ export function BPMNFlowForgeApp() {
         status: 'በሂደት ላይ',
         version: 1,
         uploaderId: user.uid,
-        expertName: user.displayName || user.email || "ባለሙያ",
+        expertName: user.displayName || user.email?.split('@')[0] || "ባለሙያ",
         sector: "ITB Sector",
         createdAt: Timestamp.now()
       };
@@ -283,7 +282,7 @@ export function BPMNFlowForgeApp() {
         sector: uploadSector || "General",
         directorate: uploadDirectorate,
         team: uploadTeam,
-        expertName: uploadExpertName || user.displayName || user.email || "ባለሙያ",
+        expertName: uploadExpertName || user.displayName || user.email?.split('@')[0] || "ባለሙያ",
         fileName: selectedFile.name,
         fileSize: (selectedFile.size / 1024).toFixed(1) + " KB",
         uploadDate: new Date().toISOString(),
@@ -305,7 +304,7 @@ export function BPMNFlowForgeApp() {
   const handleSendFeedback = async () => {
     if (!feedbackInput.trim() || !user || !db) return;
     const newFeedback: Omit<FeedbackMessage, 'id'> = {
-      senderName: user.displayName || user.email || "ተጠቃሚ",
+      senderName: user.displayName || user.email?.split('@')[0] || "ተጠቃሚ",
       senderRole: isAdmin ? "Admin" : "Staff",
       content: feedbackInput,
       timestamp: new Date().toISOString(),
@@ -338,6 +337,8 @@ export function BPMNFlowForgeApp() {
     if (db && (isAdmin || uploaderId === user?.uid)) {
       deleteDocumentNonBlocking(doc(db, 'documents', id));
       toast({ title: "ተሰርዟል", description: "ሰነዱ ተሰርዟል" });
+    } else {
+      toast({ title: "ስልጣን የለዎትም", description: "የራስዎን ፋይል ብቻ ነው መሰረዝ የሚችሉት", variant: "destructive" });
     }
   };
 
@@ -362,7 +363,7 @@ export function BPMNFlowForgeApp() {
 
       <div className="flex items-center justify-between px-6 py-2 bg-white border-b shrink-0">
         <div className="flex items-center gap-2">
-          {isAdmin ? <Badge className="bg-amber-50 text-amber-600 border-amber-200 text-[9px] font-black uppercase">Master Admin</Badge> : <Badge className="bg-blue-50 text-blue-600 border-blue-200 text-[9px] font-black uppercase">ITB Portal</Badge>}
+          {isAdmin ? <Badge className="bg-amber-50 text-amber-600 border-amber-200 text-[9px] font-black uppercase">Master Admin</Badge> : <Badge className="bg-blue-50 text-blue-600 border-blue-200 text-[9px] font-black uppercase">ITB Staff</Badge>}
         </div>
         <div className="relative max-w-xl w-full mx-4">
           <Input value={globalSearch} onChange={(e) => setGlobalSearch(e.target.value)} placeholder="መዝገብ ቤት ፈልግ..." className="h-9 text-xs pl-9 rounded-xl bg-slate-50 border-none" />
@@ -380,11 +381,13 @@ export function BPMNFlowForgeApp() {
             <DropdownMenuContent align="end" className="w-56 p-2 rounded-xl">
               {user ? (
                 <>
-                  <DropdownMenuItem asChild><Link href="/admin" className="flex items-center w-full"><LayoutIcon className="w-4 h-4 mr-2" /> መቆጣጠሪያ</Link></DropdownMenuItem>
+                  {isAdmin && (
+                    <DropdownMenuItem asChild><Link href="/admin" className="flex items-center w-full"><LayoutIcon className="w-4 h-4 mr-2" /> መቆጣጠሪያ ማዕከል</Link></DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-600 font-bold cursor-pointer"><LogOut className="w-4 h-4 mr-2" /> ውጣ</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600 font-bold cursor-pointer"><LogOut className="w-4 h-4 mr-2" /> ውጣ (Logout)</DropdownMenuItem>
                 </>
-              ) : <DropdownMenuItem asChild><Link href="/login" className="flex items-center w-full"><LogIn className="w-4 h-4 mr-2" /> ግባ</Link></DropdownMenuItem>}
+              ) : <DropdownMenuItem asChild><Link href="/login" className="flex items-center w-full"><LogIn className="w-4 h-4 mr-2" /> ግባ (Login)</Link></DropdownMenuItem>}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -392,7 +395,6 @@ export function BPMNFlowForgeApp() {
 
       <main className="flex-1 flex flex-col p-3 gap-3 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full">
-          
           <div className="lg:col-span-5 flex flex-col gap-3 overflow-hidden">
             <Card className="shadow-lg border-none rounded-2xl overflow-hidden shrink-0">
               <CardContent className="p-4 space-y-4">
@@ -471,9 +473,19 @@ export function BPMNFlowForgeApp() {
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="w-4 h-4 text-slate-400" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-xl p-1.5">
                           <DropdownMenuItem onClick={() => handleOpenFile(file.fileUrl)} className="text-xs font-bold rounded-lg cursor-pointer"><Eye className="w-4 h-4 mr-2 text-blue-600" /> ክፈት</DropdownMenuItem>
-                          {(isAdmin && file.status !== 'የጸደቀ') && <DropdownMenuItem onClick={() => handleApprove(file.id)} className="text-xs font-bold rounded-lg cursor-pointer"><CheckCircle2 className="w-4 h-4 mr-2 text-green-600" /> አጽድቅ</DropdownMenuItem>}
-                          <DropdownMenuItem asChild className="text-xs font-bold rounded-lg cursor-pointer"><a href={file.fileUrl} download={file.fileName} className="flex items-center w-full"><Download className="w-4 h-4 mr-2 text-[#1e3a8a]" /> አውርድ</a></DropdownMenuItem>
-                          {(isAdmin || file.uploaderId === user?.uid) && <DropdownMenuItem onClick={() => handleDelete(file.id, file.uploaderId)} className="text-xs font-bold text-red-600 rounded-lg cursor-pointer"><Trash2 className="w-4 h-4 mr-2" /> ሰርዝ</DropdownMenuItem>}
+                          {(isAdmin && file.status !== 'የጸደቀ') && (
+                            <DropdownMenuItem onClick={() => handleApprove(file.id)} className="text-xs font-bold rounded-lg cursor-pointer"><CheckCircle2 className="w-4 h-4 mr-2 text-green-600" /> አጽድቅ</DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem asChild className="text-xs font-bold rounded-lg cursor-pointer">
+                            <a href={file.fileUrl} download={file.fileName} className="flex items-center w-full">
+                              <Download className="w-4 h-4 mr-2 text-[#1e3a8a]" /> አውርድ
+                            </a>
+                          </DropdownMenuItem>
+                          {(isAdmin || file.uploaderId === user?.uid) && (
+                            <DropdownMenuItem onClick={() => handleDelete(file.id, file.uploaderId)} className="text-xs font-bold text-red-600 rounded-lg cursor-pointer">
+                              <Trash2 className="w-4 h-4 mr-2" /> ሰርዝ
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -541,12 +553,8 @@ export function BPMNFlowForgeApp() {
                 <TabsContent value="daily-log" className="h-full m-0">
                   <Card className="h-full shadow-lg border-none rounded-2xl bg-white overflow-hidden flex flex-col">
                     <div className="p-4 border-b flex justify-between items-center bg-slate-50/50">
-                      <h3 className="text-[11px] font-black uppercase tracking-widest flex items-center gap-2">
-                        <History className="w-4 h-4 text-[#1e3a8a]" /> የቀን ውሎ መመዝገቢያ
-                      </h3>
-                      <Badge className="bg-white text-slate-900 border-slate-200 text-[9px] font-black">
-                        {currentDate}
-                      </Badge>
+                      <h3 className="text-[11px] font-black uppercase tracking-widest flex items-center gap-2"><History className="w-4 h-4 text-[#1e3a8a]" /> የቀን ውሎ መመዝገቢያ</h3>
+                      <Badge className="bg-white text-slate-900 border-slate-200 text-[9px] font-black">{currentDate}</Badge>
                     </div>
                     <ScrollArea className="flex-1">
                       <Table>
@@ -610,9 +618,6 @@ export function BPMNFlowForgeApp() {
                             placeholder="አዲስ መመሪያ ወይም ሪፖርት እዚህ ይጻፉ... (Office Style Editor)" 
                             className="bg-slate-50 border-none rounded-2xl text-xs min-h-[140px] shadow-inner p-5 font-medium resize-none focus-visible:ring-1 focus-visible:ring-[#1e3a8a]/20" 
                           />
-                          <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-focus-within:opacity-100 transition-opacity">
-                            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md"><Settings className="w-3 h-3 text-slate-300" /></Button>
-                          </div>
                           <Button className="absolute bottom-4 right-4 h-10 px-8 rounded-xl bg-[#1e3a8a] text-white font-black text-xs shadow-xl hover:bg-[#1e3a8a]/90 transition-all active:scale-95" onClick={handleSendFeedback}>
                             <Send className="w-4 h-4 mr-2" /> መዝግብ
                           </Button>
@@ -633,14 +638,6 @@ export function BPMNFlowForgeApp() {
                             </div>
                           </div>
                         ) : <p className="text-[10px] font-bold text-slate-300 uppercase">ምንም ተጠቃሚ የለም</p>}
-                        
-                        <div className="mt-8 p-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                          <h4 className="text-[9px] font-black uppercase text-slate-400 mb-2">ተጨማሪ ተግባራት</h4>
-                          <div className="space-y-2">
-                            <Button variant="ghost" className="w-full justify-start h-8 text-[10px] font-bold rounded-lg text-slate-500 hover:text-[#1e3a8a] hover:bg-blue-50"><Briefcase className="w-3.5 h-3.5 mr-2" /> የሰራተኞች ዝርዝር</Button>
-                            <Button variant="ghost" className="w-full justify-start h-8 text-[10px] font-bold rounded-lg text-slate-500 hover:text-[#1e3a8a] hover:bg-blue-50"><Settings className="w-3.5 h-3.5 mr-2" /> ማስተካከያ</Button>
-                          </div>
-                        </div>
                       </div>
                     </Card>
                   </div>
@@ -653,13 +650,17 @@ export function BPMNFlowForgeApp() {
 
       <footer className="px-6 py-2 bg-white border-t flex justify-between items-center shrink-0">
         <div className="flex gap-4 items-center text-[9px] font-black text-slate-400 uppercase tracking-widest">
-          <span>ITB Enterprise v4.3.5</span>
-          <span className="text-slate-200">|</span>
-          <Link href="/admin" className="text-[#1e3a8a] hover:underline">MASTER CONTROL</Link>
+          <span>ITB Enterprise v4.5.0</span>
+          {isAdmin && (
+            <>
+              <span className="text-slate-200">|</span>
+              <Link href="/admin" className="text-[#1e3a8a] hover:underline">MASTER CONTROL</Link>
+            </>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-          <span className="text-[9px] font-black text-green-600 uppercase tracking-widest">Secure Cloud Active</span>
+          <span className="text-[9px] font-black text-green-600 uppercase tracking-widest">Secure Institutional Network</span>
         </div>
       </footer>
     </div>

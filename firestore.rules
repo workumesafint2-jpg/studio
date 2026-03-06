@@ -3,7 +3,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     /**
-     * Institutional Security Rules v4.3.0
+     * Institutional Security Rules v4.5.0
      * Master Admin: workumesafint2@gmail.com
      */
     
