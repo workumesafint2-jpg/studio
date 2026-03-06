@@ -8,7 +8,7 @@ import { getFirestore } from 'firebase/firestore';
 
 /**
  * Institutional Firebase Initializer.
- * v4.3.6 - Resilient Production Sync with enhanced logging
+ * v4.3.8 - Resilient Production Sync with enhanced logging
  */
 export function initializeFirebase() {
   if (typeof window === 'undefined') {
@@ -20,17 +20,15 @@ export function initializeFirebase() {
     return getSdks(getApp());
   }
 
-  // Debug check for Environment Variables in browser console
-  console.log('(ወርቁ) Pro: Checking Firebase Configuration...');
-  
-  const isConfigValid = !!(
+  // Check if configuration exists
+  const hasConfig = !!(
     firebaseConfig.apiKey && 
     firebaseConfig.apiKey !== 'undefined' && 
     firebaseConfig.projectId && 
     firebaseConfig.projectId !== 'undefined'
   );
 
-  if (isConfigValid) {
+  if (hasConfig) {
     try {
       const firebaseApp = initializeApp(firebaseConfig);
       console.log('(ወርቁ) Pro: Firebase Initialized successfully.');
@@ -42,7 +40,7 @@ export function initializeFirebase() {
   }
 
   // If not configured, we run in a restricted "local-only" state
-  console.error('(ወርቁ) CRITICAL: Firebase config missing! Ensure Environment Variables are set in Vercel/Netlify.');
+  console.warn('(ወርቁ) WARNING: Firebase configuration missing in Environment Variables.');
   return { firebaseApp: null, auth: null, firestore: null };
 }
 

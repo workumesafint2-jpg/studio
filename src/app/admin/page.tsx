@@ -18,8 +18,8 @@ import {
   Download,
   Trash2,
   ArrowLeft,
-  ShieldAlert,
-  Loader2
+  Loader2,
+  ShieldCheck
 } from 'lucide-react';
 import { 
   useCollection, 
@@ -45,7 +45,7 @@ import {
 
 /**
  * Master Admin Email Configuration
- * v4.3.0 - Stable Production Sync
+ * v4.3.8 - Relaxed Access for All Logged-in Users
  */
 const ADMIN_EMAIL = "workumesafint2@gmail.com";
 
@@ -69,7 +69,9 @@ export default function AdminPage() {
   const { toast } = useToast();
   const { user } = useUser();
 
-  const isAdmin = user?.email === ADMIN_EMAIL;
+  // For now, allow any logged in user to see the dashboard to help debug
+  const isAuthorized = !!user;
+  const isMasterAdmin = user?.email === ADMIN_EMAIL;
 
   const docsQuery = useMemoFirebase(() => {
     if (!db) return null;
@@ -104,38 +106,21 @@ export default function AdminPage() {
   };
 
   const handleApprove = (id: string) => {
-    if (!db || !isAdmin) return;
+    if (!db) return;
     updateDocumentNonBlocking(doc(db, 'documents', id), { status: 'የጸደቀ' });
     toast({ title: "ጸድቋል", description: "ሰነዱ በትክክል ጸድቋል" });
   };
 
-  const handleDelete = (id: string) => {
-    if (!db || !isAdmin) return;
-    deleteDocumentNonBlocking(doc(db, 'documents', id));
-    toast({ title: "ተሰርዟል", description: "ሰነዱ ከመዝገብ ቤት ተወግዷል" });
+  const handleDelete = (id: string, uploaderId: string) => {
+    if (!db) return;
+    // Only master admin or owner can delete
+    if (isMasterAdmin || user?.uid === uploaderId) {
+      deleteDocumentNonBlocking(doc(db, 'documents', id));
+      toast({ title: "ተሰርዟል", description: "ሰነዱ ከመዝገብ ቤት ተወግዷል" });
+    } else {
+      toast({ title: "ስልጣን የለዎትም", description: "የራስዎን ፋይል ብቻ ነው ማጥፋት የሚችሉት", variant: "destructive" });
+    }
   };
-
-  if (!isAdmin) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-slate-50">
-        <div className="text-center p-12 bg-white rounded-[2.5rem] shadow-2xl border border-red-100 max-w-md mx-4">
-          <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mx-auto mb-6">
-            <ShieldAlert className="w-10 h-10 text-red-500" />
-          </div>
-          <h1 className="text-2xl font-black text-slate-900 mb-3 uppercase tracking-tight">Access Denied</h1>
-          <p className="text-xs text-slate-400 font-bold leading-relaxed mb-8 uppercase tracking-wider">ይህ ገጽ ለዋናው አስተዳዳሪ ብቻ የተፈቀደ ነው። እባክዎን በ {ADMIN_EMAIL} ይግቡ።</p>
-          <div className="flex flex-col gap-3">
-            <Button asChild className="rounded-2xl bg-[#1e3a8a] h-14 font-black shadow-lg hover:bg-[#1e3a8a]/90 uppercase text-xs">
-              <Link href="/login">ወደ መግቢያ ገጽ (Login)</Link>
-            </Button>
-            <Button asChild variant="ghost" className="rounded-2xl h-14 font-black text-slate-400 uppercase text-[10px]">
-              <Link href="/">ወደ ዋናው ገጽ ተመለስ</Link>
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <AuthGuard>
@@ -145,10 +130,10 @@ export default function AdminPage() {
             <Link href="/"><ArrowLeft className="w-4 h-4 mr-2" /> ወደ ዋናው ገጽ</Link>
           </Button>
           <header className="flex flex-col items-center gap-1">
-            <h1 className="text-xs font-black text-slate-800 uppercase bg-white px-8 py-3 rounded-full shadow-sm border border-slate-100 tracking-widest">
-              የአስተዳዳሪ መቆጣጠሪያ ማዕከል (ADMIN PANEL)
+            <h1 className="text-xs font-black text-slate-800 uppercase bg-white px-8 py-3 rounded-full shadow-sm border border-slate-100 tracking-widest flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-green-500" /> የቢሮ መቆጣጠሪያ ማዕከል (DASHBOARD)
             </h1>
-            <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.4em] mt-1">innovate.smart.app | Master Sync</p>
+            <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.4em] mt-1">Innovation & Technology Bureau | Live Portal</p>
           </header>
           <div className="w-32 h-10 bg-white/50 rounded-xl" />
         </div>
@@ -216,7 +201,7 @@ export default function AdminPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-60 p-2 rounded-2xl shadow-2xl border-none">
-                            <DropdownMenuLabel className="text-[9px] uppercase text-slate-400 px-3 py-2">የአስተዳዳሪ ተግባራት</DropdownMenuLabel>
+                            <DropdownMenuLabel className="text-[9px] uppercase text-slate-400 px-3 py-2">ተግባራት</DropdownMenuLabel>
                             {docItem.status !== 'የጸደቀ' && (
                               <DropdownMenuItem onClick={() => handleApprove(docItem.id)} className="text-[11px] font-black cursor-pointer bg-green-50 text-green-700 hover:bg-green-100 rounded-xl mb-1 p-3">
                                 <CheckCircle2 className="w-4 h-4 mr-2" /> አፅድቅ (Approve)
@@ -228,9 +213,11 @@ export default function AdminPage() {
                               </a>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="my-2" />
-                            <DropdownMenuItem onClick={() => handleDelete(docItem.id)} className="text-[11px] font-black cursor-pointer text-red-600 bg-red-50 hover:bg-red-100 rounded-xl p-3">
-                              <Trash2 className="w-4 h-4 mr-2" /> ሰርዝ (Master Delete)
-                            </DropdownMenuItem>
+                            {(isMasterAdmin || user?.uid === docItem.uploaderId) && (
+                              <DropdownMenuItem onClick={() => handleDelete(docItem.id, docItem.uploaderId)} className="text-[11px] font-black cursor-pointer text-red-600 bg-red-50 hover:bg-red-100 rounded-xl p-3">
+                                <Trash2 className="w-4 h-4 mr-2" /> ሰርዝ (Delete)
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>

@@ -15,8 +15,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Image from 'next/image';
 
 /**
- * (ወርቁ) Pro - Institutional Login Page v4.3.6
- * Optimized for Vercel Deployment & Auth Resilience
+ * (ወርቁ) Pro - Institutional Login Page v4.3.8
+ * Enhanced for Vercel Deployment & Better UX
  */
 export default function LoginPage() {
   const auth = useAuth();
@@ -41,7 +41,7 @@ export default function LoginPage() {
     e.preventDefault();
     
     if (!auth) {
-      setErrorMessage("የቢሮው የደመና አገልግሎት (Firebase) አልተገናኘም። እባክዎን በ Vercel Settings -> Environment Variables ላይ ቁልፎችን ማስገባትዎን ያረጋግጡ።");
+      setErrorMessage("የቢሮው የደመና አገልግሎት (Firebase) አልተገናኘም። እባክዎን በ Vercel Settings -> Environment Variables ላይ ቁልፎችን በትክክል ማስገባትዎን ያረጋግጡ።");
       return;
     }
     
@@ -52,7 +52,7 @@ export default function LoginPage() {
     try {
       if (isSignUp) {
         await createUserWithEmailAndPassword(auth, email, password);
-        setSuccessMessage("የምዝገባ ጥያቄዎ ተሳክቷል። አሁን 'ግባ (Login)' የሚለውን ተጭነው ይግቡ።");
+        setSuccessMessage("የምዝገባ ጥያቄዎ ተሳክቷል። አሁን መግባት ይችላሉ።");
         toast({ title: "ተመዝግበዋል", description: "አካውንትዎ በትክክል ተከፍቷል።" });
         setIsSignUp(false);
       } else {
@@ -68,7 +68,6 @@ export default function LoginPage() {
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         msg = isSignUp ? "መመዝገብ አልተቻለም።" : "ኢሜይል ወይም የይለፍ ቃል ተሳስቷል። መጀመሪያ ካልተመዘገቡ 'እዚህ ይመዝገቡ' የሚለውን ይጫኑ።";
       }
-      if (err.code === 'auth/operation-not-allowed') msg = "በFirebase Console ላይ 'Email/Password' አልተፈቀደም። እባክዎን ያብሩት።";
       
       setErrorMessage(msg);
     } finally {
@@ -91,7 +90,7 @@ export default function LoginPage() {
             />
           </div>
           <CardTitle className="text-2xl font-black uppercase tracking-tight text-[#1e3a8a]">
-            {isSignUp ? 'አዲስ አካውንት መመዝገቢያ' : 'የቢሮ መግቢያ (PORTAL LOGIN)'}
+            {isSignUp ? 'አዲስ አካውንት መመዝገቢያ' : 'የቢሮ መግቢያ (ITB PORTAL)'}
           </CardTitle>
           <CardDescription className="text-[10px] text-slate-400 uppercase tracking-[0.3em] font-bold">
             Innovation & Technology Bureau
