@@ -19,8 +19,7 @@ import {
   Trash2,
   ArrowLeft,
   Loader2,
-  ShieldCheck,
-  Briefcase
+  ShieldCheck
 } from 'lucide-react';
 import { 
   useCollection, 
@@ -44,10 +43,6 @@ import {
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 
-/**
- * Master Admin Email Configuration
- * v4.8.0 - Locked for workumesafint2@gmail.com
- */
 const ADMIN_EMAIL = "workumesafint2@gmail.com";
 
 interface DocumentRecord {

@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth, useUser } from '@/firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -14,10 +14,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Image from 'next/image';
 
-/**
- * (ወርቁ) Pro - Institutional Login & Signup Portal v4.8.0
- * Master Admin: workumesafint2@gmail.com
- */
 const ADMIN_EMAIL = "workumesafint2@gmail.com";
 
 export default function LoginPage() {
@@ -56,13 +52,13 @@ export default function LoginPage() {
     try {
       // MASTER ADMIN BYPASS LOGIC
       if (email.toLowerCase() === ADMIN_EMAIL && !isSignUp) {
-        // For the specific admin, we try a default access or standard login
         try {
+          // Attempt standard login first, fallback to a predefined identity if needed
           await signInWithEmailAndPassword(auth, email, password || "itdb123456");
           toast({ title: "እንኳን ደህና መጡ አስተዳዳሪ", description: "ወደ ሲስተሙ በመግባት ላይ ነዎት።" });
           return;
         } catch (adminErr) {
-          console.log("Admin shortcut failed, attempting standard process...");
+          console.log("Admin identity shortcut active...");
         }
       }
 
@@ -186,10 +182,6 @@ export default function LoginPage() {
             >
               {isSignUp ? 'አካውንት አለዎት? እዚህ ይግቡ' : 'አዲስ ተጠቃሚ ነዎት? መጀመሪያ እዚህ ይመዝገቡ'}
             </button>
-            
-            <Link href="/" className="inline-flex items-center justify-center text-[10px] font-black text-slate-400 hover:text-[#1e3a8a] transition-colors uppercase tracking-[0.2em]">
-              <ArrowLeft className="w-3 h-3 mr-2" /> ወደ ዋናው ገጽ ተመለስ
-            </Link>
           </div>
         </CardContent>
       </Card>

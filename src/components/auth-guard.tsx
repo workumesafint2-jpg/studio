@@ -6,10 +6,6 @@ import { useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { Loader2 } from 'lucide-react';
 
-/**
- * (ወርቁ) Pro - AuthGuard v4.8.0
- * Fully Fixed Hydration Mismatch for Vercel/Production deployment.
- */
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
@@ -25,7 +21,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, isUserLoading, router, mounted]);
 
-  // Prevent hydration mismatch by returning null during server-side rendering
   if (!mounted) {
     return null;
   }
