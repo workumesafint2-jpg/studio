@@ -39,7 +39,7 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auth) {
-      setErrorMessage("የFirebase ግንኙነት አልተገኘም። እባክዎን በ Vercel Settings -> Environment Variables ውስጥ ቁልፎቹን መሙላትዎን ያረጋግጡ።");
+      setErrorMessage("የFirebase ግንኙነት አልተገኘም። እባክዎን Settings ውስጥ ቁልፎቹን መሙላትዎን ያረጋግጡ።");
       return;
     }
     
@@ -69,8 +69,7 @@ export default function LoginPage() {
           try {
              await signInWithEmailAndPassword(auth, email, password);
           } catch (e) {
-             // If password fails for admin, we show a special hint but still require auth
-             console.warn("Admin authentication failed. Please check password.");
+             console.warn("Admin authentication failed. Manual login required if password differs.");
           }
         }
         await signInWithEmailAndPassword(auth, email, password);
