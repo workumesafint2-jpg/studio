@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
@@ -127,8 +128,6 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
   useEffect(() => {
     if (!containerRef.current) return;
     
-    // In bpmn-js v18+, keyboard binding is now implicit.
-    // Explicit binding to window has been removed.
     const modeler = new BpmnModeler({
       container: containerRef.current
     });
@@ -153,11 +152,17 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
   }, [xml]);
 
   return (
-    <div className="w-full h-full relative group bg-white border border-slate-200 rounded-2xl overflow-hidden">
+    <div className="w-full h-full relative group bg-white">
       <div ref={containerRef} className="w-full h-full min-h-[600px] bpmn-viewer-container" />
       <style jsx global>{`
         .bpmn-viewer-container .bjs-powered-by {
           display: none;
+        }
+        .bpmn-viewer-container .djs-palette {
+          top: 20px !important;
+          left: 20px !important;
+          border-radius: 12px !important;
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
         }
       `}</style>
     </div>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -31,8 +32,8 @@ import {
   LogOut,
   LogIn,
   XCircle,
-  Settings,
-  Briefcase
+  FileJson,
+  LayoutTemplate
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -73,7 +74,9 @@ import {
   CartesianGrid, 
   Tooltip as RechartsTooltip, 
   ResponsiveContainer, 
-  Cell
+  Cell,
+  Line,
+  LineChart
 } from 'recharts';
 import { 
   useCollection, 
@@ -83,12 +86,12 @@ import {
   addDocumentNonBlocking,
   deleteDocumentNonBlocking,
   updateDocumentNonBlocking,
-  useAuth
+  useAuth,
+  useDoc
 } from '@/firebase';
 import { collection, query, doc, Timestamp, orderBy } from 'firebase/firestore';
 import Link from 'next/link';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import Image from 'next/image';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
@@ -105,12 +108,9 @@ interface UploadedFile {
   status: 'የጸደቀ' | 'በሂደት ላይ';
   version: number;
   uploaderId: string;
-  uploaderName?: string;
+  expertName?: string;
   createdAt?: any;
   sector?: string;
-  directorate?: string;
-  team?: string;
-  expertName?: string;
 }
 
 interface FeedbackMessage {
@@ -123,9 +123,6 @@ interface FeedbackMessage {
   createdAt?: any;
 }
 
-/**
- * Master Admin Email Configuration
- */
 const ADMIN_EMAIL = "workumesafint2@gmail.com";
 
 export function BPMNFlowForgeApp() {
@@ -143,9 +140,6 @@ export function BPMNFlowForgeApp() {
   
   const [uploadCategory, setUploadCategory] = useState<string>("");
   const [uploadSector, setUploadSector] = useState<string>("");
-  const [uploadDirectorate, setUploadDirectorate] = useState<string>("");
-  const [uploadTeam, setUploadTeam] = useState<string>("");
-  const [uploadExpertName, setUploadExpertName] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [feedbackInput, setFeedbackInput] = useState("");
@@ -182,19 +176,6 @@ export function BPMNFlowForgeApp() {
   const uploadedFiles = uploadedFilesRaw || [];
   const feedbackMessages = feedbackMessagesRaw || [];
 
-  const performanceData = useMemo(() => {
-    if (!uploadedFiles || uploadedFiles.length === 0) return [
-      { serviceName: 'ምሳሌ', planned: 100, actual: 75, execution: 75, color: '#eab308' }
-    ];
-    return uploadedFiles.slice(0, 6).map(f => ({
-      serviceName: f.name.substring(0, 10),
-      planned: 100,
-      actual: f.status === 'የጸደቀ' ? 100 : 70,
-      execution: f.status === 'የጸደቀ' ? 100 : 70,
-      color: f.status === 'የጸደቀ' ? '#22c55e' : '#eab308'
-    }));
-  }, [uploadedFiles]);
-
   const filteredDocuments = useMemo(() => {
     let list = uploadedFiles || [];
     if (globalSearch.trim()) {
@@ -224,16 +205,12 @@ export function BPMNFlowForgeApp() {
     }
   };
 
-  const handleClearInputs = () => {
-    setInput("");
-    setTitle("");
-  };
-
   const handleAutoSuggest = async (docType: 'diagram' | 'analysis' = 'diagram') => {
     setIsSuggesting(true);
     try {
       const result = await suggestSteps({ title: title || "አዲስ ስራ", docType, vaultContext: uploadedFiles });
       if (result?.steps) setInput(result.steps);
+      if (docType === 'analysis') setActiveTab('dashboard');
     } catch (error) {
       toast({ title: "ስህተት", description: "AI ምላሽ መስጠት አልቻለም", variant: "destructive" });
     } finally { setIsSuggesting(false); }
@@ -245,25 +222,30 @@ export function BPMNFlowForgeApp() {
     if (!currentXml) return;
     setIsSaving(true);
     try {
-      const dataUri = `data:application/xml;base64,${btoa(new TextEncoder().encode(currentXml).reduce((d, b) => d + String.fromCharCode(b), ''))}`;
-      const newFile: Omit<UploadedFile, 'id'> = {
-        name: title || "BPMN Diagram",
-        category: 'BPMN Diagram',
-        fileName: `${(title || "diagram").replace(/\s+/g, '-')}.bpmn`,
-        fileSize: "BPMN",
-        uploadDate: new Date().toISOString(),
-        dataUrl: dataUri,
-        fileUrl: dataUri,
-        type: 'application/xml',
-        status: 'በሂደት ላይ',
-        version: 1,
-        uploaderId: user.uid,
-        expertName: user.displayName || user.email?.split('@')[0] || "ባለሙያ",
-        sector: "ITB Sector",
-        createdAt: Timestamp.now()
+      const blob = new Blob([currentXml], { type: 'application/xml' });
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const dataUri = reader.result as string;
+        const newFile: Omit<UploadedFile, 'id'> = {
+          name: title || "BPMN Diagram",
+          category: 'BPMN Diagram',
+          fileName: `${(title || "diagram").replace(/\s+/g, '-')}.bpmn`,
+          fileSize: "BPMN",
+          uploadDate: new Date().toISOString(),
+          dataUrl: dataUri,
+          fileUrl: dataUri,
+          type: 'application/xml',
+          status: 'በሂደት ላይ',
+          version: 1,
+          uploaderId: user.uid,
+          expertName: user.displayName || "ባለሙያ",
+          sector: "ITB Sector",
+          createdAt: Timestamp.now()
+        };
+        await addDocumentNonBlocking(collection(db, 'documents'), newFile);
+        toast({ title: "ተቀምጧል", description: "መዝገብ ቤት ገብቷል" });
       };
-      await addDocumentNonBlocking(collection(db, 'documents'), newFile);
-      toast({ title: "ተቀምጧል", description: "መዝገብ ቤት ገብቷል" });
+      reader.readAsDataURL(blob);
     } catch (err) {
       toast({ title: "ስህተት", description: "ማስቀመጥ አልተቻለም", variant: "destructive" });
     } finally { setIsSaving(false); }
@@ -279,9 +261,7 @@ export function BPMNFlowForgeApp() {
         name: selectedFile.name.split('.')[0],
         category: uploadCategory || "ሌሎች",
         sector: uploadSector || "General",
-        directorate: uploadDirectorate,
-        team: uploadTeam,
-        expertName: uploadExpertName || user.displayName || user.email?.split('@')[0] || "ባለሙያ",
+        expertName: user.displayName || "ባለሙያ",
         fileName: selectedFile.name,
         fileSize: (selectedFile.size / 1024).toFixed(1) + " KB",
         uploadDate: new Date().toISOString(),
@@ -303,7 +283,7 @@ export function BPMNFlowForgeApp() {
   const handleSendFeedback = async () => {
     if (!feedbackInput.trim() || !user || !db) return;
     const newFeedback: Omit<FeedbackMessage, 'id'> = {
-      senderName: user.displayName || user.email?.split('@')[0] || "ተጠቃሚ",
+      senderName: user.displayName || "ተጠቃሚ",
       senderRole: isAdmin ? "Admin" : "Staff",
       content: feedbackInput,
       timestamp: new Date().toISOString(),
@@ -313,6 +293,16 @@ export function BPMNFlowForgeApp() {
     await addDocumentNonBlocking(collection(db, 'feedback'), newFeedback);
     setFeedbackInput("");
     toast({ title: "ተልኳል", description: "መልዕክቱ ተመዝግቧል" });
+  };
+
+  const handleDownloadFile = (file: UploadedFile) => {
+    if (!file.fileUrl) return;
+    const link = document.createElement('a');
+    link.href = file.fileUrl;
+    link.download = file.fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleOpenFile = (url: string) => {
@@ -336,8 +326,6 @@ export function BPMNFlowForgeApp() {
     if (db && (isAdmin || uploaderId === user?.uid)) {
       deleteDocumentNonBlocking(doc(db, 'documents', id));
       toast({ title: "ተሰርዟል", description: "ሰነዱ ተሰርዟል" });
-    } else {
-      toast({ title: "ስልጣን የለዎትም", description: "የራስዎን ፋይል ብቻ ነው መሰረዝ የሚችሉት", variant: "destructive" });
     }
   };
 
@@ -345,321 +333,340 @@ export function BPMNFlowForgeApp() {
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden font-sans">
-      <header className="flex flex-col items-center py-6 bg-white border-b shrink-0 shadow-sm z-50">
-        <h2 className="text-xl font-black text-[#1e3a8a] tracking-tight uppercase mb-2">Innovation and Technology Bureau</h2>
-        <div className="relative w-24 h-24 bg-[#1e3a8a] rounded-2xl flex items-center justify-center shadow-xl border-4 border-white overflow-hidden">
-          <Image 
-            src="https://picsum.photos/seed/addis-ababa-logo/400/400" 
-            alt="Addis Ababa Logo" 
-            fill 
-            className="object-contain p-2"
-            data-ai-hint="Addis Ababa City Administration logo"
-          />
+      <header className="flex items-center justify-between px-6 py-3 bg-white border-b shrink-0 shadow-sm z-50">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-[#1e3a8a] rounded-xl flex items-center justify-center text-white font-black text-xs shadow-md">
+            ITB
+          </div>
+          <div>
+            <h1 className="text-lg font-black text-[#1e3a8a] tracking-tight">የኢኖቬሽንና ቴክኖሎጂ ቢሮ</h1>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Innovation & Technology Bureau</p>
+          </div>
         </div>
-        <span className="text-xl font-black text-[#1e3a8a] mt-2">ITB</span>
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em] mt-1">Innovation & Technology Bureau</p>
+        
+        <div className="flex-1 max-w-xl mx-8 relative">
+          <Input value={globalSearch} onChange={(e) => setGlobalSearch(e.target.value)} placeholder="መዝገብ ቤት ፈልግ..." className="h-10 text-xs pl-10 rounded-2xl bg-slate-50 border-none focus-visible:ring-1 focus-visible:ring-[#1e3a8a]/20" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        </div>
+
+        <div className="flex items-center gap-3">
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="rounded-2xl gap-2 p-1.5 hover:bg-slate-100">
+                  <div className="text-right hidden sm:block">
+                    <p className="text-[10px] font-black text-slate-900 leading-none">{user.displayName || user.email?.split('@')[0]}</p>
+                    <p className="text-[8px] font-bold text-slate-400 uppercase">{isAdmin ? 'አስተዳዳሪ' : 'ባለሙያ'}</p>
+                  </div>
+                  <Avatar className="h-8 w-8 border-2 border-white shadow-sm">
+                    <AvatarFallback className="bg-[#1e3a8a] text-white text-[10px] font-black">{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl shadow-2xl border-none">
+                <DropdownMenuLabel className="text-[10px] uppercase font-black px-4 text-slate-400">መቆጣጠሪያ</DropdownMenuLabel>
+                {isAdmin && (
+                  <DropdownMenuItem asChild><Link href="/admin" className="flex items-center w-full p-3 rounded-xl font-bold text-xs"><ShieldCheck className="w-4 h-4 mr-2" /> የአስተዳዳሪ ገጽ</Link></DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 font-bold p-3 rounded-xl cursor-pointer"><LogOut className="w-4 h-4 mr-2" /> ውጣ (Logout)</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button asChild className="rounded-2xl bg-[#1e3a8a] font-black text-xs px-6 h-10"><Link href="/login">ይግቡ</Link></Button>
+          )}
+        </div>
       </header>
 
-      <div className="flex items-center justify-between px-6 py-2 bg-white border-b shrink-0">
-        <div className="flex items-center gap-2">
-          {isAdmin ? <Badge className="bg-amber-50 text-amber-600 border-amber-200 text-[9px] font-black uppercase">Master Admin</Badge> : <Badge className="bg-blue-50 text-blue-600 border-blue-200 text-[9px] font-black uppercase">ITB Staff</Badge>}
-        </div>
-        <div className="relative max-w-xl w-full mx-4">
-          <Input value={globalSearch} onChange={(e) => setGlobalSearch(e.target.value)} placeholder="መዝገብ ቤት ፈልግ..." className="h-9 text-xs pl-9 rounded-xl bg-slate-50 border-none" />
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        </div>
-        <div className="flex items-center gap-3">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="rounded-xl font-black text-[10px] h-9 gap-2">
-                <Avatar className="h-6 w-6"><AvatarFallback className="bg-[#1e3a8a] text-white text-[8px]">{user?.email?.charAt(0).toUpperCase()}</AvatarFallback></Avatar>
-                <span className="max-w-[120px] truncate">{user?.email || "አካውንት"}</span>
-                <ChevronDown className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 p-2 rounded-xl">
-              {user ? (
-                <>
-                  {isAdmin && (
-                    <DropdownMenuItem asChild><Link href="/admin" className="flex items-center w-full"><LayoutIcon className="w-4 h-4 mr-2" /> መቆጣጠሪያ ማዕከል</Link></DropdownMenuItem>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-600 font-bold cursor-pointer"><LogOut className="w-4 h-4 mr-2" /> ውጣ (Logout)</DropdownMenuItem>
-                </>
-              ) : <DropdownMenuItem asChild><Link href="/login" className="flex items-center w-full"><LogIn className="w-4 h-4 mr-2" /> ግባ (Login)</Link></DropdownMenuItem>}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-
-      <main className="flex-1 flex flex-col p-3 gap-3 overflow-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full">
-          <div className="lg:col-span-5 flex flex-col gap-3 overflow-hidden">
-            <Card className="shadow-lg border-none rounded-2xl overflow-hidden shrink-0">
-              <CardContent className="p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-[11px] font-black uppercase tracking-widest flex items-center gap-2">
-                    <BrainCircuit className="w-4 h-4 text-[#1e3a8a]" /> AI ረዳት
-                  </h2>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={handleClearInputs} className="h-7 text-[9px] font-black text-red-500 rounded-xl hover:bg-red-50"><XCircle className="w-3.5 h-3.5 mr-1" /> አጥፋ</Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button size="sm" className="h-7 text-[9px] font-black bg-[#1e3a8a] rounded-xl">{isSuggesting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3 mr-1" />} አመንጭ</Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-64 rounded-xl">
-                        <DropdownMenuItem onClick={() => handleAutoSuggest('diagram')} className="text-xs font-bold p-3 cursor-pointer"><LayoutIcon className="w-4 h-4 mr-2 text-[#1e3a8a]" /> አዲስ ስራ ፍሰት</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleAutoSuggest('analysis')} className="text-xs font-bold p-3 cursor-pointer"><FileSearch className="w-4 h-4 mr-2 text-green-600" /> መዝገብ ቤት ትንተና</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+      <main className="flex-1 flex gap-4 p-4 overflow-hidden">
+        {/* Left Sidebar - AI and Archive */}
+        <div className="w-[420px] flex flex-col gap-4 overflow-hidden">
+          <Card className="shadow-xl border-none rounded-[2rem] overflow-hidden shrink-0 bg-white">
+            <CardContent className="p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-[11px] font-black uppercase tracking-widest flex items-center gap-2">
+                  <BrainCircuit className="w-4 h-4 text-[#1e3a8a]" /> AI ረዳት
+                </h2>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => {setInput(""); setTitle("");}} className="h-8 text-[9px] font-black text-red-500 rounded-xl"><XCircle className="w-3.5 h-3.5" /></Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="sm" className="h-8 text-[9px] font-black bg-[#1e3a8a] rounded-xl px-4">{isSuggesting ? <Loader2 className="w-3 h-3 animate-spin" /> : 'አመንጭ'}</Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="rounded-xl p-2 w-56">
+                      <DropdownMenuItem onClick={() => handleAutoSuggest('diagram')} className="text-xs font-bold p-3 cursor-pointer"><LayoutTemplate className="w-4 h-4 mr-2" /> አዲስ ስራ ፍሰት</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleAutoSuggest('analysis')} className="text-xs font-bold p-3 cursor-pointer"><FileSearch className="w-4 h-4 mr-2 text-green-600" /> መዝገብ ቤት ትንተና</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-                <div className="space-y-3">
-                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="የአገልግሎት ስም..." className="h-10 text-xs rounded-xl bg-slate-50 border-none" />
-                  <Textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder="ዝርዝር ተግባራት..." className="min-h-[120px] text-xs leading-relaxed rounded-xl bg-slate-50 border-none" />
-                  <div className="flex gap-3">
-                    <Button className="flex-1 h-11 bg-[#1e3a8a] text-white font-black text-xs rounded-xl shadow-lg hover:bg-[#1e3a8a]/90" onClick={handleGenerate}>ካርታውን አሳይ</Button>
-                    <Button variant="outline" className="flex-1 h-11 border-[#1e3a8a] text-[#1e3a8a] font-black text-xs rounded-xl hover:bg-blue-50" onClick={handleSaveToVault} disabled={isSaving}>
-                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />} መዝግብ
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="flex-1 shadow-lg border-none rounded-2xl overflow-hidden flex flex-col">
-              <div className="p-4 border-b bg-slate-50/50 flex items-center justify-between">
-                <h3 className="text-[11px] font-black uppercase tracking-widest flex items-center gap-2"><FileText className="w-4 h-4 text-slate-400" /> መዝገብ ቤት (Vault)</h3>
-                <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-                  <DialogTrigger asChild><Button size="sm" className="h-7 rounded-xl bg-slate-900 text-[9px] font-black uppercase"><Upload className="w-3 h-3 mr-1" /> ፋይል መዝግብ</Button></DialogTrigger>
-                  <DialogContent className="max-w-2xl rounded-2xl p-6">
-                    <DialogHeader><DialogTitle className="font-black">አዲስ ፋይል መመዝገቢያ</DialogTitle></DialogHeader>
-                    <div className="grid grid-cols-2 gap-4 py-4">
-                      <div className="space-y-3">
-                        <Input value={uploadSector} onChange={(e) => setUploadSector(e.target.value)} placeholder="ዘርፍ (Sector)..." className="rounded-xl h-11" />
-                        <Input value={uploadDirectorate} onChange={(e) => setUploadDirectorate(e.target.value)} placeholder="ዳይሬክቶሬት..." className="rounded-xl h-11" />
-                        <Input value={uploadTeam} onChange={(e) => setUploadTeam(e.target.value)} placeholder="ቡድን (Team)..." className="rounded-xl h-11" />
-                        <Input value={uploadExpertName} onChange={(e) => setUploadExpertName(e.target.value)} placeholder="የባለሙያ ስም..." className="rounded-xl h-11" />
-                      </div>
-                      <div className="space-y-3">
-                        <Input value={uploadCategory} onChange={(e) => setUploadCategory(e.target.value)} placeholder="የፋይሉ አይነት (ለምሳሌ እቅድ)..." className="rounded-xl h-11" />
-                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-all">
-                          <Upload className="w-6 h-6 text-slate-300 mb-2" />
-                          <span className="text-[10px] font-black text-slate-500 uppercase">{selectedFile ? selectedFile.name : "ፋይል ይምረጡ"}</span>
-                          <input type="file" className="hidden" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
-                        </label>
-                      </div>
-                    </div>
-                    <DialogFooter><Button className="w-full h-12 bg-[#1e3a8a] rounded-xl font-black uppercase" onClick={processUpload} disabled={isUploading || !selectedFile}>{isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : "አጽድቅና መዝግብ"}</Button></DialogFooter>
-                  </DialogContent>
-                </Dialog>
               </div>
-              <ScrollArea className="flex-1 p-3">
+              <div className="space-y-3">
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="የአገልግሎት ስም..." className="h-12 rounded-xl bg-slate-50 border-none font-bold text-xs" />
+                <Textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder="ዝርዝር ተግባራት እዚህ ይጻፉ..." className="min-h-[140px] rounded-xl bg-slate-50 border-none text-xs leading-relaxed font-medium" />
+                <div className="flex gap-2">
+                  <Button className="flex-1 h-12 bg-[#1e3a8a] rounded-xl font-black text-xs shadow-lg" onClick={handleGenerate}>ካርታ አሳይ</Button>
+                  <Button variant="outline" className="flex-1 h-12 border-slate-200 rounded-xl font-black text-xs" onClick={handleSaveToVault} disabled={isSaving}>
+                    {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />} መዝግብ
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="flex-1 shadow-xl border-none rounded-[2rem] overflow-hidden bg-white flex flex-col">
+            <div className="p-6 border-b flex items-center justify-between bg-slate-50/50">
+              <h3 className="text-[11px] font-black uppercase tracking-widest flex items-center gap-2"><FileText className="w-4 h-4 text-slate-400" /> መዝገብ ቤት (Vault)</h3>
+              <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+                <DialogTrigger asChild><Button size="sm" className="h-8 rounded-xl bg-slate-900 text-[9px] font-black"><Upload className="w-3 h-3 mr-1" /> ፋይል መዝግብ</Button></DialogTrigger>
+                <DialogContent className="max-w-md rounded-[2.5rem] p-8">
+                  <DialogHeader><DialogTitle className="font-black text-xl">አዲስ ፋይል መመዝገቢያ</DialogTitle></DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <Input value={uploadCategory} onChange={(e) => setUploadCategory(e.target.value)} placeholder="የፋይሉ አይነት (ለምሳሌ እቅድ)..." className="h-12 rounded-xl" />
+                    <Input value={uploadSector} onChange={(e) => setUploadSector(e.target.value)} placeholder="ዘርፍ (Sector)..." className="h-12 rounded-xl" />
+                    <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-slate-200 rounded-3xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-all">
+                      <Upload className="w-8 h-8 text-slate-300 mb-2" />
+                      <span className="text-xs font-black text-slate-500 uppercase">{selectedFile ? selectedFile.name : "ፋይል ይምረጡ"}</span>
+                      <input type="file" className="hidden" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
+                    </label>
+                  </div>
+                  <Button className="w-full h-14 bg-[#1e3a8a] rounded-2xl font-black uppercase shadow-xl" onClick={processUpload} disabled={isUploading || !selectedFile}>{isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : "አጽድቅና መዝግብ"}</Button>
+                </DialogContent>
+              </Dialog>
+            </div>
+            <ScrollArea className="flex-1 p-4">
+              <div className="space-y-3">
                 {isDocsLoading ? (
-                  <div className="p-12 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-200" /></div>
+                  <div className="p-12 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-slate-200" /></div>
                 ) : filteredDocuments.map(file => (
-                  <div key={file.id} className="flex items-center justify-between p-3 mb-2 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all group">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-[#1e3a8a]/10 group-hover:text-[#1e3a8a] transition-colors"><FileText className="w-4 h-4" /></div>
-                      <div className="flex flex-col overflow-hidden">
-                        <span className="text-[11px] font-black text-slate-900 leading-tight line-clamp-1">{file.name}</span>
-                        <span className="text-[8px] font-bold text-slate-400 uppercase">{file.expertName} • {file.sector}</span>
+                  <div key={file.id} className="group p-4 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-[#1e3a8a]/10 group-hover:text-[#1e3a8a] transition-all"><FileText className="w-5 h-5" /></div>
+                      <div>
+                        <p className="text-[11px] font-black text-slate-900 leading-tight">{file.name}</p>
+                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{file.expertName} • {file.sector}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className={`text-[7px] border-none h-4 px-2 font-black uppercase ${file.status === 'የጸደቀ' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>{file.status}</Badge>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => handleOpenFile(file.fileUrl)} className="h-8 w-8 rounded-lg text-blue-600 hover:bg-blue-50"><Eye className="w-4 h-4" /></Button>
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="w-4 h-4 text-slate-400" /></Button></DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-xl p-1.5">
-                          <DropdownMenuItem onClick={() => handleOpenFile(file.fileUrl)} className="text-xs font-bold rounded-lg cursor-pointer"><Eye className="w-4 h-4 mr-2 text-blue-600" /> ክፈት</DropdownMenuItem>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg"><MoreVertical className="w-4 h-4 text-slate-400" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48 rounded-2xl shadow-2xl p-2 border-none">
                           {(isAdmin && file.status !== 'የጸደቀ') && (
-                            <DropdownMenuItem onClick={() => handleApprove(file.id)} className="text-xs font-bold rounded-lg cursor-pointer"><CheckCircle2 className="w-4 h-4 mr-2 text-green-600" /> አጽድቅ</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleApprove(file.id)} className="text-xs font-bold p-3 rounded-xl cursor-pointer bg-green-50 text-green-700 mb-1"><CheckCircle2 className="w-4 h-4 mr-2" /> አጽድቅ</DropdownMenuItem>
                           )}
-                          <DropdownMenuItem asChild className="text-xs font-bold rounded-lg cursor-pointer">
-                            <a href={file.fileUrl} download={file.fileName} className="flex items-center w-full">
-                              <Download className="w-4 h-4 mr-2 text-[#1e3a8a]" /> አውርድ
-                            </a>
-                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDownloadFile(file)} className="text-xs font-bold p-3 rounded-xl cursor-pointer"><Download className="w-4 h-4 mr-2" /> አውርድ</DropdownMenuItem>
                           {(isAdmin || file.uploaderId === user?.uid) && (
-                            <DropdownMenuItem onClick={() => handleDelete(file.id, file.uploaderId)} className="text-xs font-bold text-red-600 rounded-lg cursor-pointer">
-                              <Trash2 className="w-4 h-4 mr-2" /> ሰርዝ
-                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDelete(file.id, file.uploaderId)} className="text-xs font-bold p-3 rounded-xl cursor-pointer text-red-600 bg-red-50"><Trash2 className="w-4 h-4 mr-2" /> ሰርዝ</DropdownMenuItem>
                           )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
                   </div>
                 ))}
-              </ScrollArea>
-            </Card>
-          </div>
+              </div>
+            </ScrollArea>
+          </Card>
+        </div>
 
-          <div className="lg:col-span-7 flex flex-col gap-3 overflow-hidden">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <TabsList className="bg-white border p-1 h-10 rounded-2xl shadow-sm shrink-0">
-                <TabsTrigger value="diagram" className="text-[10px] font-black px-6 rounded-xl uppercase">ዲያግራም</TabsTrigger>
-                <TabsTrigger value="dashboard" className="text-[10px] font-black px-6 rounded-xl uppercase">አፈጻጸም</TabsTrigger>
-                <TabsTrigger value="daily-log" className="text-[10px] font-black px-6 rounded-xl uppercase">የቀን ውሎ</TabsTrigger>
-                <TabsTrigger value="feedback" className="text-[10px] font-black px-6 rounded-xl uppercase">ዳሽ ቦርድ</TabsTrigger>
+        {/* Right Content - Tabs */}
+        <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+            <div className="flex items-center justify-between bg-white border p-1.5 h-12 rounded-2xl shadow-sm shrink-0">
+              <TabsList className="bg-transparent border-none gap-2">
+                <TabsTrigger value="diagram" className="text-[10px] font-black px-6 rounded-xl uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white">ዲያግራም</TabsTrigger>
+                <TabsTrigger value="dashboard" className="text-[10px] font-black px-6 rounded-xl uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white">አፈጻጸምና ትንተና</TabsTrigger>
+                <TabsTrigger value="daily-log" className="text-[10px] font-black px-6 rounded-xl uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white">የቀን ውሎ</TabsTrigger>
+                <TabsTrigger value="feedback" className="text-[10px] font-black px-6 rounded-xl uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white">ዳሽቦርድ (Chat)</TabsTrigger>
               </TabsList>
+              
+              <div className="flex items-center gap-2 pr-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 rounded-xl font-black text-[9px] uppercase border-slate-200">
+                      <Download className="w-3.5 h-3.5 mr-2" /> አውርድ
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="rounded-xl p-2 w-48">
+                    <DropdownMenuItem onClick={() => viewerRef.current?.exportSVG()} className="text-xs font-bold p-3 cursor-pointer"><FileCode className="w-4 h-4 mr-2 text-orange-500" /> በ SVG አውርድ</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => viewerRef.current?.exportXML()} className="text-xs font-bold p-3 cursor-pointer"><FileJson className="w-4 h-4 mr-2 text-blue-500" /> በ BPMN አውርድ</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => viewerRef.current?.exportPNG()} className="text-xs font-bold p-3 cursor-pointer"><Image className="w-4 h-4 mr-2 text-green-500" /> በ ምስል (PNG) አውርድ</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
 
-              <div className="flex-1 mt-3 min-h-0">
-                <TabsContent value="diagram" className="h-full m-0">
-                  <Card className="h-full rounded-2xl border-none shadow-xl overflow-hidden bg-white">
-                    {xmlResult ? <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} /> : (
-                      <div className="h-full flex flex-col items-center justify-center opacity-10">
-                        <FileCode className="w-32 h-32" />
-                        <p className="text-xl font-black uppercase tracking-widest mt-4">BPMN ካርታ የለም</p>
-                      </div>
-                    )}
-                  </Card>
-                </TabsContent>
-                
-                <TabsContent value="dashboard" className="h-full m-0 overflow-auto">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 h-full">
-                    <Card className="shadow-lg border-none rounded-2xl bg-white p-5 flex flex-col">
-                      <h3 className="text-[11px] font-black uppercase tracking-widest mb-6 flex items-center gap-2"><BarChart className="w-5 h-5 text-[#1e3a8a]" /> አጠቃላይ አፈጻጸም</h3>
-                      <div className="flex-1 min-h-[300px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <RechartsBarChart data={performanceData}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                            <XAxis dataKey="serviceName" fontSize={9} fontWeight="bold" />
-                            <YAxis fontSize={9} fontWeight="bold" />
-                            <RechartsTooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
-                            <Bar dataKey="actual" radius={[6, 6, 0, 0]}>{performanceData.map((e, i) => <Cell key={`cell-${i}`} fill={e.color} />)}</Bar>
-                          </RechartsBarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </Card>
-                    <Card className="shadow-lg border-none rounded-2xl bg-white p-5 flex flex-col">
-                      <h3 className="text-[11px] font-black uppercase tracking-widest mb-6 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-green-600" /> ዝርዝር ትንተና</h3>
-                      <ScrollArea className="flex-1">
-                        <div className="space-y-4">
-                          {performanceData.map((m, i) => (
-                            <div key={`perf-${i}`} className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                              <div className="flex justify-between mb-2"><span className="text-[10px] font-black">{m.serviceName}</span><Badge className="text-[8px] font-black">{m.execution}%</Badge></div>
-                              <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
-                                <div className="h-full transition-all duration-1000" style={{ width: `${m.execution}%`, backgroundColor: m.color }}></div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </ScrollArea>
-                    </Card>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="daily-log" className="h-full m-0">
-                  <Card className="h-full shadow-lg border-none rounded-2xl bg-white overflow-hidden flex flex-col">
-                    <div className="p-4 border-b flex justify-between items-center bg-slate-50/50">
-                      <h3 className="text-[11px] font-black uppercase tracking-widest flex items-center gap-2"><History className="w-4 h-4 text-[#1e3a8a]" /> የቀን ውሎ መመዝገቢያ</h3>
-                      <Badge className="bg-white text-slate-900 border-slate-200 text-[9px] font-black">{currentDate}</Badge>
+            <div className="flex-1 mt-4 min-h-0 overflow-hidden">
+              <TabsContent value="diagram" className="h-full m-0">
+                <Card className="h-full rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-white relative">
+                  {xmlResult ? (
+                    <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
+                  ) : (
+                    <div className="h-full flex flex-col items-center justify-center opacity-20 select-none">
+                      <LayoutTemplate className="w-32 h-32 text-slate-300" />
+                      <p className="text-xl font-black uppercase tracking-widest mt-6 text-slate-400">ዲያግራም አልተመረጠም</p>
                     </div>
+                  )}
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="dashboard" className="h-full m-0 overflow-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
+                  <Card className="shadow-xl border-none rounded-[2.5rem] bg-white p-8 flex flex-col">
+                    <h3 className="text-[11px] font-black uppercase tracking-widest mb-8 flex items-center gap-3"><BarChart className="w-6 h-6 text-[#1e3a8a]" /> አጠቃላይ አፈጻጸም</h3>
+                    <div className="flex-1 min-h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={uploadedFiles.slice(0, 10).map(f => ({ name: f.name.substring(0, 10), val: f.status === 'የጸደቀ' ? 100 : 65 }))}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                          <XAxis dataKey="name" fontSize={9} fontWeight="bold" />
+                          <YAxis fontSize={9} fontWeight="bold" />
+                          <RechartsTooltip />
+                          <Line type="monotone" dataKey="val" stroke="#1e3a8a" strokeWidth={4} dot={{ fill: '#1e3a8a', r: 6 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </Card>
+                  
+                  <Card className="shadow-xl border-none rounded-[2.5rem] bg-white p-8 flex flex-col">
+                    <h3 className="text-[11px] font-black uppercase tracking-widest mb-8 flex items-center gap-3"><TrendingUp className="w-6 h-6 text-green-600" /> ዝርዝር AI ትንተና</h3>
                     <ScrollArea className="flex-1">
-                      <Table>
-                        <TableHeader className="bg-slate-50/80">
-                          <TableRow>
-                            <TableHead className="text-[9px] font-black uppercase">ሰራተኛ</TableHead>
-                            <TableHead className="text-[9px] font-black uppercase">ዘርፍ/ቡድን</TableHead>
-                            <TableHead className="text-[9px] font-black uppercase">ተግባር/ፋይል</TableHead>
-                            <TableHead className="text-[9px] font-black uppercase text-right">ርክክብ</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {uploadedFiles.map(f => (
-                            <TableRow key={f.id} className="hover:bg-slate-50/50">
-                              <TableCell className="text-[10px] font-black">{f.expertName}</TableCell>
-                              <TableCell className="text-[10px] font-medium">{f.sector} / {f.team || 'N/A'}</TableCell>
-                              <TableCell className="text-[10px] font-bold">{f.name}</TableCell>
-                              <TableCell className="text-right">
-                                <Button variant="ghost" size="sm" className="h-8 w-8 rounded-lg hover:bg-blue-50" onClick={() => handleOpenFile(f.fileUrl)}>
-                                  <Eye className="w-4 h-4 text-[#1e3a8a]" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                      <div className="space-y-6">
+                        <div className="p-6 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-100">
+                          <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">ትኩረት የሚሹ ጉዳዮች (Focus Areas)</h4>
+                          <ul className="space-y-3">
+                            <li className="flex gap-3 text-xs font-medium"><CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" /> የሂደት ማኑዋል ዝግጅት መፋጠን አለበት</li>
+                            <li className="flex gap-3 text-xs font-medium"><CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" /> የባለሙያዎች የክህሎት ክፍተት ጥናት ተጠናቋል</li>
+                            <li className="flex gap-3 text-xs font-medium"><CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" /> የዳታ ማዕከል ደህንነት ፍተሻ ውጤት ዝቅተኛ ነው</li>
+                          </ul>
+                        </div>
+                        <Button className="w-full h-14 rounded-2xl bg-slate-900 font-black text-xs shadow-xl"><Download className="w-4 h-4 mr-2" /> ሙሉ ትንተናውን በ Word አውርድ</Button>
+                      </div>
                     </ScrollArea>
                   </Card>
-                </TabsContent>
+                </div>
+              </TabsContent>
 
-                <TabsContent value="feedback" className="h-full m-0 flex flex-col gap-3">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 h-full">
-                    <Card className="md:col-span-2 shadow-xl border-none rounded-2xl bg-white flex flex-col overflow-hidden">
-                      <div className="p-4 border-b bg-slate-50/50 flex items-center justify-between">
-                        <h3 className="text-[11px] font-black uppercase tracking-widest flex items-center gap-2"><MessageSquare className="w-5 h-5 text-[#1e3a8a]" /> የአመራርና የሰራተኞች ዳሽ ቦርድ</h3>
-                        <Badge className="bg-green-50 text-green-600 border-none text-[8px] font-black uppercase">Institutional Hub</Badge>
+              <TabsContent value="daily-log" className="h-full m-0">
+                <Card className="h-full shadow-xl border-none rounded-[2.5rem] bg-white overflow-hidden flex flex-col">
+                  <div className="p-6 border-b flex justify-between items-center bg-slate-50/50">
+                    <h3 className="text-[11px] font-black uppercase tracking-widest flex items-center gap-2"><History className="w-4 h-4 text-[#1e3a8a]" /> የቀን ውሎ መመዝገቢያ</h3>
+                    <Badge className="bg-white text-slate-900 border-slate-200 text-[10px] font-black px-4 py-1.5 rounded-full">{currentDate}</Badge>
+                  </div>
+                  <ScrollArea className="flex-1">
+                    <Table>
+                      <TableHeader className="bg-slate-50/80">
+                        <TableRow className="border-none">
+                          <TableHead className="text-[9px] font-black uppercase px-6">ሰራተኛ</TableHead>
+                          <TableHead className="text-[9px] font-black uppercase px-6">ተግባር/ፋይል</TableHead>
+                          <TableHead className="text-[9px] font-black uppercase px-6">ሁኔታ</TableHead>
+                          <TableHead className="text-[9px] font-black uppercase px-6 text-right">እርምጃ</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {uploadedFiles.map(f => (
+                          <TableRow key={f.id} className="hover:bg-slate-50/50 border-slate-50">
+                            <TableCell className="px-6 py-4 text-[10px] font-black">{f.expertName || 'ባለሙያ'}</TableCell>
+                            <TableCell className="px-6 py-4 text-[10px] font-medium">{f.name}</TableCell>
+                            <TableCell className="px-6 py-4">
+                              <Badge variant="outline" className={`text-[8px] border-none px-3 py-1 font-black ${f.status === 'የጸደቀ' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>{f.status}</Badge>
+                            </TableCell>
+                            <TableCell className="px-6 py-4 text-right">
+                              <Button variant="ghost" size="sm" className="h-8 w-8 rounded-lg hover:bg-blue-50" onClick={() => handleOpenFile(f.fileUrl)}><Eye className="w-4 h-4 text-[#1e3a8a]" /></Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="feedback" className="h-full m-0 flex flex-col gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 h-full">
+                  <Card className="md:col-span-3 shadow-2xl border-none rounded-[2.5rem] bg-white flex flex-col overflow-hidden">
+                    <div className="p-6 border-b bg-slate-50/50 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-[#1e3a8a] rounded-xl flex items-center justify-center text-white font-black text-xs shadow-md">ITB</div>
+                        <div>
+                          <h3 className="text-sm font-black text-slate-900">የአመራርና የሰራተኞች መፃፃፊያ</h3>
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                            <span className="text-[9px] font-black text-green-600 uppercase tracking-widest">ተቋማዊ መስመር (WhatsApp Style)</span>
+                          </div>
+                        </div>
                       </div>
-                      <ScrollArea className="flex-1 p-5">
-                        <div className="space-y-6">
-                          {feedbackMessages.map(msg => (
-                            <div key={msg.id} className="flex gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                              <Avatar className="w-9 h-9 border-2 border-white shadow-md"><AvatarFallback className="bg-[#1e3a8a] text-white text-[10px] font-black">{msg.senderName.charAt(0)}</AvatarFallback></Avatar>
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-[11px] font-black">{msg.senderName}</span>
-                                  <Badge className="text-[8px] h-4 bg-[#1e3a8a]/5 text-[#1e3a8a] border-none uppercase">{msg.senderRole}</Badge>
-                                </div>
-                                <div className="bg-slate-50 p-4 rounded-2xl rounded-tl-none border border-slate-100 shadow-sm">
-                                  <p className="text-xs text-slate-700 leading-relaxed font-medium">{msg.content}</p>
-                                </div>
+                    </div>
+                    <ScrollArea className="flex-1 p-6">
+                      <div className="space-y-6">
+                        {feedbackMessages.map(msg => (
+                          <div key={msg.id} className={`flex gap-3 animate-in fade-in slide-in-from-bottom-2 ${msg.uploaderId === user?.uid ? 'flex-row-reverse' : ''}`}>
+                            <Avatar className="w-10 h-10 border-2 border-white shadow-md">
+                              <AvatarFallback className={`${msg.uploaderId === user?.uid ? 'bg-slate-900' : 'bg-[#1e3a8a]'} text-white text-[11px] font-black uppercase`}>{msg.senderName.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div className={`max-w-[70%] ${msg.uploaderId === user?.uid ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-black text-slate-500 uppercase">{msg.senderName}</span>
+                                <span className="text-[8px] font-bold text-slate-300">{new Date(msg.timestamp).toLocaleTimeString()}</span>
+                              </div>
+                              <div className={`${msg.uploaderId === user?.uid ? 'bg-slate-900 text-white rounded-tr-none' : 'bg-slate-100 text-slate-800 rounded-tl-none'} p-4 rounded-3xl shadow-sm`}>
+                                <p className="text-xs font-medium leading-relaxed">{msg.content}</p>
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      </ScrollArea>
-                      <div className="p-5 bg-white border-t space-y-4 shadow-inner">
-                        <div className="relative group">
-                          <Textarea 
-                            value={feedbackInput} 
-                            onChange={(e) => setFeedbackInput(e.target.value)} 
-                            placeholder="አዲስ መመሪያ ወይም ሪፖርት እዚህ ይጻፉ... (Office Style Editor)" 
-                            className="bg-slate-50 border-none rounded-2xl text-xs min-h-[140px] shadow-inner p-5 font-medium resize-none focus-visible:ring-1 focus-visible:ring-[#1e3a8a]/20" 
-                          />
-                          <Button className="absolute bottom-4 right-4 h-10 px-8 rounded-xl bg-[#1e3a8a] text-white font-black text-xs shadow-xl hover:bg-[#1e3a8a]/90 transition-all active:scale-95" onClick={handleSendFeedback}>
-                            <Send className="w-4 h-4 mr-2" /> መዝግብ
-                          </Button>
-                        </div>
+                          </div>
+                        ))}
                       </div>
-                    </Card>
-                    <Card className="shadow-lg border-none rounded-2xl bg-white p-5 flex flex-col">
-                      <h3 className="text-[11px] font-black uppercase tracking-widest mb-6 flex items-center gap-2"><Users className="w-4 h-4 text-green-600" /> ንቁ ተጠቃሚዎች</h3>
+                    </ScrollArea>
+                    <div className="p-6 bg-white border-t">
+                      <div className="relative group">
+                        <Textarea 
+                          value={feedbackInput} 
+                          onChange={(e) => setFeedbackInput(e.target.value)} 
+                          placeholder="መልዕክት እዚህ ይጻፉ..." 
+                          className="bg-slate-50 border-none rounded-[1.5rem] text-xs min-h-[100px] p-5 shadow-inner focus-visible:ring-1 focus-visible:ring-[#1e3a8a]/20 font-medium resize-none" 
+                        />
+                        <Button className="absolute bottom-4 right-4 h-11 px-8 rounded-xl bg-[#1e3a8a] text-white font-black text-xs shadow-xl" onClick={handleSendFeedback}>
+                          <Send className="w-4 h-4 mr-2" /> ላክ
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                  
+                  <Card className="shadow-xl border-none rounded-[2.5rem] bg-white p-6 flex flex-col overflow-hidden">
+                    <h3 className="text-[11px] font-black uppercase tracking-widest mb-6 flex items-center gap-2"><Users className="w-5 h-5 text-green-600" /> ንቁ ሰራተኞች</h3>
+                    <ScrollArea className="flex-1">
                       <div className="space-y-4">
                         {user ? (
                           <div className="flex items-center gap-3 p-3 rounded-2xl bg-green-50 border border-green-100 shadow-sm">
-                            <Avatar className="w-9 h-9 border-2 border-white shadow-md">
-                              <AvatarFallback className="bg-green-500 text-white font-black">{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
-                            </Avatar>
+                            <div className="relative">
+                              <Avatar className="w-10 h-10 border-2 border-white shadow-md"><AvatarFallback className="bg-green-500 text-white font-black">{user.email?.charAt(0).toUpperCase()}</AvatarFallback></Avatar>
+                              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
+                            </div>
                             <div className="flex flex-col">
-                              <span className="text-[11px] font-black truncate max-w-[120px]">{user.email?.split('@')[0]}</span>
-                              <span className="text-[9px] text-green-600 font-black uppercase tracking-widest animate-pulse">Online</span>
+                              <span className="text-[11px] font-black text-slate-800 truncate max-w-[100px]">{user.displayName || user.email?.split('@')[0]}</span>
+                              <span className="text-[8px] text-green-600 font-black uppercase tracking-widest">መስመር ላይ</span>
                             </div>
                           </div>
-                        ) : <p className="text-[10px] font-bold text-slate-300 uppercase">ምንም ተጠቃሚ የለም</p>}
+                        ) : <p className="text-[10px] font-bold text-slate-300 uppercase p-4">ምንም ተጠቃሚ የለም</p>}
                       </div>
-                    </Card>
-                  </div>
-                </TabsContent>
-              </div>
-            </Tabs>
-          </div>
+                    </ScrollArea>
+                  </Card>
+                </div>
+              </TabsContent>
+            </div>
+          </Tabs>
         </div>
       </main>
 
-      <footer className="px-6 py-2 bg-white border-t flex justify-between items-center shrink-0">
-        <div className="flex gap-4 items-center text-[9px] font-black text-slate-400 uppercase tracking-widest">
-          <span>ITB Enterprise v4.7.0</span>
-          {isAdmin && (
-            <>
-              <span className="text-slate-200">|</span>
-              <Link href="/admin" className="text-[#1e3a8a] hover:underline">MASTER CONTROL</Link>
-            </>
-          )}
+      <footer className="px-6 py-2.5 bg-white border-t flex justify-between items-center shrink-0">
+        <div className="flex gap-4 items-center text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">
+          <span>Worku ITB Enterprise v4.9.5</span>
+          <span className="text-slate-200">|</span>
+          <span className="text-[#1e3a8a]">መዝገብ ቤት - የተረጋገጠ መስመር</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-          <span className="text-[9px] font-black text-green-600 uppercase tracking-widest">Secure Institutional Network</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-4 py-1.5 bg-green-50 rounded-full border border-green-100 shadow-sm">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+            <span className="text-[9px] font-black text-green-600 uppercase tracking-widest">ንቁ የደህንነት ስርዓት</span>
+          </div>
         </div>
       </footer>
     </div>
