@@ -20,12 +20,8 @@ import {
   CheckCircle2,
   Save,
   FileCode,
-  ChevronDown,
   LayoutTemplate,
-  FileSearch,
   Zap,
-  Eye,
-  Users,
   History,
   MessageSquare,
   Send,
@@ -36,8 +32,6 @@ import {
   Image as ImageIcon,
   Share2,
   Heart,
-  Briefcase,
-  Bell,
   CalendarDays
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
@@ -56,13 +50,10 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { suggestSteps } from "@/ai/flows/suggest-steps-flow";
 import { Badge } from "@/components/ui/badge";
 import { 
   ResponsiveContainer, 
@@ -80,12 +71,11 @@ import {
   useMemoFirebase,
   addDocumentNonBlocking,
   deleteDocumentNonBlocking,
-  updateDocumentNonBlocking,
   useAuth
 } from '@/firebase';
 import { collection, query, doc, Timestamp, orderBy } from 'firebase/firestore';
 import Link from 'next/link';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
@@ -126,7 +116,6 @@ export function BPMNFlowForgeApp() {
   const [title, setTitle] = useState("");
   const [xmlResult, setXmlResult] = useState("");
   const [activeTab, setActiveTab] = useState("diagram");
-  const [isSuggesting, setIsSuggesting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -303,7 +292,6 @@ export function BPMNFlowForgeApp() {
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden font-sans">
-      {/* Tight Refined Header */}
       <header className="flex items-center justify-between px-6 py-1.5 bg-white border-b shrink-0 shadow-sm z-50">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-[#1e3a8a] rounded-xl flex items-center justify-center shadow-lg border-2 border-white">
@@ -361,7 +349,6 @@ export function BPMNFlowForgeApp() {
       </header>
 
       <main className="flex-1 flex gap-3 p-3 overflow-hidden">
-        {/* Left Side - Tools & Vault */}
         <div className="w-[340px] flex flex-col gap-3 overflow-hidden">
           <Card className="shadow-lg border-none rounded-[1.8rem] bg-white overflow-hidden shrink-0">
             <CardContent className="p-5 space-y-3">
@@ -424,7 +411,7 @@ export function BPMNFlowForgeApp() {
                         <DropdownMenuContent align="end" className="w-44 rounded-xl shadow-2xl p-1.5 border-none">
                           <DropdownMenuItem onClick={() => handleDownload(file)} className="text-[10px] font-bold p-2.5 rounded-lg cursor-pointer"><Download className="w-3.5 h-3.5 mr-2 text-blue-600" /> አውርድ</DropdownMenuItem>
                           {(isAdmin || file.uploaderId === user?.uid) && (
-                            <DropdownMenuItem onClick={() => {}} className="text-[10px] font-bold p-2.5 rounded-lg cursor-pointer text-red-600 bg-red-50"><Trash2 className="w-3.5 h-3.5 mr-2" /> ሰርዝ</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => deleteDocumentNonBlocking(doc(db!, 'documents', file.id))} className="text-[10px] font-bold p-2.5 rounded-lg cursor-pointer text-red-600 bg-red-50"><Trash2 className="w-3.5 h-3.5 mr-2" /> ሰርዝ</DropdownMenuItem>
                           )}
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -436,7 +423,6 @@ export function BPMNFlowForgeApp() {
           </Card>
         </div>
 
-        {/* Right Side - Content Tabs */}
         <div className="flex-1 flex flex-col gap-3 overflow-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
             <div className="flex items-center justify-between bg-white border p-1 h-10 rounded-2xl shadow-sm shrink-0">
@@ -451,7 +437,7 @@ export function BPMNFlowForgeApp() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="h-7 rounded-xl font-black text-[8px] uppercase border-slate-200 hover:bg-slate-50">
-                      <Download className="w-3 h-3 mr-1" /> ዳውንሎድ አዝማሚያ
+                      <Download className="w-3 h-3 mr-1" /> ዳውንሎድ
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="rounded-xl p-1.5 w-44 shadow-2xl border-none">
@@ -646,7 +632,6 @@ export function BPMNFlowForgeApp() {
         </div>
       </main>
 
-      {/* Tight Footer Branding */}
       <footer className="px-6 py-1 bg-white border-t flex justify-between items-center shrink-0">
         <div className="flex gap-4 items-center text-[7px] font-black text-slate-400 uppercase tracking-[0.2em]">
           <span className="text-[#1e3a8a]">ITB Worqu Enterprise v5.5</span>

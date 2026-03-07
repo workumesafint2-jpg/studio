@@ -7,7 +7,7 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfi
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, LogIn, AlertCircle, ShieldCheck } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -63,7 +63,12 @@ export default function LoginPage() {
         toast({ title: "ተመዝግበዋል", description: "አካውንትዎ በትክክል ተከፍቷል" });
         router.push('/');
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        // Master Admin Fast Access Logic
+        if (email === ADMIN_EMAIL && password === "admin123") {
+          await signInWithEmailAndPassword(auth, email, password);
+        } else {
+          await signInWithEmailAndPassword(auth, email, password);
+        }
         toast({ title: "እንኳን ደህና መጡ", description: "ወደ ሲስተሙ በመግባት ላይ ነዎት" });
       }
     } catch (err: any) {
