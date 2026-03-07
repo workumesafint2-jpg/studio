@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -6,7 +7,7 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfi
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, AlertCircle, Info } from 'lucide-react';
+import { Loader2, AlertCircle, Info, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -63,6 +64,15 @@ export default function LoginPage() {
         toast({ title: "ተመዝግበዋል", description: "አካውንትዎ በትክክል ተከፍቷል" });
         router.push('/');
       } else {
+        // Master Admin Fast Access Logic
+        if (email === "workumesafint2@gmail.com") {
+          try {
+             await signInWithEmailAndPassword(auth, email, password);
+          } catch (e) {
+             // If password fails for admin, we show a special hint but still require auth
+             console.warn("Admin authentication failed. Please check password.");
+          }
+        }
         await signInWithEmailAndPassword(auth, email, password);
         toast({ title: "እንኳን ደህና መጡ", description: "ወደ ሲስተሙ በመግባት ላይ ነዎት" });
       }
@@ -88,7 +98,7 @@ export default function LoginPage() {
             <Info className="h-4 w-4" />
             <AlertTitle className="text-xs font-black uppercase">የFirebase ግንኙነት ችግር</AlertTitle>
             <AlertDescription className="text-[10px] font-bold">
-              የFirebase ቁልፎች አልተገኙም። እባክዎን በ Vercel Settings -> Environment Variables ውስጥ ቁልፎቹን መሙላትዎን ያረጋግጡ።
+              የFirebase ቁልፎች አልተገኙም። እባክዎን በ Vercel Settings ውስጥ መሙላትዎን ያረጋግጡ።
             </AlertDescription>
           </Alert>
         )}
@@ -147,6 +157,11 @@ export default function LoginPage() {
               {isSignUp ? 'አካውንት አለዎት? እዚህ ይግቡ' : 'አዲስ ተጠቃሚ ነዎት? መጀመሪያ እዚህ ይመዝገቡ'}
             </button>
           </div>
+          {email === "workumesafint2@gmail.com" && (
+            <div className="mt-4 flex items-center justify-center gap-2 text-[8px] font-black text-green-600 uppercase">
+              <ShieldCheck className="w-3 h-3" /> Master Admin Access Enabled
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

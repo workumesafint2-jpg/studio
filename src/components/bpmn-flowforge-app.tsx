@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -70,7 +71,8 @@ import {
   useMemoFirebase,
   addDocumentNonBlocking,
   deleteDocumentNonBlocking,
-  useAuth
+  useAuth,
+  updateDocumentNonBlocking
 } from '@/firebase';
 import { collection, query, doc, Timestamp, orderBy } from 'firebase/firestore';
 import Link from 'next/link';
@@ -280,17 +282,33 @@ export function BPMNFlowForgeApp() {
     }
   };
 
+  const handleDeleteChatMessage = async (id: string, uploaderId: string) => {
+    if (!db) return;
+    if (isAdmin || user?.uid === uploaderId) {
+      deleteDocumentNonBlocking(doc(db, 'feedback', id));
+      toast({ title: "ተሰርዟል", description: "መልዕክቱ ተሰርዟል" });
+    }
+  };
+
+  const handleDeleteSocialPost = async (id: string, uploaderId: string) => {
+    if (!db) return;
+    if (isAdmin || user?.uid === uploaderId) {
+      deleteDocumentNonBlocking(doc(db, 'social_posts', id));
+      toast({ title: "ተሰርዟል", description: "ልጥፉ ተወግዷል" });
+    }
+  };
+
   if (!mounted) return null;
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden font-sans">
-      <header className="flex items-center justify-between px-6 py-2 bg-white border-b shrink-0 shadow-sm z-50">
+      <header className="flex items-center justify-between px-6 py-2 bg-white border-b shrink-0 shadow-sm z-50 h-14">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-[#1e3a8a] rounded-xl flex items-center justify-center shadow-lg border-2 border-white">
             <span className="text-white font-black text-xs">ITB</span>
           </div>
           <div>
-            <h1 className="text-sm font-black text-[#1e3a8a] tracking-tight">የኢኖቬሽንና ቴክኖሎጂ ቢሮ</h1>
+            <h1 className="text-xs font-black text-[#1e3a8a] tracking-tight uppercase leading-none mb-1">የኢኖቬሽንና ቴክኖሎጂ ቢሮ</h1>
             <p className="text-[7px] font-bold text-green-600 uppercase tracking-widest leading-none">Institutional Sync v5.5</p>
           </div>
         </div>
@@ -352,7 +370,7 @@ export function BPMNFlowForgeApp() {
               </div>
               <div className="space-y-2.5">
                 <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="የሂደት ስም..." className="h-9 rounded-xl bg-slate-50 border-none font-bold text-[10px]" />
-                <Textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder="ተግባራት እዚህ ይጻፉ..." className="min-h-[120px] rounded-xl bg-slate-50 border-none text-[10px] leading-relaxed font-medium resize-none shadow-inner" />
+                <Textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder="ተግባራት እዚህ ይጻፉ..." className="min-h-[100px] rounded-xl bg-slate-50 border-none text-[10px] leading-relaxed font-medium resize-none shadow-inner" />
                 <div className="flex gap-2">
                   <Button className="flex-1 h-9 bg-[#1e3a8a] rounded-xl font-black text-[9px] shadow-md uppercase transition-all active:scale-95" onClick={handleGenerate}>ካርታ አሳይ</Button>
                   <Button variant="outline" className="flex-1 h-9 border-slate-200 rounded-xl font-black text-[9px] uppercase shadow-sm transition-all active:scale-95" onClick={handleSaveToVault} disabled={isSaving}>
