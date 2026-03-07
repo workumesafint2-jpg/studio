@@ -1,4 +1,3 @@
-
 'use client';
 
 import { firebaseConfig } from '@/firebase/config';
@@ -7,8 +6,8 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 /**
- * Institutional Firebase Initializer.
- * v4.3.8 - Resilient Production Sync with enhanced logging
+ * ITB Pro: Institutional Firebase Initializer.
+ * v5.5.2 - Enhanced Production Resiliency
  */
 export function initializeFirebase() {
   if (typeof window === 'undefined') {
@@ -31,16 +30,16 @@ export function initializeFirebase() {
   if (hasConfig) {
     try {
       const firebaseApp = initializeApp(firebaseConfig);
-      console.log('(ወርቁ) Pro: Firebase Initialized successfully.');
+      console.log('ITB Pro: Firebase Initialized successfully.');
       return getSdks(firebaseApp);
     } catch (e) {
-      console.error('Firebase initialization failed:', e);
+      console.error('ITB Pro: Firebase initialization failed:', e);
       return { firebaseApp: null, auth: null, firestore: null };
     }
   }
 
-  // If not configured, we run in a restricted "local-only" state
-  console.warn('(ወርቁ) WARNING: Firebase configuration missing in Environment Variables.');
+  // If not configured, we return nulls but with clear logging
+  console.warn('ITB Pro: Missing Firebase Environment Variables. UI will show warnings.');
   return { firebaseApp: null, auth: null, firestore: null };
 }
 
@@ -52,7 +51,7 @@ export function getSdks(firebaseApp: FirebaseApp) {
       firestore: getFirestore(firebaseApp)
     };
   } catch (e) {
-    console.error('Failed to retrieve SDKs:', e);
+    console.error('ITB Pro: Failed to retrieve SDKs:', e);
     return { firebaseApp: null, auth: null, firestore: null };
   }
 }
