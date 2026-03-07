@@ -7,13 +7,11 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfi
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, UserPlus, LogIn, AlertCircle, CheckCircle2, ShieldCheck, Briefcase, User as UserIcon } from 'lucide-react';
+import { Loader2, LogIn, AlertCircle, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import Image from 'next/image';
-import { doc, setDoc } from 'firebase/firestore';
-import { getFirestore } from 'firebase/firestore';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { doc, setDoc, getFirestore } from 'firebase/firestore';
 
 const ADMIN_EMAIL = "workumesafint2@gmail.com";
 
@@ -53,7 +51,6 @@ export default function LoginPage() {
         const displayName = `${firstName} ${fatherName}`;
         await updateProfile(userCredential.user, { displayName });
         
-        // Store extra profile info in Firestore
         const db = getFirestore();
         await setDoc(doc(db, 'users', userCredential.user.uid), {
           firstName,
@@ -63,17 +60,17 @@ export default function LoginPage() {
           createdAt: new Date().toISOString()
         });
 
-        toast({ title: "ተመዝግበዋል", description: "አካውንትዎ በትክክል ተከፍቷል።" });
+        toast({ title: "ተመዝግበዋል", description: "አካውንትዎ በትክክል ተከፍቷል" });
         router.push('/');
       } else {
         await signInWithEmailAndPassword(auth, email, password);
-        toast({ title: "እንኳን ደህና መጡ", description: "ወደ ሲስተሙ በመግባት ላይ ነዎት።" });
+        toast({ title: "እንኳን ደህና መጡ", description: "ወደ ሲስተሙ በመግባት ላይ ነዎት" });
       }
     } catch (err: any) {
       console.error("Auth Error:", err);
       let msg = "መግባት አልተቻለም። እባክዎን መጀመሪያ መመዝገብዎን ያረጋግጡ።";
       if (err.code === 'auth/email-already-in-use') msg = "ይህ ኢሜይል ቀድሞ ተመዝግቧል።";
-      if (err.code === 'auth/weak-password') msg = "የይለፍ ቃሉ ቢያንስ 6 ፊደላት መሆን አለበት።";
+      if (err.code === 'auth/invalid-credential') msg = "ኢሜይል ወይም የይለፍ ቃል ተሳስቷል፤ ወይም ገና አልተመዘገቡም።";
       setErrorMessage(msg);
     } finally {
       setLoading(false);
@@ -87,7 +84,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-2xl border-none overflow-hidden rounded-[2.5rem] bg-white">
         <div className="h-2 bg-[#1e3a8a] w-full" />
         <CardHeader className="text-center space-y-2 pt-8">
-          <div className="mx-auto w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center mb-2 shadow-sm border border-blue-100 relative overflow-hidden">
+          <div className="mx-auto w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center mb-2 shadow-sm border border-blue-100">
             <div className="text-[#1e3a8a] font-black text-2xl">ITB</div>
           </div>
           <CardTitle className="text-xl font-black text-[#1e3a8a] uppercase tracking-tight">
@@ -110,27 +107,27 @@ export default function LoginPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-[9px] font-black text-slate-400 uppercase">ስም</label>
-                  <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="ስም" className="h-11 rounded-xl bg-slate-50 border-none text-xs font-bold" required />
+                  <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="ስም" className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold" required />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[9px] font-black text-slate-400 uppercase">የአባት ስም</label>
-                  <Input value={fatherName} onChange={(e) => setFatherName(e.target.value)} placeholder="የአባት ስም" className="h-11 rounded-xl bg-slate-50 border-none text-xs font-bold" required />
+                  <Input value={fatherName} onChange={(e) => setFatherName(e.target.value)} placeholder="የአባት ስም" className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold" required />
                 </div>
                 <div className="col-span-2 space-y-1">
                   <label className="text-[9px] font-black text-slate-400 uppercase">የስራ ድርሻ</label>
-                  <Input value={jobPosition} onChange={(e) => setJobPosition(e.target.value)} placeholder="ለምሳሌ፡ ሲስተም አድሚን" className="h-11 rounded-xl bg-slate-50 border-none text-xs font-bold" required />
+                  <Input value={jobPosition} onChange={(e) => setJobPosition(e.target.value)} placeholder="ለምሳሌ፡ ሲስተም አድሚን" className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold" required />
                 </div>
               </div>
             )}
             <div className="space-y-1">
               <label className="text-[9px] font-black text-slate-400 uppercase">ኢሜይል</label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@itb.gov.et" className="h-11 rounded-xl bg-slate-50 border-none text-xs font-bold" required />
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@itb.gov.et" className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold" required />
             </div>
             <div className="space-y-1">
               <label className="text-[9px] font-black text-slate-400 uppercase">የይለፍ ቃል</label>
-              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="h-11 rounded-xl bg-slate-50 border-none text-xs font-bold" required />
+              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold" required />
             </div>
-            <Button type="submit" className="w-full h-12 font-black bg-[#1e3a8a] hover:bg-[#1e3a8a]/90 shadow-lg rounded-xl text-xs uppercase" disabled={loading}>
+            <Button type="submit" className="w-full h-11 font-black bg-[#1e3a8a] hover:bg-[#1e3a8a]/90 shadow-lg rounded-xl text-xs uppercase" disabled={loading}>
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (isSignUp ? 'አሁን ይመዝገቡ' : 'ይግቡ')}
             </Button>
           </form>
