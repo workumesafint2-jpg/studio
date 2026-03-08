@@ -3,8 +3,8 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     /**
-     * Institutional Security Rules v4.5.0
-     * Master Admin: workumesafint2@gmail.com
+     * Institutional Security Rules v6.0
+     * Fully permissive for authenticated users in Spark (Free) plan.
      */
     
     function isAuthenticated() {
@@ -15,21 +15,19 @@ service cloud.firestore {
       return isAuthenticated() && (request.auth.token.email == 'workumesafint2@gmail.com');
     }
 
-    function isOwner(data) {
-      return isAuthenticated() && (request.auth.uid == data.uploaderId);
+    match /documents/{documentId} {
+      allow read, create: if isAuthenticated();
+      allow update, delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.uploaderId);
     }
 
-    match /documents/{documentId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAdmin() || isOwner(resource.data);
-      allow delete: if isAdmin() || isOwner(resource.data);
+    match /social_posts/{postId} {
+      allow read, create: if isAuthenticated();
+      allow update, delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.uploaderId);
     }
 
     match /feedback/{feedbackId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAdmin() || isOwner(resource.data);
+      allow read, create: if isAuthenticated();
+      allow update, delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.uploaderId);
     }
 
     match /users/{userId} {

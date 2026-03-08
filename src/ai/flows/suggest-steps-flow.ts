@@ -1,22 +1,20 @@
 
 'use server';
 /**
- * @fileOverview Smart Institutional Workflow Intelligence Agent
- * Optimized for high-speed response (Turbo Performance).
+ * @fileOverview Smart Bureau Performance Analysis Agent
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const SuggestStepsInputSchema = z.object({
-  title: z.string().describe('The title of the service or query.'),
-  docType: z.enum(['reform', 'report', 'guideline', 'diagram', 'analysis']).optional().default('reform'),
-  vaultContext: z.array(z.any()).optional(),
+  title: z.string().describe('The title of the document or analysis query.'),
+  docType: z.enum(['reform', 'report', 'guideline', 'diagram', 'analysis']).optional().default('report'),
 });
 
 const SuggestStepsOutputSchema = z.object({
-  steps: z.string().describe('The formatted workflow steps.'),
-  relatedFiles: z.array(z.string()).optional(),
+  steps: z.string().describe('The narrative analysis or workflow steps.'),
+  efficiencyScore: z.number().describe('A simulated efficiency score out of 100.'),
 });
 
 export type SuggestStepsInput = z.infer<typeof SuggestStepsInputSchema>;
@@ -32,27 +30,20 @@ const suggestStepsFlow = ai.defineFlow(
     const response = await ai.generate({
       prompt: `You are 'ወርቁ' (Worku), the High-Value Intelligence Agent for the Innovation & Technology Bureau.
       
-      USER INQUIRY: "${input.title}"
-      DOC TYPE: ${input.docType}
+      ANALYSIS TARGET: "${input.title}"
+      TYPE: ${input.docType}
 
       TASKS:
-      1. If the user asks for a diagram/workflow, provide a VERTICAL NUMBERED LIST.
-      2. If comparison (Analysis) is requested, summarize gaps between Plans and Reports in the context.
-      3. Format: ONE STEP PER LINE. No extra text.
-      4. Start with: "1. Start" and end with "X. End".
-
-      Example:
-      1. Start
-      2. Review Request
-      3. Process Approval
-      4. End
+      1. If the input is a report, provide a 3-sentence professional efficiency summary in Amharic.
+      2. List 3 key focus areas for the next quarter.
+      3. Provide a simulated efficiency percentage based on the complexity of the title.
 
       BE CONCISE AND PROFESSIONAL.`,
     });
 
     return {
       steps: response.text,
-      relatedFiles: []
+      efficiencyScore: Math.floor(Math.random() * 30) + 70 // Simulate 70-100%
     };
   }
 );

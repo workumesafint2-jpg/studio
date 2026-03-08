@@ -7,7 +7,7 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfi
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, AlertCircle, ShieldCheck } from 'lucide-react';
+import { Loader2, AlertCircle, ShieldCheck, UserPlus, LogIn } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -53,17 +53,13 @@ export default function LoginPage() {
           fatherName,
           jobPosition,
           email,
+          displayName,
           createdAt: new Date().toISOString()
         });
 
         toast({ title: "ተመዝግበዋል", description: "አካውንትዎ በትክክል ተከፍቷል" });
       } else {
-        // Master Admin Bypass Logic for your specific email
-        if (email === 'workumesafint2@gmail.com' && password === 'admin123') {
-           await signInWithEmailAndPassword(auth, email, password);
-        } else {
-           await signInWithEmailAndPassword(auth, email, password);
-        }
+        await signInWithEmailAndPassword(auth, email, password);
         toast({ title: "እንኳን ደህና መጡ", description: "ወደ ሲስተሙ በመግባት ላይ ነዎት" });
       }
     } catch (err: any) {
@@ -100,7 +96,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {isSignUp && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-2">
                 <div className="space-y-1">
                   <label className="text-[9px] font-black text-slate-400 uppercase">ስም</label>
                   <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="ስም" className="h-10 rounded-xl bg-slate-50 border-none font-bold text-xs" required />
@@ -124,7 +120,7 @@ export default function LoginPage() {
               <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="h-10 rounded-xl bg-slate-50 border-none font-bold text-xs" required />
             </div>
             <Button type="submit" className="w-full h-11 font-black bg-[#1e3a8a] hover:bg-[#1e3a8a]/90 shadow-lg rounded-xl text-xs uppercase" disabled={loading}>
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (isSignUp ? 'አሁን ይመዝገቡ' : 'ይግቡ')}
+              {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : (isSignUp ? <><UserPlus className="w-4 h-4 mr-2"/> አሁን ይመዝገቡ</> : <><LogIn className="w-4 h-4 mr-2"/> ይግቡ</>)}
             </Button>
           </form>
           
@@ -135,7 +131,7 @@ export default function LoginPage() {
           </div>
           {email === "workumesafint2@gmail.com" && (
             <div className="mt-4 flex items-center justify-center gap-2 text-[8px] font-black text-green-600 uppercase">
-              <ShieldCheck className="w-3 h-3" /> Master Admin Access (No PW Required)
+              <ShieldCheck className="w-3 h-3" /> Master Admin Access Point
             </div>
           )}
         </CardContent>
