@@ -16,7 +16,6 @@ export interface BPMNViewerRef {
   exportSVG: () => Promise<void>;
   exportXML: () => Promise<void>;
   getXML: () => Promise<string>;
-  getSVG: () => Promise<string>;
   fitViewport: () => void;
 }
 
@@ -35,135 +34,80 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
     fitViewport,
     getXML: async () => {
       if (!modelerRef.current) return '';
-      try {
-        const { xml: resultXml } = await modelerRef.current.saveXML({ format: true });
-        return resultXml || '';
-      } catch (err) {
-        console.error('Error getting XML:', err);
-        return '';
-      }
-    },
-    getSVG: async () => {
-      if (!modelerRef.current) return '';
-      try {
-        const { svg } = await modelerRef.current.saveSVG();
-        return svg || '';
-      } catch (err) {
-        console.error('Error getting SVG:', err);
-        return '';
-      }
+      const { xml: resultXml } = await modelerRef.current.saveXML({ format: true });
+      return resultXml || '';
     },
     exportXML: async () => {
       if (!modelerRef.current) return;
-      try {
-        const { xml: resultXml } = await modelerRef.current.saveXML({ format: true });
-        if (!resultXml) return;
-        const blob = new Blob([resultXml], { type: 'application/xml;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${title.replace(/\s+/g, '-').toLowerCase()}.bpmn`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      } catch (err) {
-        console.error('Error exporting BPMN XML:', err);
-      }
+      const { xml: resultXml } = await modelerRef.current.saveXML({ format: true });
+      if (!resultXml) return;
+      const blob = new Blob([resultXml], { type: 'application/xml' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${title.replace(/\s+/g, '-').toLowerCase()}.bpmn`;
+      link.click();
+      URL.revokeObjectURL(url);
     },
     exportSVG: async () => {
       if (!modelerRef.current) return;
-      try {
-        const { svg } = await modelerRef.current.saveSVG();
-        if (!svg) return;
-        const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${title.replace(/\s+/g, '-').toLowerCase()}.svg`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      } catch (err) {
-        console.error('Error exporting SVG:', err);
-      }
+      const { svg } = await modelerRef.current.saveSVG();
+      if (!svg) return;
+      const blob = new Blob([svg], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${title.replace(/\s+/g, '-').toLowerCase()}.svg`;
+      link.click();
+      URL.revokeObjectURL(url);
     },
     exportPNG: async () => {
       if (!modelerRef.current) return;
-      try {
-        const { svg } = await modelerRef.current.saveSVG();
-        if (!svg) return;
-        const canvas = document.createElement('canvas');
-        const img = new Image();
-        const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
-        const url = URL.createObjectURL(svgBlob);
-        
-        img.onload = () => {
-          const scale = 3; 
-          canvas.width = img.width * scale;
-          canvas.height = img.height * scale;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            const pngUrl = canvas.toDataURL('image/png', 1.0);
-            const downloadLink = document.createElement('a');
-            downloadLink.href = pngUrl;
-            downloadLink.download = `${title.replace(/\s+/g, '-').toLowerCase()}.png`;
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
-          }
-          URL.revokeObjectURL(url);
-        };
-        img.src = url;
-      } catch (err) {
-        console.error('Error exporting PNG:', err);
-      }
+      const { svg } = await modelerRef.current.saveSVG();
+      if (!svg) return;
+      const canvas = document.createElement('canvas');
+      const img = new Image();
+      const svgBlob = new Blob([svg], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(svgBlob);
+      
+      img.onload = () => {
+        canvas.width = img.width * 2;
+        canvas.height = img.height * 2;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const pngUrl = canvas.toDataURL('image/png');
+          const downloadLink = document.createElement('a');
+          downloadLink.href = pngUrl;
+          downloadLink.download = `${title.replace(/\s+/g, '-').toLowerCase()}.png`;
+          downloadLink.click();
+        }
+        URL.revokeObjectURL(url);
+      };
+      img.src = url;
     }
   }));
 
   useEffect(() => {
     if (!containerRef.current) return;
-    
-    const modeler = new BpmnModeler({
-      container: containerRef.current
-    });
-    
+    const modeler = new BpmnModeler({ container: containerRef.current });
     modelerRef.current = modeler;
-    
-    return () => {
-      if (modelerRef.current) {
-        modelerRef.current.destroy();
-      }
-    };
+    return () => { modeler.destroy(); };
   }, []);
 
   useEffect(() => {
     if (modelerRef.current && xml) {
-      modelerRef.current.importXML(xml).then(() => {
-        fitViewport();
-      }).catch(err => {
-        console.error('Error importing XML:', err);
-      });
+      modelerRef.current.importXML(xml).then(() => fitViewport());
     }
   }, [xml]);
 
   return (
-    <div className="w-full h-full relative group bg-white">
+    <div className="w-full h-full relative bg-white">
       <div ref={containerRef} className="w-full h-full min-h-[600px] bpmn-viewer-container" />
       <style jsx global>{`
-        .bpmn-viewer-container .bjs-powered-by {
-          display: none;
-        }
-        .bpmn-viewer-container .djs-palette {
-          top: 20px !important;
-          left: 20px !important;
-          border-radius: 12px !important;
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
-        }
+        .bpmn-viewer-container .bjs-powered-by { display: none; }
       `}</style>
     </div>
   );
