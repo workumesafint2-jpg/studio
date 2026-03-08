@@ -71,8 +71,7 @@ import {
   useMemoFirebase,
   addDocumentNonBlocking,
   deleteDocumentNonBlocking,
-  useAuth,
-  updateDocumentNonBlocking
+  useAuth
 } from '@/firebase';
 import { collection, query, doc, Timestamp, orderBy } from 'firebase/firestore';
 import Link from 'next/link';
@@ -719,3 +718,4 @@ export function BPMNFlowForgeApp() {
     </div>
   );
 }
+
