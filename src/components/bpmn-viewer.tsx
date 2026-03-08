@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react
 import BpmnModeler from 'bpmn-js/lib/Modeler';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css';
+import 'bpmn-js/dist/assets/bpmn-js.css';
 
 interface BPMNViewerProps {
   xml: string;
@@ -92,7 +93,10 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
 
   useEffect(() => {
     if (!containerRef.current) return;
-    const modeler = new BpmnModeler({ container: containerRef.current });
+    const modeler = new BpmnModeler({ 
+      container: containerRef.current,
+      keyboard: { bindTo: window }
+    });
     modelerRef.current = modeler;
     return () => { modeler.destroy(); };
   }, []);
@@ -104,10 +108,23 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
   }, [xml]);
 
   return (
-    <div className="w-full h-full relative bg-white">
-      <div ref={containerRef} className="w-full h-full min-h-[600px] bpmn-viewer-container" />
+    <div className="w-full h-full relative bg-white border rounded-xl overflow-hidden">
+      <div ref={containerRef} className="w-full h-full min-h-[600px] bpmn-modeler-container" />
       <style jsx global>{`
-        .bpmn-viewer-container .bjs-powered-by { display: none; }
+        .bpmn-modeler-container .bjs-powered-by { display: none; }
+        .djs-palette {
+          top: 20px !important;
+          left: 20px !important;
+          border-radius: 12px !important;
+          border: none !important;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+          padding: 5px !important;
+          background: white !important;
+        }
+        .djs-context-pad {
+          border-radius: 8px !important;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+        }
       `}</style>
     </div>
   );

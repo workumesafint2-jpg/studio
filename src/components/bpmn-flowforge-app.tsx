@@ -15,11 +15,6 @@ import {
   BarChart,
   FileText,
   BrainCircuit,
-  TrendingUp,
-  CheckCircle2,
-  Save,
-  FileCode,
-  LayoutTemplate,
   Zap,
   History,
   MessageSquare,
@@ -27,15 +22,13 @@ import {
   LogOut,
   ShieldCheck,
   User,
-  Building2,
-  Clock,
-  Briefcase,
-  CalendarDays,
   Plus,
   ArrowRightLeft,
-  Settings,
   BriefcaseBusiness,
-  FileUp
+  LayoutTemplate,
+  Save,
+  CalendarDays,
+  Briefcase
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -127,7 +120,7 @@ export function BPMNFlowForgeApp() {
   const [globalSearch, setGlobalSearch] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
-  // Metadata Fields
+  // Metadata Fields for Upload
   const [upName, setUpName] = useState("");
   const [upSector, setUpSector] = useState("");
   const [upDirectorate, setUpDirectorate] = useState("");
@@ -230,7 +223,7 @@ export function BPMNFlowForgeApp() {
     if (result) {
       setXmlResult(result);
       setActiveTab("diagram");
-      toast({ title: "ተሳክቷል", description: "ካርታው ተዘጋጅቷል" });
+      toast({ title: "ተሳክቷል", description: "ካርታው ተዘጋጅቷል፤ አሁን ምልክቶቹን ተጠቅመው መቀየር ይችላሉ።" });
     }
   };
 
@@ -242,7 +235,7 @@ export function BPMNFlowForgeApp() {
 
     setIsSaving(true);
     try {
-      let fileUrl = "data:text/plain;base64,U2FtcGxlIERvY3VtZW50"; // Default
+      let fileUrl = "data:text/plain;base64,U2FtcGxlIERvY3VtZW50"; 
       let fileName = upName;
 
       if (selectedFile) {
@@ -344,21 +337,6 @@ export function BPMNFlowForgeApp() {
     } catch (e) {
       toast({ title: "ስህተት", description: "መመዝገብ አልተቻለም" });
     }
-  };
-
-  const handleDownloadLogReport = () => {
-    if (dailyLogs.length === 0) return;
-    const content = dailyLogs.map(l => 
-      `ባለሙያ: ${l.uploaderName}\nተግባር: ${l.taskName}\nየተጀመረበት: ${l.startTime}\nየተጠናቀቀበት: ${l.endTime}\nየታቀደለት: ${l.plannedTime}\nቀን: ${new Date(l.timestamp).toLocaleString()}\n----------------------\n`
-    ).join('');
-    
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `የቀን-ውሎ-ሪፖርት-${new Date().toLocaleDateString()}.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
   };
 
   const handleSendFeedback = async () => {
@@ -547,11 +525,19 @@ export function BPMNFlowForgeApp() {
 
             <div className="flex-1 mt-4 min-h-0 overflow-hidden">
               <TabsContent value="diagram" className="h-full m-0 outline-none">
-                <Card className="h-full rounded-2xl border-none shadow-lg overflow-hidden bg-white">
-                  {xmlResult ? <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} /> : (
+                <Card className="h-full rounded-2xl border-none shadow-lg overflow-hidden bg-white relative">
+                  {xmlResult ? (
+                    <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
+                  ) : (
                     <div className="h-full flex flex-col items-center justify-center opacity-5 select-none">
                       <LayoutTemplate className="w-24 h-24 text-slate-300" />
                       <p className="text-[10px] font-black uppercase tracking-[0.5em] mt-8 text-slate-400">ካርታ አልተመረጠም</p>
+                    </div>
+                  )}
+                  {xmlResult && (
+                    <div className="absolute top-4 right-4 flex gap-2 z-10">
+                       <Button variant="secondary" size="sm" onClick={() => viewerRef.current?.exportSVG()} className="h-8 text-[9px] font-black uppercase rounded-lg shadow-md border-white">SVG አውርድ</Button>
+                       <Button variant="secondary" size="sm" onClick={() => viewerRef.current?.exportPNG()} className="h-8 text-[9px] font-black uppercase rounded-lg shadow-md border-white">PNG አውርድ</Button>
                     </div>
                   )}
                 </Card>
@@ -627,15 +613,6 @@ export function BPMNFlowForgeApp() {
                           <p className="text-lg font-black text-slate-800">{automatedAnalysis.totalLogs}</p>
                         </div>
                       </div>
-                      <div className="p-4 border rounded-xl space-y-2">
-                         <div className="flex justify-between items-center text-[9px] font-black uppercase">
-                            <span>የታቀደ</span>
-                            <span>100%</span>
-                         </div>
-                         <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-green-500 w-[90%]"></div>
-                         </div>
-                      </div>
                     </div>
                   </Card>
                 </div>
@@ -672,7 +649,6 @@ export function BPMNFlowForgeApp() {
                 <Card className="flex-1 shadow-lg border-none rounded-2xl bg-white overflow-hidden flex flex-col">
                   <div className="p-3 border-b bg-slate-50/20 flex items-center justify-between">
                     <h4 className="text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><CalendarDays className="w-3.5 h-3.5" /> የውሎ ሰንጠረዥ</h4>
-                    <Button variant="outline" size="sm" onClick={handleDownloadLogReport} className="h-7 rounded-md border-slate-200 text-[8px] font-black uppercase shadow-sm"><Download className="w-3 h-3 mr-1" /> ሪፖርት አውርድ</Button>
                   </div>
                   <ScrollArea className="flex-1">
                     <Table>
