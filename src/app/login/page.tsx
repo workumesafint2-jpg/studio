@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -99,25 +98,25 @@ export default function LoginPage() {
               <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-2">
                 <div className="space-y-1">
                   <label className="text-[9px] font-black text-slate-400 uppercase">ስም</label>
-                  <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="ስም" className="h-10 rounded-xl bg-slate-50 border-none font-bold text-xs" required />
+                  <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="ስም" className="h-10 rounded-xl bg-slate-50 border-none font-bold text-xs shadow-inner" required />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[9px] font-black text-slate-400 uppercase">የአባት ስም</label>
-                  <Input value={fatherName} onChange={(e) => setFatherName(e.target.value)} placeholder="የአባት" className="h-10 rounded-xl bg-slate-50 border-none font-bold text-xs" required />
+                  <Input value={fatherName} onChange={(e) => setFatherName(e.target.value)} placeholder="የአባት" className="h-10 rounded-xl bg-slate-50 border-none font-bold text-xs shadow-inner" required />
                 </div>
                 <div className="col-span-2 space-y-1">
                   <label className="text-[9px] font-black text-slate-400 uppercase">የስራ ድርሻ</label>
-                  <Input value={jobPosition} onChange={(e) => setJobPosition(e.target.value)} placeholder="ለምሳሌ፡ ሲስተም አድሚን" className="h-10 rounded-xl bg-slate-50 border-none font-bold text-xs" required />
+                  <Input value={jobPosition} onChange={(e) => setJobPosition(e.target.value)} placeholder="ለምሳሌ፡ ሲስተም አድሚን" className="h-10 rounded-xl bg-slate-50 border-none font-bold text-xs shadow-inner" required />
                 </div>
               </div>
             )}
             <div className="space-y-1">
               <label className="text-[9px] font-black text-slate-400 uppercase">ኢሜይል</label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@itb.gov.et" className="h-10 rounded-xl bg-slate-50 border-none font-bold text-xs" required />
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@itb.gov.et" className="h-10 rounded-xl bg-slate-50 border-none font-bold text-xs shadow-inner" required />
             </div>
             <div className="space-y-1">
               <label className="text-[9px] font-black text-slate-400 uppercase">የይለፍ ቃል</label>
-              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="h-10 rounded-xl bg-slate-50 border-none font-bold text-xs" required />
+              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="h-10 rounded-xl bg-slate-50 border-none font-bold text-xs shadow-inner" required />
             </div>
             <Button type="submit" className="w-full h-11 font-black bg-[#1e3a8a] hover:bg-[#1e3a8a]/90 shadow-lg rounded-xl text-xs uppercase" disabled={loading}>
               {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : (isSignUp ? <><UserPlus className="w-4 h-4 mr-2"/> አሁን ይመዝገቡ</> : <><LogIn className="w-4 h-4 mr-2"/> ይግቡ</>)}
@@ -129,11 +128,6 @@ export default function LoginPage() {
               {isSignUp ? 'አካውንት አለዎት? እዚህ ይግቡ' : 'አዲስ ተጠቃሚ ነዎት? እዚህ ይመዝገቡ'}
             </button>
           </div>
-          {email === "workumesafint2@gmail.com" && (
-            <div className="mt-4 flex items-center justify-center gap-2 text-[8px] font-black text-green-600 uppercase">
-              <ShieldCheck className="w-3 h-3" /> Master Admin Access Point
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

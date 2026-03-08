@@ -1,10 +1,10 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     /**
-     * Institutional Security Rules v9.0
-     * Wide Open for Production Resilience as per user request.
+     * Institutional Security Rules v11.0
+     * Fully open for production resilience as per user request.
+     * Prevents permission errors during Base64 file uploads.
      */
     match /{allPaths=**} {
       allow read, write: if true;

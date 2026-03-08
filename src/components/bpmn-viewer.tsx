@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
@@ -103,7 +102,7 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
 
   useEffect(() => {
     if (modelerRef.current && xml) {
-      modelerRef.current.importXML(xml).then(() => fitViewport());
+      modelerRef.current.importXML(xml).then(() => fitViewport()).catch(err => console.error(err));
     }
   }, [xml]);
 
@@ -116,9 +115,9 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
           top: 20px !important;
           left: 20px !important;
           border-radius: 12px !important;
-          border: none !important;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
-          padding: 5px !important;
+          border: 1px solid #e2e8f0 !important;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.05) !important;
+          padding: 8px !important;
           background: white !important;
         }
         .djs-context-pad {

@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -28,7 +27,8 @@ import {
   LayoutTemplate,
   Save,
   CalendarDays,
-  Briefcase
+  Briefcase,
+  ExternalLink
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -448,31 +448,31 @@ export function BPMNFlowForgeApp() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2 space-y-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase ml-1">ፋይል ይምረጡ</label>
-                      <Input type="file" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold pt-2 cursor-pointer" />
+                      <Input type="file" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold pt-2 cursor-pointer shadow-inner" />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase ml-1">የሰነዱ ስም</label>
-                      <Input value={upName} onChange={(e) => setUpName(e.target.value)} placeholder="ስም..." className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold" />
+                      <Input value={upName} onChange={(e) => setUpName(e.target.value)} placeholder="ስም..." className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold shadow-inner" />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase ml-1">ምድብ</label>
-                      <Input value={upCategory} onChange={(e) => setUpCategory(e.target.value)} placeholder="ምሳሌ፡ እቅድ" className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold" />
+                      <Input value={upCategory} onChange={(e) => setUpCategory(e.target.value)} placeholder="ምሳሌ፡ እቅድ" className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold shadow-inner" />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase ml-1">ዘርፍ (Sector)</label>
-                      <Input value={upSector} onChange={(e) => setUpSector(e.target.value)} placeholder="ዘርፍ..." className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold" />
+                      <Input value={upSector} onChange={(e) => setUpSector(e.target.value)} placeholder="ዘርፍ..." className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold shadow-inner" />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase ml-1">ዳይሬክቶሬት</label>
-                      <Input value={upDirectorate} onChange={(e) => setUpDirectorate(e.target.value)} placeholder="ዳይሬክቶሬት..." className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold" />
+                      <Input value={upDirectorate} onChange={(e) => setUpDirectorate(e.target.value)} placeholder="ዳይሬክቶሬት..." className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold shadow-inner" />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase ml-1">ቡድን (Team)</label>
-                      <Input value={upTeam} onChange={(e) => setUpTeam(e.target.value)} placeholder="ቡድን..." className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold" />
+                      <Input value={upTeam} onChange={(e) => setUpTeam(e.target.value)} placeholder="ቡድን..." className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold shadow-inner" />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase ml-1">የባለሙያ ስም</label>
-                      <Input value={upExpertName} onChange={(e) => setUpExpertName(e.target.value)} placeholder="ባለሙያ..." className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold" />
+                      <Input value={upExpertName} onChange={(e) => setUpExpertName(e.target.value)} placeholder="ባለሙያ..." className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold shadow-inner" />
                     </div>
                   </div>
                   <Button className="w-full h-11 bg-[#1e3a8a] rounded-xl font-black uppercase shadow-lg text-[10px] mt-8" onClick={handleFileUpload} disabled={isSaving}>
@@ -697,7 +697,7 @@ export function BPMNFlowForgeApp() {
 
       <footer className="px-6 h-8 bg-white border-t flex justify-between items-center shrink-0">
         <div className="flex gap-4 items-center text-[8px] font-black text-slate-400 uppercase tracking-widest">
-          <span className="text-[#1e3a8a]">ITB Enterprise v10.0</span>
+          <span className="text-[#1e3a8a]">ITB Enterprise v11.0</span>
           <span>Institutional Sync Active</span>
         </div>
         <div className="flex items-center gap-2 px-3 py-0.5 bg-green-50 rounded-full border border-green-100 shadow-sm">
