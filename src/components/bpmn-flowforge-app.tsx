@@ -25,7 +25,6 @@ import {
   MessageSquare,
   Send,
   LogOut,
-  XCircle,
   FileJson,
   ShieldCheck,
   Image as ImageIcon,
@@ -33,7 +32,8 @@ import {
   Building2,
   Clock,
   Briefcase,
-  CalendarDays
+  CalendarDays,
+  Plus
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -171,12 +171,12 @@ export function BPMNFlowForgeApp() {
     const q = globalSearch.toLowerCase();
     return uploadedFiles.filter(f => 
       f.name.toLowerCase().includes(q) || 
-      f.expertName?.toLowerCase().includes(q) ||
-      f.sector?.toLowerCase().includes(q)
+      (f.expertName && f.expertName.toLowerCase().includes(q)) ||
+      (f.sector && f.sector.toLowerCase().includes(q))
     );
   }, [uploadedFiles, globalSearch]);
 
-  // AUTOMATED PERFORMANCE LOGIC (NO AI CALLS)
+  // AUTOMATED PERFORMANCE LOGIC (STRICTLY AUTOMATED)
   const automatedAnalysis = useMemo(() => {
     const total = uploadedFiles.length;
     const approved = uploadedFiles.filter(f => f.status === 'የጸደቀ').length;
@@ -221,7 +221,10 @@ export function BPMNFlowForgeApp() {
   };
 
   const handleManualUpload = async () => {
-    if (!selectedFile || !user || !db) return;
+    if (!selectedFile || !user || !db) {
+      toast({ title: "ስህተት", description: "እባክዎ መጀመሪያ ፋይል ይምረጡ", variant: "destructive" });
+      return;
+    }
     setIsUploading(true);
     try {
       const reader = new FileReader();
@@ -259,7 +262,10 @@ export function BPMNFlowForgeApp() {
   const handleSaveToVault = async () => {
     if (!user || !db) return;
     const currentXml = await viewerRef.current?.getXML() || xmlResult;
-    if (!currentXml) return;
+    if (!currentXml) {
+      toast({ title: "ዲያግራም የለም", description: "መጀመሪያ ዲያግራም ማዘጋጀት አለብዎት", variant: "destructive" });
+      return;
+    }
     setIsSaving(true);
     try {
       const blob = new Blob([currentXml], { type: 'application/xml' });
@@ -286,11 +292,15 @@ export function BPMNFlowForgeApp() {
       reader.readAsDataURL(blob);
     } catch (e) {
       setIsSaving(false);
+      toast({ title: "ስህተት", description: "ዲያግራሙን መመዝገብ አልተቻለም" });
     }
   };
 
   const handleAddDailyLog = async () => {
-    if (!logTask.trim() || !user || !db) return;
+    if (!logTask.trim() || !user || !db) {
+      toast({ title: "መረጃ ይጎድላል", description: "እባክዎ የተከናወነውን ተግባር ይጻፉ" });
+      return;
+    }
     try {
       await addDocumentNonBlocking(collection(db, 'daily_logs'), {
         taskName: logTask,
@@ -320,7 +330,9 @@ export function BPMNFlowForgeApp() {
         createdAt: Timestamp.now()
       });
       setFeedbackInput("");
-    } catch (e) { toast({ title: "ስህተት", description: "መልዕክቱ አልተላከም" }); }
+    } catch (e) { 
+      toast({ title: "ስህተት", description: "መልዕክቱ አልተላከም" }); 
+    }
   };
 
   if (!mounted) return null;
@@ -421,7 +433,7 @@ export function BPMNFlowForgeApp() {
                       <input type="file" className="hidden" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
                     </label>
                   </div>
-                  <Button className="w-full h-12 bg-[#1e3a8a] rounded-2xl font-black uppercase shadow-xl text-xs flex items-center justify-center gap-2" onClick={handleManualUpload} disabled={isUploading || !selectedFile}>
+                  <Button className="w-full h-12 bg-[#1e3a8a] rounded-2xl font-black uppercase shadow-xl text-xs flex items-center justify-center gap-2" onClick={handleManualUpload} disabled={isUploading}>
                     {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle2 className="w-5 h-5" /> አጽድቅና መዝግብ</>}
                   </Button>
                 </DialogContent>
@@ -519,25 +531,27 @@ export function BPMNFlowForgeApp() {
                            <MessageSquare className="w-16 h-16 text-slate-300" />
                            <p className="text-[11px] font-black uppercase mt-4">ምንም መልዕክት የለም</p>
                         </div>
-                      ) : feedbackMessages.map(msg => (
-                        <div key={msg.id} className={`flex gap-4 animate-in fade-in slide-in-from-bottom-2 ${msg.uploaderId === user?.uid ? 'flex-row-reverse' : ''}`}>
-                          <Avatar className="w-10 h-10 border-2 shadow-sm shrink-0">
-                            <AvatarFallback className={`${msg.uploaderId === user?.uid ? 'bg-slate-900' : 'bg-[#1e3a8a]'} text-white text-[10px] font-black`}>{msg.senderName.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                          <div className={`max-w-[70%] ${msg.uploaderId === user?.uid ? 'items-end' : 'items-start'} flex flex-col gap-1.5`}>
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-2">{msg.senderName}</span>
-                            <div className={`${msg.uploaderId === user?.uid ? 'bg-[#1e3a8a] text-white rounded-tr-none shadow-[#1e3a8a]/20' : 'bg-slate-100 text-slate-800 rounded-tl-none shadow-slate-200'} p-4 rounded-2xl shadow-lg relative group`}>
-                              <p className="text-[12px] font-medium leading-relaxed">{msg.content}</p>
-                              {(isAdmin || msg.uploaderId === user?.uid) && (
-                                <button onClick={() => deleteDocumentNonBlocking(doc(db!, 'feedback', msg.id))} className="absolute -top-3 -right-3 bg-white text-red-500 p-1.5 rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-all active:scale-90">
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              )}
+                      ) : (
+                        feedbackMessages.map(msg => (
+                          <div key={msg.id} className={`flex gap-4 animate-in fade-in slide-in-from-bottom-2 ${msg.uploaderId === user?.uid ? 'flex-row-reverse' : ''}`}>
+                            <Avatar className="w-10 h-10 border-2 shadow-sm shrink-0">
+                              <AvatarFallback className={`${msg.uploaderId === user?.uid ? 'bg-slate-900' : 'bg-[#1e3a8a]'} text-white text-[10px] font-black`}>{msg.senderName?.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div className={`max-w-[70%] ${msg.uploaderId === user?.uid ? 'items-end' : 'items-start'} flex flex-col gap-1.5`}>
+                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-2">{msg.senderName}</span>
+                              <div className={`${msg.uploaderId === user?.uid ? 'bg-[#1e3a8a] text-white rounded-tr-none shadow-[#1e3a8a]/20' : 'bg-slate-100 text-slate-800 rounded-tl-none shadow-slate-200'} p-4 rounded-2xl shadow-lg relative group`}>
+                                <p className="text-[12px] font-medium leading-relaxed">{msg.content}</p>
+                                {(isAdmin || msg.uploaderId === user?.uid) && (
+                                  <button onClick={() => deleteDocumentNonBlocking(doc(db!, 'feedback', msg.id))} className="absolute -top-3 -right-3 bg-white text-red-500 p-1.5 rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-all active:scale-90">
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                              <span className="text-[8px] text-slate-300 font-bold mt-1 px-1">{msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""}</span>
                             </div>
-                            <span className="text-[8px] text-slate-300 font-bold mt-1 px-1">{new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                           </div>
-                        </div>
-                      ))}
+                        ))
+                      )}
                     </div>
                   </ScrollArea>
                   <div className="p-4 bg-white border-t flex gap-3 px-8 pb-6">
@@ -552,21 +566,25 @@ export function BPMNFlowForgeApp() {
                   <Card className="shadow-2xl border-none rounded-[2.5rem] bg-white p-8 flex flex-col">
                     <h3 className="text-[11px] font-black uppercase tracking-widest mb-6 flex items-center gap-3"><BarChart className="w-5 h-5 text-[#1e3a8a]" /> የአፈጻጸም ግራፍ (Automated)</h3>
                     <div className="flex-1 min-h-[300px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={automatedAnalysis.graphData}>
-                          <defs>
-                            <linearGradient id="colorEff" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#1e3a8a" stopOpacity={0.4}/>
-                              <stop offset="95%" stopColor="#1e3a8a" stopOpacity={0}/>
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                          <XAxis dataKey="name" fontSize={9} fontWeight="black" axisLine={false} tickLine={false} />
-                          <YAxis fontSize={9} fontWeight="black" axisLine={false} tickLine={false} />
-                          <RechartsTooltip />
-                          <Area type="monotone" dataKey="efficiency" stroke="#1e3a8a" strokeWidth={4} fillOpacity={1} fill="url(#colorEff)" />
-                        </AreaChart>
-                      </ResponsiveContainer>
+                      {automatedAnalysis.graphData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={automatedAnalysis.graphData}>
+                            <defs>
+                              <linearGradient id="colorEff" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#1e3a8a" stopOpacity={0.4}/>
+                                <stop offset="95%" stopColor="#1e3a8a" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                            <XAxis dataKey="name" fontSize={9} fontWeight="black" axisLine={false} tickLine={false} />
+                            <YAxis fontSize={9} fontWeight="black" axisLine={false} tickLine={false} />
+                            <RechartsTooltip />
+                            <Area type="monotone" dataKey="efficiency" stroke="#1e3a8a" strokeWidth={4} fillOpacity={1} fill="url(#colorEff)" />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-full flex items-center justify-center opacity-10">ግራፍ ለመሳል በቂ ዳታ የለም</div>
+                      )}
                     </div>
                     <div className="mt-6 p-6 bg-blue-50 rounded-3xl border border-blue-100 shadow-inner">
                       <div className="flex items-center gap-3 mb-3">
@@ -621,7 +639,7 @@ export function BPMNFlowForgeApp() {
                         <option value="በሂደት ላይ">በሂደት ላይ</option>
                         <option value="ተጀምሯል">ተጀምሯል</option>
                       </select>
-                      <Button onClick={handleAddDailyLog} className="h-11 rounded-xl bg-[#1e3a8a] text-white font-black text-[11px] uppercase shadow-xl active:scale-95 transition-all"><PlusIcon className="w-4 h-4 mr-2" /> መዝግብ</Button>
+                      <Button onClick={handleAddDailyLog} className="h-11 rounded-xl bg-[#1e3a8a] text-white font-black text-[11px] uppercase shadow-xl active:scale-95 transition-all"><Plus className="w-4 h-4 mr-2" /> መዝግብ</Button>
                     </div>
                   </div>
                 </Card>
@@ -650,26 +668,28 @@ export function BPMNFlowForgeApp() {
                               <p className="text-[10px] font-black uppercase">ምንም የተመዘገበ የቀን ውሎ የለም</p>
                             </TableCell>
                           </TableRow>
-                        ) : dailyLogs.map(log => (
-                          <TableRow key={log.id} className="hover:bg-slate-50 transition-colors">
-                            <TableCell className="text-[11px] font-bold text-[#1e3a8a]">{log.uploaderName}</TableCell>
-                            <TableCell className="text-[11px] font-medium">{log.taskName}</TableCell>
-                            <TableCell className="text-[11px] font-bold">{log.duration}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className={`text-[9px] font-black uppercase border-none h-6 px-3 ${log.status === 'ተጠናቋል' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
-                                {log.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-[10px] text-slate-400 font-bold">{new Date(log.timestamp).toLocaleDateString('en-GB')}</TableCell>
-                            <TableCell className="text-right">
-                              {(isAdmin || log.uploaderId === user?.uid) && (
-                                <Button variant="ghost" size="icon" onClick={() => deleteDocumentNonBlocking(doc(db!, 'daily_logs', log.id))} className="h-8 w-8 text-red-300 hover:text-red-600 rounded-xl transition-all">
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        ) : (
+                          dailyLogs.map(log => (
+                            <TableRow key={log.id} className="hover:bg-slate-50 transition-colors">
+                              <TableCell className="text-[11px] font-bold text-[#1e3a8a]">{log.uploaderName}</TableCell>
+                              <TableCell className="text-[11px] font-medium">{log.taskName}</TableCell>
+                              <TableCell className="text-[11px] font-bold">{log.duration}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className={`text-[9px] font-black uppercase border-none h-6 px-3 ${log.status === 'ተጠናቋል' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
+                                  {log.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-[10px] text-slate-400 font-bold">{log.timestamp ? new Date(log.timestamp).toLocaleDateString('en-GB') : ""}</TableCell>
+                              <TableCell className="text-right">
+                                {(isAdmin || log.uploaderId === user?.uid) && (
+                                  <Button variant="ghost" size="icon" onClick={() => deleteDocumentNonBlocking(doc(db!, 'daily_logs', log.id))} className="h-8 w-8 text-red-300 hover:text-red-600 rounded-xl transition-all">
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
                       </TableBody>
                     </Table>
                   </ScrollArea>
@@ -695,8 +715,3 @@ export function BPMNFlowForgeApp() {
   );
 }
 
-function PlusIcon(props: any) {
-  return (
-    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-  )
-}
