@@ -29,10 +29,11 @@ import {
   FileJson,
   ShieldCheck,
   Image as ImageIcon,
-  Share2,
-  Heart,
   User,
-  Building2
+  Building2,
+  Clock,
+  Briefcase,
+  CalendarDays
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -78,6 +79,7 @@ import Link from 'next/link';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface UploadedFile {
   id: string;
@@ -95,16 +97,14 @@ interface UploadedFile {
   createdAt?: any;
 }
 
-interface SocialPost {
+interface DailyLog {
   id: string;
-  authorName: string;
-  authorPosition: string;
-  content: string;
-  imageUrl?: string;
-  likes: number;
-  comments: number;
+  taskName: string;
+  duration: string;
+  status: string;
   timestamp: string;
   uploaderId: string;
+  uploaderName: string;
   createdAt?: any;
 }
 
@@ -123,12 +123,14 @@ export function BPMNFlowForgeApp() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadCategory, setUploadCategory] = useState("");
   const [uploadSector, setUploadSector] = useState("");
-  const [socialInput, setSocialInput] = useState("");
+  
+  // Daily Log State
+  const [logTask, setLogTask] = useState("");
+  const [logDuration, setLogDuration] = useState("");
+  const [logStatus, setLogStatus] = useState("ተጠናቋል");
   const [feedbackInput, setFeedbackInput] = useState("");
-  const [selectedSocialImage, setSelectedSocialImage] = useState<string | null>(null);
 
   const viewerRef = useRef<BPMNViewerRef>(null);
-  const socialFileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const router = useRouter();
   const { user } = useUser();
@@ -146,9 +148,9 @@ export function BPMNFlowForgeApp() {
     return query(collection(db, 'documents'), orderBy('createdAt', 'desc'));
   }, [db]);
 
-  const socialQuery = useMemoFirebase(() => {
+  const dailyLogQuery = useMemoFirebase(() => {
     if (!db) return null;
-    return query(collection(db, 'social_posts'), orderBy('createdAt', 'desc'));
+    return query(collection(db, 'daily_logs'), orderBy('createdAt', 'desc'));
   }, [db]);
 
   const feedbackQuery = useMemoFirebase(() => {
@@ -157,11 +159,11 @@ export function BPMNFlowForgeApp() {
   }, [db]);
 
   const { data: uploadedFilesRaw, isLoading: isDocsLoading } = useCollection<UploadedFile>(documentsQuery);
-  const { data: socialPostsRaw } = useCollection<SocialPost>(socialQuery);
+  const { data: dailyLogsRaw } = useCollection<DailyLog>(dailyLogQuery);
   const { data: feedbackMessagesRaw } = useCollection<any>(feedbackQuery);
   
   const uploadedFiles = uploadedFilesRaw || [];
-  const socialPosts = socialPostsRaw || [];
+  const dailyLogs = dailyLogsRaw || [];
   const feedbackMessages = feedbackMessagesRaw || [];
 
   const filteredDocuments = useMemo(() => {
@@ -174,21 +176,29 @@ export function BPMNFlowForgeApp() {
     );
   }, [uploadedFiles, globalSearch]);
 
-  const statsData = useMemo(() => {
-    if (uploadedFiles.length === 0) {
-      return [
-        { name: 'Day 1', efficiency: 65 },
-        { name: 'Day 2', efficiency: 72 },
-        { name: 'Day 3', efficiency: 85 },
-        { name: 'Day 4', efficiency: 78 },
-        { name: 'Day 5', efficiency: 92 }
-      ];
+  // AUTOMATED PERFORMANCE LOGIC (NO AI CALLS)
+  const automatedAnalysis = useMemo(() => {
+    const total = uploadedFiles.length;
+    const approved = uploadedFiles.filter(f => f.status === 'የጸደቀ').length;
+    const pending = total - approved;
+    const efficiency = total > 0 ? Math.round((approved / total) * 100) : 0;
+    
+    let narrative = "በአሁኑ ሰዓት በሲስተሙ ውስጥ ምንም አይነት የሰነድ እንቅስቃሴ አልተመዘገበም።";
+    if (total > 0) {
+      narrative = `በአሁኑ ወቅት በሲስተሙ ውስጥ በአጠቃላይ ${total} ሰነዶች ተመዝግበዋል። ከነዚህም ውስጥ ${approved} ሰነዶች የጸደቁ ሲሆኑ፣ ${pending} ሰነዶች በሂደት ላይ ይገኛሉ። አጠቃላይ የቢሮው የስራ አፈጻጸም ${efficiency}% ደረጃ ላይ ይገኛል።`;
+      if (efficiency > 80) narrative += " ይህም እጅግ በጣም ከፍተኛ አፈጻጸም መሆኑን ያሳያል።";
+      else if (efficiency > 50) narrative += " አፈጻጸሙ በመካከለኛ ደረጃ ላይ ሲሆን፣ የቀሩትን ሰነዶች ማጽደቅ ያስፈልጋል።";
     }
-    return uploadedFiles.slice(0, 7).reverse().map((f, i) => ({
-      name: `Day ${i + 1}`,
-      efficiency: f.status === 'የጸደቀ' ? 95 : 65 + (i * 4),
-      progress: 70 + (i * 3)
-    }));
+
+    const graphData = [
+      { name: 'ሰኞ', efficiency: 65 },
+      { name: 'ማክሰኞ', efficiency: 72 },
+      { name: 'ረቡዕ', efficiency: 85 },
+      { name: 'ሐሙስ', efficiency: 78 },
+      { name: 'አርብ', efficiency: efficiency > 0 ? efficiency : 90 }
+    ];
+
+    return { total, approved, pending, efficiency, narrative, graphData };
   }, [uploadedFiles]);
 
   const handleLogout = async () => {
@@ -279,25 +289,24 @@ export function BPMNFlowForgeApp() {
     }
   };
 
-  const handlePostSocial = async () => {
-    if (!socialInput.trim() && !selectedSocialImage) return;
-    if (!user || !db) return;
+  const handleAddDailyLog = async () => {
+    if (!logTask.trim() || !user || !db) return;
     try {
-      await addDocumentNonBlocking(collection(db, 'social_posts'), {
-        authorName: user.displayName || "ባለሙያ",
-        authorPosition: "ITB Member",
-        content: socialInput,
-        imageUrl: selectedSocialImage || undefined,
-        likes: 0,
-        comments: 0,
+      await addDocumentNonBlocking(collection(db, 'daily_logs'), {
+        taskName: logTask,
+        duration: logDuration || "N/A",
+        status: logStatus,
         timestamp: new Date().toISOString(),
         uploaderId: user.uid,
+        uploaderName: user.displayName || "ባለሙያ",
         createdAt: Timestamp.now()
       });
-      setSocialInput("");
-      setSelectedSocialImage(null);
-      toast({ title: "ተሳክቷል", description: "ልጥፉ ተጋርቷል" });
-    } catch (e) { toast({ title: "ስህተት", description: "መለጠፍ አልተቻለም" }); }
+      setLogTask("");
+      setLogDuration("");
+      toast({ title: "ተመዝግቧል", description: "የቀን ውሎዎ በትክክል ተመዝግቧል" });
+    } catch (e) {
+      toast({ title: "ስህተት", description: "መመዝገብ አልተቻለም" });
+    }
   };
 
   const handleSendFeedback = async () => {
@@ -320,13 +329,13 @@ export function BPMNFlowForgeApp() {
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden text-slate-900">
       <header className="flex items-center justify-between px-6 bg-white border-b shrink-0 shadow-sm z-50 h-14">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-[#1e3a8a] rounded-xl flex items-center justify-center shadow-lg ring-2 ring-white">
+          <div className="w-10 h-10 bg-[#1e3a8a] rounded-xl flex items-center justify-center shadow-lg ring-2 ring-white">
              <Avatar className="h-full w-full">
-                <AvatarFallback className="bg-[#1e3a8a] text-white text-[10px] font-black">ITB</AvatarFallback>
+                <AvatarFallback className="bg-[#1e3a8a] text-white text-[12px] font-black">ITB</AvatarFallback>
              </Avatar>
           </div>
           <div className="flex flex-col">
-            <h1 className="text-[12px] font-black text-[#1e3a8a] tracking-tight uppercase leading-none">የኢኖቬሽንና ቴክኖሎጂ ቢሮ</h1>
+            <h1 className="text-[13px] font-black text-[#1e3a8a] tracking-tight uppercase leading-none">የኢኖቬሽንና ቴክኖሎጂ ቢሮ</h1>
             <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Institutional Digital Portal</span>
           </div>
         </div>
@@ -360,8 +369,8 @@ export function BPMNFlowForgeApp() {
                       </Link>
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem onClick={() => setActiveTab("dashboard")} className="p-2.5 rounded-xl font-bold text-[11px] hover:bg-slate-50 cursor-pointer">
-                    <History className="w-4 h-4 mr-2 text-slate-400" /> እንቅስቃሴዎች
+                  <DropdownMenuItem onClick={() => setActiveTab("daily-log")} className="p-2.5 rounded-xl font-bold text-[11px] hover:bg-slate-50 cursor-pointer">
+                    <History className="w-4 h-4 mr-2 text-slate-400" /> የቀን ውሎ
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-slate-50" />
                   <DropdownMenuItem onClick={handleLogout} className="text-red-600 font-bold p-2.5 rounded-xl cursor-pointer hover:bg-red-50">
@@ -456,16 +465,16 @@ export function BPMNFlowForgeApp() {
             <div className="flex items-center justify-between bg-white border p-1.5 h-12 rounded-2xl shadow-sm shrink-0">
               <TabsList className="bg-transparent border-none gap-2">
                 <TabsTrigger value="diagram" className="text-[10px] font-black px-6 h-9 rounded-xl uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white data-[state=active]:shadow-lg transition-all">ካርታ</TabsTrigger>
-                <TabsTrigger value="messenger" className="text-[10px] font-black px-6 h-9 rounded-xl uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white data-[state=active]:shadow-lg transition-all">የቢሮ ሜሴንጀር</TabsTrigger>
+                <TabsTrigger value="messenger" className="text-[10px] font-black px-6 h-9 rounded-xl uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white data-[state=active]:shadow-lg transition-all">ቢሮ ሜሴንጀር</TabsTrigger>
                 <TabsTrigger value="dashboard" className="text-[10px] font-black px-6 h-9 rounded-xl uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white data-[state=active]:shadow-lg transition-all">አፈጻጸም ትንተና</TabsTrigger>
-                <TabsTrigger value="social" className="text-[10px] font-black px-6 h-9 rounded-xl uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white data-[state=active]:shadow-lg transition-all">ማህበራዊ ገጽ</TabsTrigger>
+                <TabsTrigger value="daily-log" className="text-[10px] font-black px-6 h-9 rounded-xl uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white data-[state=active]:shadow-lg transition-all">የቀን ውሎ መዝገብ</TabsTrigger>
               </TabsList>
               
               <div className="flex items-center gap-3 pr-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="h-9 rounded-xl font-black text-[10px] uppercase border-slate-200 px-5 shadow-sm">
-                      <Download className="w-4 h-4 mr-2" /> Export
+                      <Download className="w-4 h-4 mr-2" /> ማውረጃ
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="rounded-2xl p-2 w-56 shadow-2xl border-none mt-2">
@@ -495,7 +504,7 @@ export function BPMNFlowForgeApp() {
                     <div className="flex items-center gap-4">
                       <div className="w-11 h-11 bg-[#1e3a8a] rounded-2xl flex items-center justify-center text-white font-black text-[11px] shadow-xl border-2 border-white">ITB</div>
                       <div>
-                        <h3 className="text-[12px] font-black text-slate-900">የቢሮ መልዕክት መለዋወጫ (Messenger)</h3>
+                        <h3 className="text-[12px] font-black text-slate-900">የቢሮ ሜሴንጀር (Office Messenger)</h3>
                         <div className="flex items-center gap-2 mt-1">
                           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
                           <span className="text-[9px] font-black text-green-600 uppercase tracking-widest">Active Bureau Network</span>
@@ -541,10 +550,10 @@ export function BPMNFlowForgeApp() {
               <TabsContent value="dashboard" className="h-full m-0 overflow-auto outline-none flex flex-col gap-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 h-full min-h-[500px]">
                   <Card className="shadow-2xl border-none rounded-[2.5rem] bg-white p-8 flex flex-col">
-                    <h3 className="text-[11px] font-black uppercase tracking-widest mb-6 flex items-center gap-3"><BarChart className="w-5 h-5 text-[#1e3a8a]" /> የአፈጻጸም ግራፍ (AI Analysis)</h3>
+                    <h3 className="text-[11px] font-black uppercase tracking-widest mb-6 flex items-center gap-3"><BarChart className="w-5 h-5 text-[#1e3a8a]" /> የአፈጻጸም ግራፍ (Automated)</h3>
                     <div className="flex-1 min-h-[300px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={statsData}>
+                        <AreaChart data={automatedAnalysis.graphData}>
                           <defs>
                             <linearGradient id="colorEff" x1="0" y1="0" x2="0" y2="1">
                               <stop offset="5%" stopColor="#1e3a8a" stopOpacity={0.4}/>
@@ -562,30 +571,30 @@ export function BPMNFlowForgeApp() {
                     <div className="mt-6 p-6 bg-blue-50 rounded-3xl border border-blue-100 shadow-inner">
                       <div className="flex items-center gap-3 mb-3">
                         <TrendingUp className="w-5 h-5 text-blue-600" />
-                        <span className="text-[11px] font-black text-blue-800 uppercase">አጠቃላይ የአፈጻጸም ግምገማ</span>
+                        <span className="text-[11px] font-black text-blue-800 uppercase">አጠቃላይ የአፈጻጸም ትንተና</span>
                       </div>
-                      <p className="text-[11px] font-medium text-blue-700 leading-relaxed italic">"ባለፉት ቀናት በተከናወኑ ስራዎች ላይ የተገኘው አማካኝ ውጤት 87% ሲሆን፣ ይህም ካለፈው ሳምንት በ12% ጭማሪ አሳይቷል። አብዛኞቹ ሰነዶች በተቀመጠላቸው የጊዜ ገደብ ውስጥ ተጠናቀዋል።"</p>
+                      <p className="text-[11px] font-medium text-blue-700 leading-relaxed italic">"{automatedAnalysis.narrative}"</p>
                     </div>
                   </Card>
                   
                   <Card className="shadow-2xl border-none rounded-[2.5rem] bg-white p-8 flex flex-col">
-                    <h3 className="text-[11px] font-black uppercase tracking-widest mb-6 flex items-center gap-3"><Zap className="w-5 h-5 text-amber-500" /> ትኩረት የሚሹ ጉዳዮች (Automatic Narrative)</h3>
+                    <h3 className="text-[11px] font-black uppercase tracking-widest mb-6 flex items-center gap-3"><Zap className="w-5 h-5 text-amber-500" /> ትኩረት የሚሹ ጉዳዮች (Automatic Log)</h3>
                     <ScrollArea className="flex-1">
                       <div className="space-y-6 pr-4">
                         <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-sm">
-                          <h4 className="text-[10px] font-black text-slate-500 uppercase mb-4">በAI የተተነተኑ ዋና ዋና ነጥቦች፦</h4>
+                          <h4 className="text-[10px] font-black text-slate-500 uppercase mb-4">በሲስተሙ የተለዩ ዋና ዋና ነጥቦች፦</h4>
                           <ul className="space-y-4">
                             <li className="flex gap-4 items-start animate-in slide-in-from-left-4">
                               <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
-                              <span className="text-[12px] font-bold text-slate-700 leading-snug">የዲጂታል ትራንስፎርሜሽን እቅድ 95% አፈጻጸም ላይ ይገኛል።</span>
+                              <span className="text-[12px] font-bold text-slate-700 leading-snug">በአጠቃላይ {automatedAnalysis.total} ሰነዶች ተመዝግበዋል።</span>
                             </li>
                             <li className="flex gap-4 items-start animate-in slide-in-from-left-4" style={{animationDelay: '150ms'}}>
                               <CheckCircle2 className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                              <span className="text-[12px] font-bold text-slate-700 leading-snug">የሳይበር ደህንነት ክትትል ሪፖርቶች በ2 ቀናት መዘግየት ታይቶባቸዋል።</span>
+                              <span className="text-[12px] font-bold text-slate-700 leading-snug">ከእነዚህ ውስጥ {automatedAnalysis.approved} ሰነዶች ተረጋግጠው ጽድቀዋል።</span>
                             </li>
                             <li className="flex gap-4 items-start animate-in slide-in-from-left-4" style={{animationDelay: '300ms'}}>
-                              <CheckCircle2 className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-                              <span className="text-[12px] font-bold text-slate-700 leading-snug">የሃርድዌር ጥገና ድጋፍ ጥያቄዎች በ15% ጨምረዋል።</span>
+                              <CheckCircle2 className={`w-5 h-5 ${automatedAnalysis.pending > 0 ? 'text-red-500' : 'text-green-500'} shrink-0 mt-0.5`} />
+                              <span className="text-[12px] font-bold text-slate-700 leading-snug">ቀሪ {automatedAnalysis.pending} ሰነዶች ክትትልና ማረጋገጫ ይፈልጋሉ።</span>
                             </li>
                           </ul>
                         </div>
@@ -600,78 +609,71 @@ export function BPMNFlowForgeApp() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="social" className="h-full m-0 flex flex-col gap-4 outline-none overflow-hidden">
+              <TabsContent value="daily-log" className="h-full m-0 flex flex-col gap-3 outline-none overflow-hidden">
                 <Card className="shadow-2xl border-none rounded-[2.5rem] bg-white p-6 shrink-0 border-b-8 border-[#1e3a8a]">
-                  <div className="flex gap-5">
-                    <Avatar className="w-14 h-14 border-4 border-[#1e3a8a]/10 shadow-xl shrink-0">
-                      <AvatarFallback className="bg-[#1e3a8a] text-white font-black text-lg">{user?.displayName?.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 space-y-4">
-                      <Textarea value={socialInput} onChange={(e) => setSocialInput(e.target.value)} placeholder="ዜና ወይም መልዕክት እዚህ ያጋሩ..." className="min-h-[80px] bg-slate-50 border-none rounded-[1.5rem] text-[13px] font-medium resize-none shadow-inner p-4" />
-                      
-                      {selectedSocialImage && (
-                        <div className="relative w-40 h-40 rounded-[1.5rem] overflow-hidden border shadow-2xl group animate-in zoom-in-95">
-                          <img src={selectedSocialImage} className="w-full h-full object-cover" />
-                          <button onClick={() => setSelectedSocialImage(null)} className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1.5 hover:bg-red-500 transition-colors"><XCircle className="w-4 h-4" /></button>
-                        </div>
-                      )}
-
-                      <div className="flex justify-between items-center pt-2">
-                        <div className="flex gap-3">
-                          <input type="file" ref={socialFileInputRef} className="hidden" onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              const r = new FileReader();
-                              r.onload = (ev) => setSelectedSocialImage(ev.target?.result as string);
-                              r.readAsDataURL(file);
-                            }
-                          }} accept="image/*" />
-                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-slate-500 font-black text-[11px] hover:bg-slate-100 px-5" onClick={() => socialFileInputRef.current?.click()}>
-                            <ImageIcon className="w-4 h-4 mr-2.5 text-blue-500" /> ፎቶ ጨምር
-                          </Button>
-                        </div>
-                        <Button onClick={handlePostSocial} className="h-10 px-8 rounded-xl bg-[#1e3a8a] text-white font-black text-[11px] uppercase shadow-2xl active:scale-95 transition-all"><Send className="w-4 h-4 mr-2.5" /> ልጥፍ (Post)</Button>
-                      </div>
+                  <div className="flex flex-col gap-4">
+                    <h3 className="text-[11px] font-black uppercase tracking-widest flex items-center gap-3"><Briefcase className="w-5 h-5 text-[#1e3a8a]" /> የቀን ውሎ መመዝገቢያ (Daily Activity Log)</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                      <Input value={logTask} onChange={(e) => setLogTask(e.target.value)} placeholder="የስራው አይነት (ለምሳሌ፡ ሪፖርት ማዘጋጀት)..." className="h-11 bg-slate-50 border-none rounded-xl text-[11px] font-bold" />
+                      <Input value={logDuration} onChange={(e) => setLogDuration(e.target.value)} placeholder="የፈጀው ሰዓት (ለምሳሌ፡ 2 ሰዓት)..." className="h-11 bg-slate-50 border-none rounded-xl text-[11px] font-bold" />
+                      <select value={logStatus} onChange={(e) => setLogStatus(e.target.value)} className="h-11 bg-slate-50 border-none rounded-xl text-[11px] font-bold px-4 appearance-none outline-none">
+                        <option value="ተጠናቋል">ተጠናቋል</option>
+                        <option value="በሂደት ላይ">በሂደት ላይ</option>
+                        <option value="ተጀምሯል">ተጀምሯል</option>
+                      </select>
+                      <Button onClick={handleAddDailyLog} className="h-11 rounded-xl bg-[#1e3a8a] text-white font-black text-[11px] uppercase shadow-xl active:scale-95 transition-all"><PlusIcon className="w-4 h-4 mr-2" /> መዝግብ</Button>
                     </div>
                   </div>
                 </Card>
-                <ScrollArea className="flex-1">
-                  <div className="space-y-6 pb-20">
-                    {socialPosts.length === 0 ? (
-                      <div className="p-20 text-center opacity-20"><ImageIcon className="w-20 h-20 mx-auto mb-6 text-slate-300" /><p className="text-[12px] font-black uppercase">ምንም ልጥፍ የለም</p></div>
-                    ) : socialPosts.map(post => (
-                      <Card key={post.id} className="shadow-xl border-none rounded-[2.5rem] bg-white overflow-hidden animate-in fade-in slide-in-from-bottom-4">
-                        <CardHeader className="p-6 flex flex-row items-center gap-4">
-                          <Avatar className="w-11 h-11 border-2 shadow-md shrink-0">
-                            <AvatarFallback className="bg-[#1e3a8a] text-white font-black text-[11px]">{post.authorName.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-[12px] font-black text-slate-900 truncate">{post.authorName}</h4>
-                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">{post.authorPosition} • {new Date(post.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
-                          </div>
-                          {(isAdmin || post.uploaderId === user?.uid) && (
-                            <Button variant="ghost" size="icon" onClick={() => deleteDocumentNonBlocking(doc(db!, 'social_posts', post.id))} className="h-9 w-9 rounded-xl text-slate-300 hover:text-red-600 active:scale-90 transition-all">
-                              <Trash2 className="w-5 h-5" />
-                            </Button>
-                          )}
-                        </CardHeader>
-                        <CardContent className="px-7 pb-7 pt-0 space-y-4">
-                          {post.content && <p className="text-[13px] font-medium leading-relaxed text-slate-700">{post.content}</p>}
-                          {post.imageUrl && (
-                            <div className="rounded-[2rem] overflow-hidden border-4 border-slate-50 bg-slate-50 max-h-[500px] shadow-lg">
-                              <img src={post.imageUrl} alt="Social content" className="w-full h-auto object-contain mx-auto" />
-                            </div>
-                          )}
-                          <div className="flex items-center gap-8 pt-5 border-t border-slate-50">
-                            <button className="flex items-center gap-2 text-[11px] font-black text-slate-400 hover:text-red-500 transition-colors active:scale-110"><Heart className="w-5 h-5" /> {post.likes || 0}</button>
-                            <button className="flex items-center gap-2 text-[11px] font-black text-slate-400 hover:text-blue-500 transition-colors active:scale-110"><MessageSquare className="w-5 h-5" /> {post.comments || 0}</button>
-                            <button className="flex items-center gap-2 text-[11px] font-black text-slate-400 hover:text-green-500 transition-colors ml-auto active:scale-110"><Share2 className="w-5 h-5" /> አጋራ</button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                
+                <Card className="flex-1 shadow-2xl border-none rounded-[2.5rem] bg-white overflow-hidden flex flex-col">
+                  <div className="p-5 border-b bg-slate-50/50 flex items-center justify-between">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><CalendarDays className="w-4 h-4" /> የባለሙያዎች የቀን እንቅስቃሴ ዝርዝር</h4>
                   </div>
-                </ScrollArea>
+                  <ScrollArea className="flex-1">
+                    <Table>
+                      <TableHeader className="bg-slate-50/50">
+                        <TableRow>
+                          <TableHead className="text-[10px] font-black uppercase">ባለሙያ</TableHead>
+                          <TableHead className="text-[10px] font-black uppercase">የተከናወነ ተግባር</TableHead>
+                          <TableHead className="text-[10px] font-black uppercase">የፈጀው ሰዓት</TableHead>
+                          <TableHead className="text-[10px] font-black uppercase">ሁኔታ</TableHead>
+                          <TableHead className="text-[10px] font-black uppercase">ቀን</TableHead>
+                          <TableHead className="text-right"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {dailyLogs.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={6} className="h-60 text-center opacity-20">
+                              <Briefcase className="w-12 h-12 mx-auto mb-4" />
+                              <p className="text-[10px] font-black uppercase">ምንም የተመዘገበ የቀን ውሎ የለም</p>
+                            </TableCell>
+                          </TableRow>
+                        ) : dailyLogs.map(log => (
+                          <TableRow key={log.id} className="hover:bg-slate-50 transition-colors">
+                            <TableCell className="text-[11px] font-bold text-[#1e3a8a]">{log.uploaderName}</TableCell>
+                            <TableCell className="text-[11px] font-medium">{log.taskName}</TableCell>
+                            <TableCell className="text-[11px] font-bold">{log.duration}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className={`text-[9px] font-black uppercase border-none h-6 px-3 ${log.status === 'ተጠናቋል' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
+                                {log.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-[10px] text-slate-400 font-bold">{new Date(log.timestamp).toLocaleDateString('en-GB')}</TableCell>
+                            <TableCell className="text-right">
+                              {(isAdmin || log.uploaderId === user?.uid) && (
+                                <Button variant="ghost" size="icon" onClick={() => deleteDocumentNonBlocking(doc(db!, 'daily_logs', log.id))} className="h-8 w-8 text-red-300 hover:text-red-600 rounded-xl transition-all">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                </Card>
               </TabsContent>
             </div>
           </Tabs>
@@ -680,9 +682,9 @@ export function BPMNFlowForgeApp() {
 
       <footer className="px-8 h-10 bg-white border-t flex justify-between items-center shrink-0 shadow-inner">
         <div className="flex gap-4 items-center text-[8px] font-black text-slate-400 uppercase tracking-widest">
-          <span className="text-[#1e3a8a]">ITB Enterprise v6.5 (Worqu Pro)</span>
+          <span className="text-[#1e3a8a]">ITB Enterprise v7.0 (Worqu Pro)</span>
           <span className="text-slate-200">|</span>
-          <span>Zero-Failure Sync Protocol Engaged</span>
+          <span>Automated Performance Protocol Engaged</span>
         </div>
         <div className="flex items-center gap-2.5 px-4 py-1.5 bg-green-50 rounded-full border border-green-100 shadow-sm">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
@@ -693,3 +695,8 @@ export function BPMNFlowForgeApp() {
   );
 }
 
+function PlusIcon(props: any) {
+  return (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+  )
+}
