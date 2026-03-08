@@ -182,7 +182,10 @@ export function BPMNFlowForgeApp() {
   };
 
   const handleGenerate = () => {
-    if (!input.trim()) return;
+    if (!input.trim()) {
+      toast({ title: "መረጃ ይጎድላል", description: "እባክዎ የሂደት ተግባራትን ይጻፉ", variant: "destructive" });
+      return;
+    }
     const result = generateBPMN(input, title || "የሂደት ዲያግራም");
     if (result) {
       setXmlResult(result);
@@ -191,10 +194,49 @@ export function BPMNFlowForgeApp() {
     }
   };
 
+  const handleManualUpload = async () => {
+    if (!selectedFile || !user || !db) return;
+    setIsUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const dataUri = reader.result as string;
+        const newFile: Omit<UploadedFile, 'id'> = {
+          name: selectedFile.name.split('.')[0],
+          category: uploadCategory || 'ሰነድ',
+          fileName: selectedFile.name,
+          fileSize: `${(selectedFile.size / 1024).toFixed(1)} KB`,
+          uploadDate: new Date().toISOString(),
+          fileUrl: dataUri,
+          type: selectedFile.type,
+          status: 'በሂደት ላይ',
+          uploaderId: user.uid,
+          expertName: user.displayName || "ባለሙያ",
+          sector: uploadSector || "አጠቃላይ",
+          createdAt: Timestamp.now()
+        };
+        await addDocumentNonBlocking(collection(db, 'documents'), newFile);
+        setIsUploadOpen(false);
+        setSelectedFile(null);
+        setUploadCategory("");
+        setUploadSector("");
+        toast({ title: "ተሳክቷል", description: "ፋይሉ በትክክል ተመዝግቧል" });
+      };
+      reader.readAsDataURL(selectedFile);
+    } catch (err) {
+      toast({ title: "ስህተት", description: "ፋይሉን መጫን አልተቻለም", variant: "destructive" });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleSaveToVault = async () => {
     if (!user || !db) return router.push('/login');
     const currentXml = await viewerRef.current?.getXML() || xmlResult;
-    if (!currentXml) return;
+    if (!currentXml) {
+      toast({ title: "ዲያግራም የለም", description: "መጀመሪያ ዲያግራም ማዘጋጀት ይኖርብዎታል", variant: "destructive" });
+      return;
+    }
     setIsSaving(true);
     try {
       const blob = new Blob([currentXml], { type: 'application/xml' });
@@ -202,7 +244,7 @@ export function BPMNFlowForgeApp() {
       reader.onloadend = async () => {
         const dataUri = reader.result as string;
         const newFile: Omit<UploadedFile, 'id'> = {
-          name: title || "BPMN Diagram",
+          name: title || "የሂደት ካርታ",
           category: 'BPMN Diagram',
           fileName: `${(title || "diagram").replace(/\s+/g, '-')}.bpmn`,
           fileSize: "BPMN",
@@ -216,7 +258,7 @@ export function BPMNFlowForgeApp() {
           createdAt: Timestamp.now()
         };
         await addDocumentNonBlocking(collection(db, 'documents'), newFile);
-        toast({ title: "ተቀምጧል", description: "መዝገብ ቤት ገብቷል" });
+        toast({ title: "ተቀምጧል", description: "ካርታው መዝገብ ቤት ገብቷል" });
       };
       reader.readAsDataURL(blob);
     } catch (err) {
@@ -235,33 +277,40 @@ export function BPMNFlowForgeApp() {
 
   const handlePostSocial = async () => {
     if (!socialInput.trim() || !user || !db) return;
-    const newPost: Omit<SocialPost, 'id'> = {
-      authorName: user.displayName || "ባለሙያ",
-      authorPosition: "ITB Staff",
-      content: socialInput,
-      imageUrl: selectedSocialImage || undefined,
-      likes: 0,
-      comments: 0,
-      timestamp: new Date().toISOString(),
-      uploaderId: user.uid
-    };
-    await addDocumentNonBlocking(collection(db, 'social_posts'), { ...newPost, createdAt: Timestamp.now() });
-    setSocialInput("");
-    setSelectedSocialImage(null);
-    toast({ title: "ተለጠፈ", description: "መልዕክትዎ ለሰራተኞች ደርሷል" });
+    try {
+      const newPost: Omit<SocialPost, 'id'> = {
+        authorName: user.displayName || "ባለሙያ",
+        authorPosition: "ITB Staff",
+        content: socialInput,
+        imageUrl: selectedSocialImage || undefined,
+        likes: 0,
+        comments: 0,
+        timestamp: new Date().toISOString(),
+        uploaderId: user.uid
+      };
+      await addDocumentNonBlocking(collection(db, 'social_posts'), { ...newPost, createdAt: Timestamp.now() });
+      setSocialInput("");
+      setSelectedSocialImage(null);
+      toast({ title: "ተለጠፈ", description: "መልዕክትዎ ለሰራተኞች ደርሷል" });
+    } catch (e) {
+      toast({ title: "ስህተት", description: "መለጠፍ አልተቻለም", variant: "destructive" });
+    }
   };
 
   const handleSendFeedback = async () => {
     if (!feedbackInput.trim() || !user || !db) return;
-    await addDocumentNonBlocking(collection(db, 'feedback'), {
-      senderName: user.displayName || "ተጠቃሚ",
-      content: feedbackInput,
-      timestamp: new Date().toISOString(),
-      uploaderId: user.uid,
-      createdAt: Timestamp.now()
-    });
-    setFeedbackInput("");
-    toast({ title: "ተልኳል", description: "መልዕክትዎ ተመዝግቧል" });
+    try {
+      await addDocumentNonBlocking(collection(db, 'feedback'), {
+        senderName: user.displayName || "ተጠቃሚ",
+        content: feedbackInput,
+        timestamp: new Date().toISOString(),
+        uploaderId: user.uid,
+        createdAt: Timestamp.now()
+      });
+      setFeedbackInput("");
+    } catch (e) {
+      toast({ title: "ስህተት", description: "መልዕክቱ አልተላከም", variant: "destructive" });
+    }
   };
 
   const handleDownload = (file: UploadedFile) => {
@@ -272,7 +321,7 @@ export function BPMNFlowForgeApp() {
     try {
       const link = document.createElement('a');
       link.href = file.fileUrl;
-      link.download = file.fileName || `${file.name.replace(/\s+/g, '-')}.bpmn`;
+      link.setAttribute('download', file.fileName || `${file.name.replace(/\s+/g, '-')}.bpmn`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -388,18 +437,20 @@ export function BPMNFlowForgeApp() {
               <h3 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2"><FileText className="w-3.5 h-3.5 text-slate-400" /> መዝገብ ቤት</h3>
               <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
                 <DialogTrigger asChild><Button size="sm" className="h-7 rounded-lg bg-slate-900 text-[8px] font-black uppercase shadow-lg active:scale-95"><Upload className="w-3 h-3 mr-1" /> አዲስ መዝግብ</Button></DialogTrigger>
-                <DialogContent className="max-w-md rounded-[2rem] p-8 border-none shadow-2xl animate-in zoom-in duration-300">
+                <DialogContent className="max-w-md rounded-[2rem] p-8 border-none shadow-2xl">
                   <DialogHeader><DialogTitle className="font-black text-lg text-[#1e3a8a]">አዲስ ፋይል መመዝገቢያ</DialogTitle></DialogHeader>
                   <div className="space-y-4 py-4">
-                    <Input value={uploadCategory} onChange={(e) => setUploadCategory(e.target.value)} placeholder="የፋይሉ አይነት (ለምሳሌ፡ ዲያግራም)" className="h-11 rounded-xl bg-slate-50 border-none" />
-                    <Input value={uploadSector} onChange={(e) => setUploadSector(e.target.value)} placeholder="የስራ ዘርፍ (Sector)" className="h-11 rounded-xl bg-slate-50 border-none" />
+                    <Input value={uploadCategory} onChange={(e) => setUploadCategory(e.target.value)} placeholder="የፋይሉ አይነት (ለምሳሌ፡ ዲያግራም)" className="h-11 rounded-xl bg-slate-50 border-none font-bold text-sm" />
+                    <Input value={uploadSector} onChange={(e) => setUploadSector(e.target.value)} placeholder="የስራ ዘርፍ (Sector)" className="h-11 rounded-xl bg-slate-50 border-none font-bold text-sm" />
                     <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-slate-200 rounded-3xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-all group">
-                      <Upload className="w-10 h-10 text-slate-300 mb-3 group-hover:text-[#1e3a8a] group-hover:scale-110 transition-all" />
-                      <span className="text-[10px] font-black text-slate-500 uppercase">{selectedFile ? selectedFile.name : "ፋይል ይምረጡ"}</span>
+                      <Upload className="w-10 h-10 text-slate-300 mb-3 group-hover:text-[#1e3a8a] transition-all" />
+                      <span className="text-[10px] font-black text-slate-500 uppercase px-4 text-center">{selectedFile ? selectedFile.name : "ፋይል ይምረጡ"}</span>
                       <input type="file" className="hidden" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
                     </label>
                   </div>
-                  <Button className="w-full h-12 bg-[#1e3a8a] rounded-2xl font-black uppercase shadow-xl transition-all active:scale-95" onClick={() => {}} disabled={isUploading || !selectedFile}>አጽድቅና መዝግብ</Button>
+                  <Button className="w-full h-12 bg-[#1e3a8a] rounded-2xl font-black uppercase shadow-xl" onClick={handleManualUpload} disabled={isUploading || !selectedFile}>
+                    {isUploading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "አጽድቅና መዝግብ"}
+                  </Button>
                 </DialogContent>
               </Dialog>
             </div>
@@ -460,7 +511,7 @@ export function BPMNFlowForgeApp() {
                       <Download className="w-3.5 h-3.5 mr-2" /> ዳውንሎድ (Export)
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="rounded-2xl p-2 w-56 shadow-2xl border-none animate-in slide-in-from-top-2">
+                  <DropdownMenuContent className="rounded-2xl p-2 w-56 shadow-2xl border-none">
                     <DropdownMenuItem onClick={() => viewerRef.current?.exportSVG()} className="text-[10px] font-bold p-3 cursor-pointer rounded-xl hover:bg-slate-50"><FileCode className="w-4 h-4 mr-3 text-orange-500" /> እንደ SVG አውርድ</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => viewerRef.current?.exportXML()} className="text-[10px] font-bold p-3 cursor-pointer rounded-xl hover:bg-slate-50"><FileJson className="w-4 h-4 mr-3 text-blue-500" /> እንደ BPMN አውርድ</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => viewerRef.current?.exportPNG()} className="text-[10px] font-bold p-3 cursor-pointer rounded-xl hover:bg-slate-50"><ImageIcon className="w-4 h-4 mr-3 text-green-500" /> እንደ ምስል (PNG) አውርድ</DropdownMenuItem>
@@ -487,10 +538,10 @@ export function BPMNFlowForgeApp() {
                 <Card className="shadow-xl border-none rounded-[2rem] bg-white p-5 shrink-0">
                   <div className="flex gap-4">
                     <Avatar className="w-12 h-12 border-2 border-[#1e3a8a] shadow-md">
-                      <AvatarFallback className="bg-[#1e3a8a] text-white font-black text-sm">{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                      <AvatarFallback className="bg-[#1e3a8a] text-white font-black text-sm">{user?.displayName?.charAt(0) || user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 space-y-3">
-                      <Textarea value={socialInput} onChange={(e) => setSocialInput(e.target.value)} placeholder="ዜና ወይም መልዕክት እዚህ ያጋሩ..." className="min-h-[90px] bg-slate-50 border-none rounded-2xl text-[12px] font-medium resize-none focus-visible:ring-2 focus-visible:ring-[#1e3a8a]/10" />
+                      <Textarea value={socialInput} onChange={(e) => setSocialInput(e.target.value)} placeholder="ዜና ወይም መልዕክት እዚህ ያጋሩ..." className="min-h-[90px] bg-slate-50 border-none rounded-2xl text-[12px] font-medium resize-none" />
                       
                       {selectedSocialImage && (
                         <div className="relative w-32 h-32 rounded-2xl overflow-hidden border shadow-lg group">
@@ -514,7 +565,7 @@ export function BPMNFlowForgeApp() {
                 <ScrollArea className="flex-1">
                   <div className="space-y-4 pb-10 px-1">
                     {socialPosts.map(post => (
-                      <Card key={post.id} className="shadow-lg border-none rounded-[2.2rem] bg-white overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-500">
+                      <Card key={post.id} className="shadow-lg border-none rounded-[2.2rem] bg-white overflow-hidden animate-in fade-in slide-in-from-bottom-5">
                         <CardHeader className="p-5 flex flex-row items-center gap-4">
                           <Avatar className="w-11 h-11 border shadow-sm">
                             <AvatarFallback className="bg-[#1e3a8a] text-white font-black text-xs">{post.authorName.charAt(0)}</AvatarFallback>
@@ -524,7 +575,7 @@ export function BPMNFlowForgeApp() {
                             <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">{post.authorPosition} • {new Date(post.timestamp).toLocaleTimeString()}</p>
                           </div>
                           {(isAdmin || post.uploaderId === user?.uid) && (
-                            <Button variant="ghost" size="icon" onClick={() => handleDeleteSocialPost(post.id, post.uploaderId)} className="h-9 w-9 rounded-full text-slate-300 hover:text-red-600 hover:bg-red-50 transition-all">
+                            <Button variant="ghost" size="icon" onClick={() => handleDeleteSocialPost(post.id, post.uploaderId)} className="h-9 w-9 rounded-full text-slate-300 hover:text-red-600 hover:bg-red-50">
                               <Trash2 className="w-4.5 h-4.5" />
                             </Button>
                           )}
@@ -578,7 +629,7 @@ export function BPMNFlowForgeApp() {
                                 </button>
                               )}
                             </div>
-                            <div className={`${msg.uploaderId === user?.uid ? 'bg-[#1e3a8a] text-white rounded-tr-none shadow-blue-900/10' : 'bg-slate-100 text-slate-800 rounded-tl-none shadow-slate-200/50'} p-4 rounded-3xl shadow-lg animate-in slide-in-from-bottom-1`}>
+                            <div className={`${msg.uploaderId === user?.uid ? 'bg-[#1e3a8a] text-white rounded-tr-none shadow-blue-900/10' : 'bg-slate-100 text-slate-800 rounded-tl-none shadow-slate-200/50'} p-4 rounded-3xl shadow-lg`}>
                               <p className="text-[11px] font-medium leading-relaxed">{msg.content}</p>
                             </div>
                             <span className="text-[8px] text-slate-300 font-bold mt-1 tracking-tighter">{new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
@@ -588,8 +639,8 @@ export function BPMNFlowForgeApp() {
                     </div>
                   </ScrollArea>
                   <div className="p-4 bg-white border-t flex gap-3 items-center px-6">
-                    <Input value={feedbackInput} onChange={(e) => setFeedbackInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendFeedback()} placeholder="መልዕክት ይጻፉ..." className="h-11 bg-slate-50 border-none rounded-2xl text-[11px] font-medium px-6 focus-visible:ring-2 focus-visible:ring-[#1e3a8a]/10" />
-                    <Button className="h-11 w-11 p-0 rounded-2xl bg-[#1e3a8a] text-white shadow-xl active:scale-90 transition-transform" onClick={handleSendFeedback}><Send className="w-4.5 h-4.5" /></Button>
+                    <Input value={feedbackInput} onChange={(e) => setFeedbackInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendFeedback()} placeholder="መልዕክት ይጻፉ..." className="h-11 bg-slate-50 border-none rounded-2xl text-[11px] font-medium px-6" />
+                    <Button className="h-11 w-11 p-0 rounded-2xl bg-[#1e3a8a] text-white shadow-xl active:scale-90" onClick={handleSendFeedback}><Send className="w-4.5 h-4.5" /></Button>
                   </div>
                 </Card>
               </TabsContent>
