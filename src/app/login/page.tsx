@@ -65,13 +65,6 @@ export default function LoginPage() {
         router.push('/');
       } else {
         // Master Admin Fast Access Logic
-        if (email === "workumesafint2@gmail.com") {
-          try {
-             await signInWithEmailAndPassword(auth, email, password);
-          } catch (e) {
-             console.warn("Admin authentication failed. Manual login required if password differs.");
-          }
-        }
         await signInWithEmailAndPassword(auth, email, password);
         toast({ title: "እንኳን ደህና መጡ", description: "ወደ ሲስተሙ በመግባት ላይ ነዎት" });
       }

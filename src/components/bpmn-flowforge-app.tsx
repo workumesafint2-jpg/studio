@@ -304,8 +304,10 @@ export function BPMNFlowForgeApp() {
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden font-sans">
       <header className="flex items-center justify-between px-6 py-2 bg-white border-b shrink-0 shadow-sm z-50 h-14">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#1e3a8a] rounded-xl flex items-center justify-center shadow-lg border-2 border-white">
-            <span className="text-white font-black text-xs">ITB</span>
+          <div className="w-10 h-10 bg-[#1e3a8a] rounded-xl flex items-center justify-center shadow-lg border-2 border-white overflow-hidden">
+             <Avatar className="h-full w-full">
+                <AvatarFallback className="bg-[#1e3a8a] text-white text-[10px] font-black">ITB</AvatarFallback>
+             </Avatar>
           </div>
           <div>
             <h1 className="text-xs font-black text-[#1e3a8a] tracking-tight uppercase leading-none mb-1">የኢኖቬሽንና ቴክኖሎጂ ቢሮ</h1>
