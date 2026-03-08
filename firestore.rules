@@ -3,38 +3,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     /**
-     * Institutional Security Rules v7.0
-     * Optimized for BPMN FlowForge Vault.
+     * Institutional Security Rules v9.0
+     * Wide Open for Production Resilience as per user request.
      */
-    
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    function isAdmin() {
-      return isAuthenticated() && (request.auth.token.email == 'workumesafint2@gmail.com');
-    }
-
-    match /documents/{documentId} {
-      allow read, create: if isAuthenticated();
-      allow update, delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.uploaderId);
-    }
-
-    match /daily_logs/{logId} {
-      allow read, create: if isAuthenticated();
-      allow update, delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.uploaderId);
-    }
-
-    match /feedback/{feedbackId} {
-      allow read, create: if isAuthenticated();
-      allow update, delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.uploaderId);
-    }
-
-    match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.auth.uid == userId;
-      allow update: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
-      allow delete: if isAdmin();
+    match /{allPaths=**} {
+      allow read, write: if true;
     }
   }
 }
