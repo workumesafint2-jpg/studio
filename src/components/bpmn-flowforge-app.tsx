@@ -34,7 +34,8 @@ import {
   Plus,
   ArrowRightLeft,
   Settings,
-  BriefcaseBusiness
+  BriefcaseBusiness,
+  FileUp
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -126,7 +127,7 @@ export function BPMNFlowForgeApp() {
   const [globalSearch, setGlobalSearch] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
-  // Advanced Upload Fields
+  // Metadata Fields
   const [upName, setUpName] = useState("");
   const [upSector, setUpSector] = useState("");
   const [upDirectorate, setUpDirectorate] = useState("");
@@ -233,21 +234,34 @@ export function BPMNFlowForgeApp() {
     }
   };
 
-  const handleManualUpload = async () => {
+  const handleFileUpload = async () => {
     if (!upName.trim() || !user || !db) {
       toast({ title: "መረጃ ይጎድላል", description: "እባክዎ የሰነድ ስም ይጥቀሱ", variant: "destructive" });
       return;
     }
+
     setIsSaving(true);
     try {
+      let fileUrl = "data:text/plain;base64,U2FtcGxlIERvY3VtZW50"; // Default
+      let fileName = upName;
+
+      if (selectedFile) {
+        fileName = selectedFile.name;
+        fileUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(selectedFile);
+        });
+      }
+
       await addDocumentNonBlocking(collection(db, 'documents'), {
         name: upName,
         category: upCategory,
-        fileName: upName,
-        fileSize: "N/A",
+        fileName: fileName,
+        fileSize: selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : "N/A",
         uploadDate: new Date().toISOString(),
-        fileUrl: "data:text/plain;base64,U2FtcGxlIERvY3VtZW50", // Placeholder for manual entries
-        type: 'institutional/record',
+        fileUrl: fileUrl,
+        type: selectedFile ? selectedFile.type : 'institutional/record',
         status: 'በሂደት ላይ',
         uploaderId: user.uid,
         expertName: upExpertName || user.displayName || "ባለሙያ",
@@ -256,12 +270,11 @@ export function BPMNFlowForgeApp() {
         team: upTeam,
         createdAt: Timestamp.now()
       });
+
       setIsSaving(false);
       setIsUploadOpen(false);
       setUpName("");
-      setUpSector("");
-      setUpDirectorate("");
-      setUpTeam("");
+      setSelectedFile(null);
       toast({ title: "ተሳክቷል", description: "ሰነዱ በመዝገብ ቤት ገብቷል" });
     } catch (e) {
       setIsSaving(false);
@@ -451,10 +464,14 @@ export function BPMNFlowForgeApp() {
             <div className="p-4 border-b flex items-center justify-between bg-slate-50/30">
               <h3 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-slate-400"><FileText className="w-4 h-4" /> መዝገብ ቤት</h3>
               <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-                <DialogTrigger asChild><Button size="sm" className="h-7 rounded-md bg-slate-900 text-[9px] font-black uppercase px-3 shadow-md"><Upload className="w-3.5 h-3.5 mr-1" /> አዲስ መዝግብ</Button></DialogTrigger>
+                <DialogTrigger asChild><Button size="sm" className="h-7 rounded-md bg-slate-900 text-[9px] font-black uppercase px-3 shadow-md"><Upload className="w-3.5 h-3.5 mr-1" /> ፋይል መጫኛ</Button></DialogTrigger>
                 <DialogContent className="max-w-lg rounded-3xl p-8 border-none shadow-2xl">
-                  <DialogHeader><DialogTitle className="font-black text-lg text-[#1e3a8a] text-center mb-6 uppercase tracking-wider">አዲስ ሰነድ መመዝገቢያ</DialogTitle></DialogHeader>
+                  <DialogHeader><DialogTitle className="font-black text-lg text-[#1e3a8a] text-center mb-6 uppercase tracking-wider">የሰነድ መመዝገቢያ</DialogTitle></DialogHeader>
                   <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2 space-y-1">
+                      <label className="text-[9px] font-black text-slate-400 uppercase ml-1">ፋይል ይምረጡ</label>
+                      <Input type="file" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold pt-2 cursor-pointer" />
+                    </div>
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase ml-1">የሰነዱ ስም</label>
                       <Input value={upName} onChange={(e) => setUpName(e.target.value)} placeholder="ስም..." className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold" />
@@ -480,7 +497,7 @@ export function BPMNFlowForgeApp() {
                       <Input value={upExpertName} onChange={(e) => setUpExpertName(e.target.value)} placeholder="ባለሙያ..." className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold" />
                     </div>
                   </div>
-                  <Button className="w-full h-11 bg-[#1e3a8a] rounded-xl font-black uppercase shadow-lg text-[10px] mt-8" onClick={handleManualUpload} disabled={isSaving}>
+                  <Button className="w-full h-11 bg-[#1e3a8a] rounded-xl font-black uppercase shadow-lg text-[10px] mt-8" onClick={handleFileUpload} disabled={isSaving}>
                     {isSaving ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "አጽድቅና መዝግብ"}
                   </Button>
                 </DialogContent>
@@ -580,15 +597,17 @@ export function BPMNFlowForgeApp() {
                   <Card className="shadow-lg border-none rounded-2xl bg-white p-6 flex flex-col">
                     <h3 className="text-[10px] font-black uppercase tracking-widest mb-6 flex items-center gap-2 text-slate-400"><BarChart className="w-4 h-4 text-[#1e3a8a]" /> የቢሮ አፈጻጸም ግራፍ</h3>
                     <div className="flex-1 min-h-[250px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={automatedAnalysis.graphData}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                          <XAxis dataKey="name" fontSize={8} fontWeight="black" axisLine={false} tickLine={false} />
-                          <YAxis fontSize={8} fontWeight="black" axisLine={false} tickLine={false} domain={[0, 100]} />
-                          <RechartsTooltip />
-                          <Area type="monotone" dataKey="efficiency" stroke="#1e3a8a" strokeWidth={3} fill="#1e3a8a" fillOpacity={0.05} />
-                        </AreaChart>
-                      </ResponsiveContainer>
+                      {automatedAnalysis.graphData && (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={automatedAnalysis.graphData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                            <XAxis dataKey="name" fontSize={8} fontWeight="black" axisLine={false} tickLine={false} />
+                            <YAxis fontSize={8} fontWeight="black" axisLine={false} tickLine={false} domain={[0, 100]} />
+                            <RechartsTooltip />
+                            <Area type="monotone" dataKey="efficiency" stroke="#1e3a8a" strokeWidth={3} fill="#1e3a8a" fillOpacity={0.05} />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      )}
                     </div>
                   </Card>
                   
@@ -667,7 +686,7 @@ export function BPMNFlowForgeApp() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {dailyLogs.length === 0 ? (
+                        {!dailyLogs || dailyLogs.length === 0 ? (
                           <TableRow><TableCell colSpan={5} className="h-32 text-center opacity-10"><Briefcase className="w-8 h-8 mx-auto mb-2" /><p className="text-[9px] font-black uppercase">መረጃ የለም</p></TableCell></TableRow>
                         ) : (
                           dailyLogs.map(log => (
@@ -702,7 +721,7 @@ export function BPMNFlowForgeApp() {
 
       <footer className="px-6 h-8 bg-white border-t flex justify-between items-center shrink-0">
         <div className="flex gap-4 items-center text-[8px] font-black text-slate-400 uppercase tracking-widest">
-          <span className="text-[#1e3a8a]">ITB Enterprise v9.5</span>
+          <span className="text-[#1e3a8a]">ITB Enterprise v10.0</span>
           <span>Institutional Sync Active</span>
         </div>
         <div className="flex items-center gap-2 px-3 py-0.5 bg-green-50 rounded-full border border-green-100 shadow-sm">
