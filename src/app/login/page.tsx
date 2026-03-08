@@ -6,7 +6,7 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfi
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, AlertCircle, ShieldCheck, UserPlus, LogIn } from 'lucide-react';
+import { Loader2, AlertCircle, UserPlus, LogIn, Briefcase, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -56,15 +56,17 @@ export default function LoginPage() {
           createdAt: new Date().toISOString()
         });
 
-        toast({ title: "ተመዝግበዋል", description: "አካውንትዎ በትክክል ተከፍቷል" });
+        toast({ title: "ተመዝግበዋል", description: "የቢሮ አካውንትዎ በትክክል ተከፍቷል" });
       } else {
         await signInWithEmailAndPassword(auth, email, password);
         toast({ title: "እንኳን ደህና መጡ", description: "ወደ ሲስተሙ በመግባት ላይ ነዎት" });
       }
     } catch (err: any) {
+      console.error(err);
       let msg = "መግባት አልተቻለም።";
       if (err.code === 'auth/email-already-in-use') msg = "ይህ ኢሜይል ቀድሞ ተመዝግቧል።";
       if (err.code === 'auth/invalid-credential') msg = "ኢሜይል ወይም የይለፍ ቃል ተሳስቷል፤ ወይም ገና አልተመዘገቡም።";
+      if (err.code === 'auth/weak-password') msg = "የይለፍ ቃሉ ቢያንስ 6 ፊደላት መሆን አለበት።";
       setErrorMessage(msg);
     } finally {
       setLoading(false);
@@ -78,10 +80,10 @@ export default function LoginPage() {
         <CardHeader className="text-center space-y-2 pt-8">
           <div className="mx-auto w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-2 border border-blue-100 shadow-sm text-[#1e3a8a] font-black text-xl">ITB</div>
           <CardTitle className="text-xl font-black text-[#1e3a8a] uppercase">
-            {isSignUp ? 'የአዲስ ተጠቃሚ ምዝገባ' : 'የቢሮ መግቢያ (Portal)'}
+            {isSignUp ? 'የአዲስ ሰራተኛ ምዝገባ' : 'የቢሮ መግቢያ (ITB Portal)'}
           </CardTitle>
           <CardDescription className="text-[10px] text-slate-400 uppercase font-black tracking-widest">
-            የኢኖቬሽንና ቴክኖሎጂ ቢሮ
+            የኢኖቬሽንና ቴክኖሎጂ ቢሮ ዲጂታል መድረክ
           </CardDescription>
         </CardHeader>
         <CardContent className="px-8 pb-10">
@@ -97,21 +99,21 @@ export default function LoginPage() {
             {isSignUp && (
               <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-2">
                 <div className="space-y-1">
-                  <label className="text-[9px] font-black text-slate-400 uppercase">ስም</label>
+                  <label className="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1"><User className="w-3 h-3" /> ስም</label>
                   <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="ስም" className="h-10 rounded-xl bg-slate-50 border-none font-bold text-xs shadow-inner" required />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[9px] font-black text-slate-400 uppercase">የአባት ስም</label>
+                  <label className="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1">የአባት ስም</label>
                   <Input value={fatherName} onChange={(e) => setFatherName(e.target.value)} placeholder="የአባት" className="h-10 rounded-xl bg-slate-50 border-none font-bold text-xs shadow-inner" required />
                 </div>
                 <div className="col-span-2 space-y-1">
-                  <label className="text-[9px] font-black text-slate-400 uppercase">የስራ ድርሻ</label>
-                  <Input value={jobPosition} onChange={(e) => setJobPosition(e.target.value)} placeholder="ለምሳሌ፡ ሲስተም አድሚን" className="h-10 rounded-xl bg-slate-50 border-none font-bold text-xs shadow-inner" required />
+                  <label className="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1"><Briefcase className="w-3 h-3" /> የስራ ድርሻ</label>
+                  <Input value={jobPosition} onChange={(e) => setJobPosition(e.target.value)} placeholder="ለምሳሌ፡ ሲስተም አድሚን / ዳይሬክተር" className="h-10 rounded-xl bg-slate-50 border-none font-bold text-xs shadow-inner" required />
                 </div>
               </div>
             )}
             <div className="space-y-1">
-              <label className="text-[9px] font-black text-slate-400 uppercase">ኢሜይል</label>
+              <label className="text-[9px] font-black text-slate-400 uppercase">የቢሮ ኢሜይል</label>
               <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@itb.gov.et" className="h-10 rounded-xl bg-slate-50 border-none font-bold text-xs shadow-inner" required />
             </div>
             <div className="space-y-1">
@@ -119,13 +121,13 @@ export default function LoginPage() {
               <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="h-10 rounded-xl bg-slate-50 border-none font-bold text-xs shadow-inner" required />
             </div>
             <Button type="submit" className="w-full h-11 font-black bg-[#1e3a8a] hover:bg-[#1e3a8a]/90 shadow-lg rounded-xl text-xs uppercase" disabled={loading}>
-              {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : (isSignUp ? <><UserPlus className="w-4 h-4 mr-2"/> አሁን ይመዝገቡ</> : <><LogIn className="w-4 h-4 mr-2"/> ይግቡ</>)}
+              {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : (isSignUp ? <><UserPlus className="w-4 h-4 mr-2"/> አሁኑኑ ይመዝገቡ</> : <><LogIn className="w-4 h-4 mr-2"/> ይግቡ</>)}
             </Button>
           </form>
           
-          <div className="mt-6 text-center">
-            <button onClick={() => { setIsSignUp(!isSignUp); setErrorMessage(null); }} className="text-[10px] font-black text-[#1e3a8a] uppercase hover:underline">
-              {isSignUp ? 'አካውንት አለዎት? እዚህ ይግቡ' : 'አዲስ ተጠቃሚ ነዎት? እዚህ ይመዝገቡ'}
+          <div className="mt-6 text-center border-t pt-4">
+            <button type="button" onClick={() => { setIsSignUp(!isSignUp); setErrorMessage(null); }} className="text-[10px] font-black text-[#1e3a8a] uppercase hover:underline">
+              {isSignUp ? 'አካውንት አለዎት? እዚህ ይግቡ' : 'አዲስ ሰራተኛ ነዎት? እዚህ ይመዝገቡ'}
             </button>
           </div>
         </CardContent>

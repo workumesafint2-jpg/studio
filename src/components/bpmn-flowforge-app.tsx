@@ -28,7 +28,8 @@ import {
   Save,
   CalendarDays,
   Briefcase,
-  ExternalLink
+  ExternalLink,
+  CheckCircle2
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -171,9 +172,9 @@ export function BPMNFlowForgeApp() {
   const { data: dailyLogsRaw } = useCollection<DailyLog>(dailyLogQuery);
   const { data: feedbackMessagesRaw } = useCollection<any>(feedbackQuery);
   
-  const uploadedFiles = uploadedFilesRaw || [];
-  const dailyLogs = dailyLogsRaw || [];
-  const feedbackMessages = feedbackMessagesRaw || [];
+  const uploadedFiles = useMemo(() => uploadedFilesRaw || [], [uploadedFilesRaw]);
+  const dailyLogs = useMemo(() => dailyLogsRaw || [], [dailyLogsRaw]);
+  const feedbackMessages = useMemo(() => feedbackMessagesRaw || [], [feedbackMessagesRaw]);
 
   const filteredDocuments = useMemo(() => {
     if (!globalSearch.trim()) return uploadedFiles;
@@ -191,7 +192,7 @@ export function BPMNFlowForgeApp() {
     
     let efficiency = 85; 
     if (totalLogs > 0) {
-      efficiency = Math.min(98, 70 + (totalDocs * 2) + (totalLogs / 2));
+      efficiency = Math.min(98, 70 + (totalDocs * 2) + (totalLogs / 10));
     }
 
     const narrative = totalLogs > 0 
@@ -228,18 +229,20 @@ export function BPMNFlowForgeApp() {
   };
 
   const handleFileUpload = async () => {
-    if (!upName.trim() || !user || !db) {
-      toast({ title: "መረጃ ይጎድላል", description: "እባክዎ የሰነድ ስም ይጥቀሱ", variant: "destructive" });
+    if (!selectedFile && !upName.trim()) {
+      toast({ title: "መረጃ ይጎድላል", description: "እባክዎ ፋይል ይምረጡ ወይም ስም ይጥቀሱ", variant: "destructive" });
       return;
     }
 
+    if (!user || !db) return;
+
     setIsSaving(true);
     try {
+      let finalName = upName.trim() || (selectedFile ? selectedFile.name : "ያልተሰየመ ሰነድ");
       let fileUrl = "data:text/plain;base64,U2FtcGxlIERvY3VtZW50"; 
-      let fileName = upName;
+      let fileName = selectedFile ? selectedFile.name : finalName;
 
       if (selectedFile) {
-        fileName = selectedFile.name;
         fileUrl = await new Promise((resolve) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result as string);
@@ -248,7 +251,7 @@ export function BPMNFlowForgeApp() {
       }
 
       await addDocumentNonBlocking(collection(db, 'documents'), {
-        name: upName,
+        name: finalName,
         category: upCategory,
         fileName: fileName,
         fileSize: selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : "N/A",
@@ -270,6 +273,7 @@ export function BPMNFlowForgeApp() {
       setSelectedFile(null);
       toast({ title: "ተሳክቷል", description: "ሰነዱ በመዝገብ ቤት ገብቷል" });
     } catch (e) {
+      console.error(e);
       setIsSaving(false);
       toast({ title: "ስህተት", description: "መመዝገብ አልተቻለም" });
     }
@@ -307,6 +311,7 @@ export function BPMNFlowForgeApp() {
       };
       reader.readAsDataURL(blob);
     } catch (e) {
+      console.error(e);
       setIsSaving(false);
       toast({ title: "ስህተት", description: "ዲያግራሙን መመዝገብ አልተቻለም" });
     }
@@ -335,6 +340,7 @@ export function BPMNFlowForgeApp() {
       setLogPlanned("");
       toast({ title: "ተመዝግቧል", description: "የቀን ውሎዎ በትክክል ተመዝግቧል" });
     } catch (e) {
+      console.error(e);
       toast({ title: "ስህተት", description: "መመዝገብ አልተቻለም" });
     }
   };
@@ -351,6 +357,7 @@ export function BPMNFlowForgeApp() {
       });
       setFeedbackInput("");
     } catch (e) { 
+      console.error(e);
       toast({ title: "ስህተት", description: "መልዕክቱ አልተላከም" }); 
     }
   };
@@ -423,7 +430,7 @@ export function BPMNFlowForgeApp() {
           <Card className="shadow-lg border-none rounded-2xl bg-white overflow-hidden shrink-0">
             <CardContent className="p-4 space-y-4">
               <h2 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                <BrainCircuit className="w-4 h-4 text-[#1e3a8a]" /> AI ካርታ ሰሪ (Architect)
+                <BrainCircuit className="w-4 h-4 text-[#1e3a8a]" /> AI ካርታ ሰሪ (BPMN)
               </h2>
               <div className="space-y-3">
                 <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="የሂደት ስም..." className="h-9 rounded-lg bg-slate-50 border-none font-bold text-[11px]" />
@@ -451,8 +458,8 @@ export function BPMNFlowForgeApp() {
                       <Input type="file" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold pt-2 cursor-pointer shadow-inner" />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] font-black text-slate-400 uppercase ml-1">የሰነዱ ስም</label>
-                      <Input value={upName} onChange={(e) => setUpName(e.target.value)} placeholder="ስም..." className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold shadow-inner" />
+                      <label className="text-[9px] font-black text-slate-400 uppercase ml-1">የሰነዱ ስም (ከተፈለገ)</label>
+                      <Input value={upName} onChange={(e) => setUpName(e.target.value)} placeholder="የሰነዱ ስም..." className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold shadow-inner" />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase ml-1">ምድብ</label>
@@ -697,7 +704,7 @@ export function BPMNFlowForgeApp() {
 
       <footer className="px-6 h-8 bg-white border-t flex justify-between items-center shrink-0">
         <div className="flex gap-4 items-center text-[8px] font-black text-slate-400 uppercase tracking-widest">
-          <span className="text-[#1e3a8a]">ITB Enterprise v11.0</span>
+          <span className="text-[#1e3a8a]">ITB Enterprise v12.0</span>
           <span>Institutional Sync Active</span>
         </div>
         <div className="flex items-center gap-2 px-3 py-0.5 bg-green-50 rounded-full border border-green-100 shadow-sm">
