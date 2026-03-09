@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -6,7 +7,7 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfi
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, AlertCircle, UserPlus, LogIn, Briefcase, User } from 'lucide-react';
+import { Loader2, AlertCircle, UserPlus, LogIn, Briefcase, User, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -125,10 +126,16 @@ export default function LoginPage() {
             </Button>
           </form>
           
-          <div className="mt-6 text-center border-t pt-4">
-            <button type="button" onClick={() => { setIsSignUp(!isSignUp); setErrorMessage(null); }} className="text-[10px] font-black text-[#1e3a8a] uppercase hover:underline">
+          <div className="mt-6 text-center border-t pt-4 space-y-3">
+            <button type="button" onClick={() => { setIsSignUp(!isSignUp); setErrorMessage(null); }} className="text-[10px] font-black text-[#1e3a8a] uppercase hover:underline block w-full">
               {isSignUp ? 'አካውንት አለዎት? እዚህ ይግቡ' : 'አዲስ ሰራተኛ ነዎት? እዚህ ይመዝገቡ'}
             </button>
+            {!isSignUp && (
+              <div className="p-3 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">አስተዳዳሪ (Admin) ከሆኑ በዚሁ ኢሜይል ይግቡ፦</p>
+                <p className="text-[9px] font-bold text-[#1e3a8a] mt-1">workumesafint2@gmail.com</p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

@@ -1,21 +1,24 @@
 
 # ወርቁ (Worku) - Smart BPMN Generator (Stable Production Build)
 
-Professional BPMN diagram generator with interactive Modeler support, optimized for APK and Desktop deployment via Next.js and Capacitor.
+Professional BPMN diagram generator with interactive Modeler support, optimized for APK and Desktop deployment.
 
-## Build Instructions (APK)
+## GitHub Token (Password) አጠቃቀም መመሪያ
+ኮድ በ GitHub በኩል ስትልክ (Push ስታደርግ) "Password" ወይም "Token" ከጠየቀህ የሚከተሉትን ደረጃዎች ተከተል፦
 
-1. **Install Dependencies**: `npm install`
-2. **Build Web Assets**: `npm run build`
-3. **Add Android Platform**: `npx cap add android`
-4. **Sync Assets**: `npx cap sync android`
-5. **Open Android Studio**: `npx cap open android`
-6. **Generate APK**: Build > Build APKs in Android Studio.
+1. GitHub ገጽህ ላይ ሂድና **Settings** ግባ።
+2. ወደታች ወርደህ **Developer settings** የሚለውን ተጫን።
+3. **Personal access tokens** -> **Tokens (classic)** ግባ።
+4. **Generate new token** የሚለውን ተጫን።
+5. ለቶክኑ ስም ስጠው (ለምሳሌ: `worku-token`) እና ቀኑን `No expiration` አድርገው።
+6. **repo** የሚለውን ሳጥን አብራ (Check አድርግ)።
+7. **Generate token** በለውና የሚመጣልህን ረጅም ኮድ ኮፒ አድርገህ ያዘው።
+8. ኮምፒውተርህ ላይ ፓስወርድ ሲጠይቅህ ይህንን ኮድ (Token) አስገባ።
 
-## Key Features
-- **Interactive Modeler**: Drag-and-drop elements, double-click to edit labels.
-- **Strict Logic**: Empty Start Events, Midpoint Flow Labels, and Side-Positioned Data Objects.
-- **Industrial Scale**: Supports complex horizontal processes on a 5000px workspace.
-- **Manual Wrap**: Use `[wrap]` in text to force a row break.
+## ቁልፍ ባህሪያት
+- **Interactive Modeler**: የካሙንዳ (Camunda) ምልክቶችን በመጠቀም መሳል።
+- **Admin Control**: በ `workumesafint2@gmail.com` መግባትና መቆጣጠር።
+- **Zero-Cost Storage**: ያለ ክፍያ ዘዴ ፋይሎችን መጫን።
+- **Daily Log**: የቀን ውሎ መመዝገቢያ ሰንጠረዥ።
 
 © 2024 ወርቁ Pro - STABLE RECOVERY BUILD.
