@@ -2,8 +2,9 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     /**
-     * Institutional Security Rules v18.0
-     * Optimized for zero-cost deployment and maximum resilience.
+     * ITB Pro: Institutional Security Rules v22.0
+     * Fully permissive to avoid 'Insufficient Permissions' errors 
+     * during institutional deployment and testing.
      */
     match /{allPaths=**} {
       allow read, write: if true;

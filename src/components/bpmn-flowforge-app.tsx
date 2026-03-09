@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -25,15 +24,12 @@ import {
   Plus,
   ArrowRightLeft,
   BriefcaseBusiness,
-  LayoutTemplate,
   Save,
   CalendarDays,
   Briefcase,
-  ExternalLink,
   CheckCircle2,
-  LayoutDashboard,
-  Clock,
-  Building2
+  Building2,
+  Clock
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -96,8 +92,6 @@ interface UploadedFile {
   uploaderId: string;
   expertName?: string;
   sector?: string;
-  directorate?: string;
-  team?: string;
   createdAt?: any;
 }
 
@@ -611,7 +605,7 @@ export function BPMNFlowForgeApp() {
                   <Card className="shadow-lg border-none rounded-2xl bg-white p-6 flex flex-col">
                     <h3 className="text-[10px] font-black uppercase tracking-widest mb-6 flex items-center gap-2 text-slate-400"><BarChart className="w-4 h-4 text-[#1e3a8a]" /> የቢሮ አፈጻጸም ግራፍ (Daily)</h3>
                     <div className="flex-1 min-h-[300px]">
-                      {automatedAnalysis.graphData && (
+                      {automatedAnalysis.graphData && automatedAnalysis.graphData.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
                           <AreaChart data={automatedAnalysis.graphData}>
                             <defs>
@@ -627,6 +621,8 @@ export function BPMNFlowForgeApp() {
                             <Area type="monotone" dataKey="efficiency" stroke="#1e3a8a" strokeWidth={3} fillOpacity={1} fill="url(#colorEff)" />
                           </AreaChart>
                         </ResponsiveContainer>
+                      ) : (
+                        <div className="h-full flex items-center justify-center opacity-20"><Loader2 className="animate-spin" /></div>
                       )}
                     </div>
                   </Card>
