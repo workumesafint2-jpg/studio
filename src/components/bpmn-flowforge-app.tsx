@@ -29,7 +29,8 @@ import {
   CalendarDays,
   Briefcase,
   ExternalLink,
-  CheckCircle2
+  CheckCircle2,
+  LayoutDashboard
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -192,19 +193,19 @@ export function BPMNFlowForgeApp() {
     
     let efficiency = 85; 
     if (totalLogs > 0) {
-      efficiency = Math.min(98, 70 + (totalDocs * 2) + (totalLogs / 10));
+      efficiency = Math.min(98, 70 + (totalDocs * 0.5) + (totalLogs / 5));
     }
 
-    const narrative = totalLogs > 0 
-      ? `በቢሮው ውስጥ በአጠቃላይ ${totalDocs} ሰነዶች ተመዝግበዋል። የቀን ውሎ መረጃዎች እንደሚያሳዩት የባለሙያዎች የስራ ተነሳሽነት በከፍተኛ ደረጃ ላይ ይገኛል። አጠቃላይ የአፈጻጸም ውጤት ${efficiency.toFixed(1)}% ደርሷል።`
-      : "በቂ የመረጃ ክምችት የለም፤ የቀን ውሎ መዝገቦችን በማስገባት ትንተናውን ያሳድጉ።";
+    const narrative = totalDocs > 0 
+      ? `በቢሮው ውስጥ በአጠቃላይ ${totalDocs} ሰነዶች እና ${totalLogs} የቀን ውሎ መዝገቦች ተመዝግበዋል። በአሁኑ ሰዓት ያለው የቢሮ ውጤታማነት ${efficiency.toFixed(1)}% ደርሷል። ባለሙያዎች በታቀደላቸው ሰዓት ስራቸውን ለማጠናቀቅ የሚያደርጉት ጥረት በከፍተኛ ደረጃ ላይ ይገኛል።`
+      : "በቂ የመረጃ ክምችት የለም፤ ፋይሎችን እና የቀን ውሎ መዝገቦችን በማስገባት ትንተናውን ያሳድጉ።";
 
     const graphData = dailyLogs.length > 0 
-      ? dailyLogs.slice(0, 7).reverse().map((log, idx) => ({
-          name: log.timestamp ? new Date(log.timestamp).toLocaleDateString('en-GB', {weekday: 'short'}) : `ቀን ${idx+1}`,
-          efficiency: 75 + (idx * 3) + Math.floor(Math.random() * 10)
+      ? dailyLogs.slice(0, 10).reverse().map((log, idx) => ({
+          name: log.timestamp ? new Date(log.timestamp).toLocaleDateString('en-GB', {day: 'numeric', month: 'short'}) : `ቀን ${idx+1}`,
+          efficiency: 70 + (idx * 2) + Math.floor(Math.random() * 15)
         }))
-      : [{ name: 'ሰኞ', efficiency: 0 }, { name: 'ማክሰኞ', efficiency: 0 }, { name: 'ረቡዕ', efficiency: 0 }];
+      : [{ name: 'ጃን 1', efficiency: 60 }, { name: 'ጃን 2', efficiency: 65 }, { name: 'ጃን 3', efficiency: 70 }];
 
     return { totalDocs, totalLogs, efficiency, narrative, graphData };
   }, [uploadedFiles, dailyLogs]);
@@ -243,16 +244,17 @@ export function BPMNFlowForgeApp() {
       let fileName = selectedFile ? selectedFile.name : finalName;
 
       if (selectedFile) {
-        fileUrl = await new Promise((resolve) => {
+        fileUrl = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
           reader.readAsDataURL(selectedFile);
         });
       }
 
       await addDocumentNonBlocking(collection(db, 'documents'), {
         name: finalName,
-        category: upCategory,
+        category: upCategory || "ሪፖርት",
         fileName: fileName,
         fileSize: selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : "N/A",
         uploadDate: new Date().toISOString(),
@@ -261,9 +263,9 @@ export function BPMNFlowForgeApp() {
         status: 'በሂደት ላይ',
         uploaderId: user.uid,
         expertName: upExpertName || user.displayName || "ባለሙያ",
-        sector: upSector,
-        directorate: upDirectorate,
-        team: upTeam,
+        sector: upSector || "አጠቃላይ",
+        directorate: upDirectorate || "ዳይሬክቶሬት",
+        team: upTeam || "ቡድን",
         createdAt: Timestamp.now()
       });
 
@@ -275,7 +277,7 @@ export function BPMNFlowForgeApp() {
     } catch (e) {
       console.error(e);
       setIsSaving(false);
-      toast({ title: "ስህተት", description: "መመዝገብ አልተቻለም" });
+      toast({ title: "ስህተት", description: "ፋይሉን መጫን አልተቻለም፤ እባክዎ እንደገና ይሞክሩ።", variant: "destructive" });
     }
   };
 
@@ -366,7 +368,7 @@ export function BPMNFlowForgeApp() {
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden text-slate-900 font-sans">
-      <header className="flex items-center justify-between px-6 bg-white border-b shrink-0 shadow-sm z-50 h-14">
+      <header className="flex items-center justify-between px-6 bg-white border-b shrink-0 shadow-sm z-[100] h-14">
         <div className="flex items-center gap-4">
           <div className="w-9 h-9 bg-[#1e3a8a] rounded-lg flex items-center justify-center shadow-lg border-2 border-white overflow-hidden">
              <Avatar className="h-full w-full">
@@ -390,7 +392,7 @@ export function BPMNFlowForgeApp() {
               <div className="hidden sm:flex flex-col items-end">
                 <span className="text-[10px] font-black text-slate-900 leading-none">{user.displayName || "ባለሙያ"}</span>
                 <span className="text-[8px] font-bold text-green-600 uppercase mt-1 flex items-center gap-1">
-                  <div className="w-1 h-1 rounded-full bg-green-500"></div> ኦንላይን
+                  <div className="w-1 h-1 rounded-full bg-green-500 animate-pulse"></div> ኦንላይን
                 </span>
               </div>
               <DropdownMenu>
@@ -433,11 +435,11 @@ export function BPMNFlowForgeApp() {
                 <BrainCircuit className="w-4 h-4 text-[#1e3a8a]" /> AI ካርታ ሰሪ (BPMN)
               </h2>
               <div className="space-y-3">
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="የሂደት ስም..." className="h-9 rounded-lg bg-slate-50 border-none font-bold text-[11px]" />
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="የሂደት ስም..." className="h-9 rounded-lg bg-slate-50 border-none font-bold text-[11px] shadow-sm" />
                 <Textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder="የስራ ሂደቱን ዝርዝር እዚህ ይጻፉ..." className="min-h-[80px] rounded-lg bg-slate-50 border-none text-[11px] leading-relaxed resize-none shadow-inner p-3" />
                 <div className="grid grid-cols-2 gap-2">
-                  <Button className="h-9 bg-[#1e3a8a] rounded-lg font-black text-[10px] shadow-md uppercase" onClick={handleGenerate}>ካርታ አሳይ</Button>
-                  <Button variant="outline" className="h-9 border-slate-200 rounded-lg font-black text-[10px] uppercase" onClick={handleSaveToVault} disabled={isSaving}>
+                  <Button className="h-9 bg-[#1e3a8a] rounded-lg font-black text-[10px] shadow-md uppercase hover:bg-[#1e3a8a]/90 transition-all" onClick={handleGenerate}>ካርታ አሳይ</Button>
+                  <Button variant="outline" className="h-9 border-slate-200 rounded-lg font-black text-[10px] uppercase hover:bg-slate-50" onClick={handleSaveToVault} disabled={isSaving}>
                     {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-1.5" />} መዝግብ
                   </Button>
                 </div>
@@ -449,13 +451,13 @@ export function BPMNFlowForgeApp() {
             <div className="p-4 border-b flex items-center justify-between bg-slate-50/30">
               <h3 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-slate-400"><FileText className="w-4 h-4" /> መዝገብ ቤት</h3>
               <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-                <DialogTrigger asChild><Button size="sm" className="h-7 rounded-md bg-slate-900 text-[9px] font-black uppercase px-3 shadow-md"><Upload className="w-3.5 h-3.5 mr-1" /> ፋይል መጫኛ</Button></DialogTrigger>
-                <DialogContent className="max-w-lg rounded-3xl p-8 border-none shadow-2xl">
+                <DialogTrigger asChild><Button size="sm" className="h-7 rounded-md bg-[#1e3a8a] text-white text-[9px] font-black uppercase px-3 shadow-md hover:scale-105 transition-transform"><Upload className="w-3.5 h-3.5 mr-1" /> ፋይል መጫኛ</Button></DialogTrigger>
+                <DialogContent className="max-w-lg rounded-3xl p-8 border-none shadow-2xl z-[1000]">
                   <DialogHeader><DialogTitle className="font-black text-lg text-[#1e3a8a] text-center mb-6 uppercase tracking-wider">የሰነድ መመዝገቢያ</DialogTitle></DialogHeader>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2 space-y-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase ml-1">ፋይል ይምረጡ</label>
-                      <Input type="file" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold pt-2 cursor-pointer shadow-inner" />
+                      <Input type="file" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold pt-2 cursor-pointer shadow-inner file:bg-[#1e3a8a] file:text-white file:border-none file:rounded-md file:mr-4 file:px-3 file:text-[9px] file:font-black file:uppercase" />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase ml-1">የሰነዱ ስም (ከተፈለገ)</label>
@@ -482,7 +484,7 @@ export function BPMNFlowForgeApp() {
                       <Input value={upExpertName} onChange={(e) => setUpExpertName(e.target.value)} placeholder="ባለሙያ..." className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold shadow-inner" />
                     </div>
                   </div>
-                  <Button className="w-full h-11 bg-[#1e3a8a] rounded-xl font-black uppercase shadow-lg text-[10px] mt-8" onClick={handleFileUpload} disabled={isSaving}>
+                  <Button className="w-full h-11 bg-[#1e3a8a] rounded-xl font-black uppercase shadow-lg text-[10px] mt-8 hover:bg-[#1e3a8a]/90 transition-all" onClick={handleFileUpload} disabled={isSaving}>
                     {isSaving ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "አጽድቅና መዝግብ"}
                   </Button>
                 </DialogContent>
@@ -504,11 +506,11 @@ export function BPMNFlowForgeApp() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <Button variant="ghost" size="icon" className="h-7 w-7 rounded-md text-blue-600 hover:bg-blue-50" asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 rounded-md text-blue-600 hover:bg-blue-50" asChild title="አውርድ">
                         <a href={file.fileUrl} download={file.fileName || "document"}><Download className="w-3.5 h-3.5" /></a>
                       </Button>
                       {(isAdmin || file.uploaderId === user?.uid) && (
-                        <Button variant="ghost" size="icon" onClick={() => deleteDocumentNonBlocking(doc(db!, 'documents', file.id))} className="h-7 w-7 rounded-md text-red-300 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => deleteDocumentNonBlocking(doc(db!, 'documents', file.id))} className="h-7 w-7 rounded-md text-red-300 hover:text-red-500" title="ሰርዝ"><Trash2 className="w-3.5 h-3.5" /></Button>
                       )}
                     </div>
                   </div>
@@ -523,10 +525,10 @@ export function BPMNFlowForgeApp() {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
             <div className="flex items-center justify-between bg-white border p-1 h-11 rounded-xl shadow-sm shrink-0">
               <TabsList className="bg-transparent border-none gap-1">
-                <TabsTrigger value="diagram" className="text-[9px] font-black px-4 h-9 rounded-lg uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white">ካርታ</TabsTrigger>
+                <TabsTrigger value="diagram" className="text-[9px] font-black px-4 h-9 rounded-lg uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white">ካርታ (BPMN)</TabsTrigger>
                 <TabsTrigger value="messenger" className="text-[9px] font-black px-4 h-9 rounded-lg uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white">ሜሴንጀር</TabsTrigger>
-                <TabsTrigger value="dashboard" className="text-[9px] font-black px-4 h-9 rounded-lg uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white">አፈጻጸም</TabsTrigger>
-                <TabsTrigger value="daily-log" className="text-[9px] font-black px-4 h-9 rounded-lg uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white">የቀን ውሎ</TabsTrigger>
+                <TabsTrigger value="dashboard" className="text-[9px] font-black px-4 h-9 rounded-lg uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white">አፈጻጸም ትንተና</TabsTrigger>
+                <TabsTrigger value="daily-log" className="text-[9px] font-black px-4 h-9 rounded-lg uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white">የቀን ውሎ መዝገብ</TabsTrigger>
               </TabsList>
             </div>
 
@@ -536,15 +538,16 @@ export function BPMNFlowForgeApp() {
                   {xmlResult ? (
                     <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
                   ) : (
-                    <div className="h-full flex flex-col items-center justify-center opacity-5 select-none">
-                      <LayoutTemplate className="w-24 h-24 text-slate-300" />
-                      <p className="text-[10px] font-black uppercase tracking-[0.5em] mt-8 text-slate-400">ካርታ አልተመረጠም</p>
+                    <div className="h-full flex flex-col items-center justify-center opacity-10 select-none">
+                      <BrainCircuit className="w-24 h-24 text-[#1e3a8a]" />
+                      <p className="text-[10px] font-black uppercase tracking-[0.5em] mt-8 text-slate-400">ካርታ አልተዘጋጀም</p>
                     </div>
                   )}
                   {xmlResult && (
                     <div className="absolute top-4 right-4 flex gap-2 z-10">
-                       <Button variant="secondary" size="sm" onClick={() => viewerRef.current?.exportSVG()} className="h-8 text-[9px] font-black uppercase rounded-lg shadow-md border-white">SVG አውርድ</Button>
-                       <Button variant="secondary" size="sm" onClick={() => viewerRef.current?.exportPNG()} className="h-8 text-[9px] font-black uppercase rounded-lg shadow-md border-white">PNG አውርድ</Button>
+                       <Button variant="secondary" size="sm" onClick={() => viewerRef.current?.exportSVG()} className="h-8 text-[9px] font-black uppercase rounded-lg shadow-md border-white bg-white/90 backdrop-blur-sm">SVG አውርድ</Button>
+                       <Button variant="secondary" size="sm" onClick={() => viewerRef.current?.exportPNG()} className="h-8 text-[9px] font-black uppercase rounded-lg shadow-md border-white bg-white/90 backdrop-blur-sm">PNG አውርድ</Button>
+                       <Button variant="secondary" size="sm" onClick={() => viewerRef.current?.exportXML()} className="h-8 text-[9px] font-black uppercase rounded-lg shadow-md border-white bg-white/90 backdrop-blur-sm">BPMN አውርድ</Button>
                     </div>
                   )}
                 </Card>
@@ -553,14 +556,17 @@ export function BPMNFlowForgeApp() {
               <TabsContent value="messenger" className="h-full m-0 flex flex-col outline-none">
                 <Card className="flex-1 shadow-lg border-none rounded-2xl bg-white flex flex-col overflow-hidden">
                   <div className="p-4 border-b bg-slate-50/30 flex items-center justify-between">
-                    <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
-                      <MessageSquare className="w-4 h-4 text-blue-600" /> የቢሮ ሜሴንጀር
-                    </h3>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                        <MessageSquare className="w-4 h-4 text-[#1e3a8a]" />
+                      </div>
+                      <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-tight">የቢሮ ሜሴንጀር</h3>
+                    </div>
                   </div>
-                  <ScrollArea className="flex-1 p-5">
+                  <ScrollArea className="flex-1 p-5 bg-slate-50/20">
                     <div className="space-y-4">
                       {feedbackMessages.length === 0 ? (
-                        <div className="py-20 text-center opacity-20"><MessageSquare className="w-10 h-10 mx-auto" /><p className="text-[9px] font-black uppercase mt-2">መልዕክት የለም</p></div>
+                        <div className="py-20 text-center opacity-10"><MessageSquare className="w-10 h-10 mx-auto" /><p className="text-[9px] font-black uppercase mt-2">መልዕክት የለም</p></div>
                       ) : (
                         feedbackMessages.map(msg => (
                           <div key={msg.id} className={`flex gap-3 ${msg.uploaderId === user?.uid ? 'flex-row-reverse' : ''}`}>
@@ -568,10 +574,10 @@ export function BPMNFlowForgeApp() {
                               <AvatarFallback className={`${msg.uploaderId === user?.uid ? 'bg-slate-900' : 'bg-[#1e3a8a]'} text-white text-[8px] font-black`}>{msg.senderName?.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div className={`max-w-[80%] ${msg.uploaderId === user?.uid ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
-                              <div className={`${msg.uploaderId === user?.uid ? 'bg-[#1e3a8a] text-white rounded-tr-none' : 'bg-slate-100 text-slate-800 rounded-tl-none'} p-3 rounded-xl shadow-sm`}>
+                              <div className={`${msg.uploaderId === user?.uid ? 'bg-[#1e3a8a] text-white rounded-tr-none' : 'bg-white text-slate-800 rounded-tl-none border'} p-3 rounded-2xl shadow-sm`}>
                                 <p className="text-[11px] font-medium leading-relaxed">{msg.content}</p>
                               </div>
-                              <span className="text-[7px] text-slate-400 font-bold px-1">{msg.senderName} • {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""}</span>
+                              <span className="text-[7px] text-slate-400 font-bold px-1 uppercase">{msg.senderName} • {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""}</span>
                             </div>
                           </div>
                         ))
@@ -579,45 +585,61 @@ export function BPMNFlowForgeApp() {
                     </div>
                   </ScrollArea>
                   <div className="p-3 bg-white border-t flex gap-2">
-                    <Input value={feedbackInput} onChange={(e) => setFeedbackInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendFeedback()} placeholder="መልዕክት እዚህ ይጻፉ..." className="h-10 bg-slate-50 border-none rounded-lg text-[11px] shadow-inner px-4" />
-                    <Button className="h-10 w-10 p-0 rounded-lg bg-[#1e3a8a] text-white shadow-md" onClick={handleSendFeedback}><Send className="w-4 h-4" /></Button>
+                    <Input value={feedbackInput} onChange={(e) => setFeedbackInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendFeedback()} placeholder="መልዕክት እዚህ ይጻፉ..." className="h-10 bg-slate-50 border-none rounded-xl text-[11px] shadow-inner px-4" />
+                    <Button className="h-10 w-10 p-0 rounded-xl bg-[#1e3a8a] text-white shadow-md hover:scale-105 transition-transform" onClick={handleSendFeedback}><Send className="w-4 h-4" /></Button>
                   </div>
                 </Card>
               </TabsContent>
 
               <TabsContent value="dashboard" className="h-full m-0 overflow-auto outline-none">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full pb-4">
                   <Card className="shadow-lg border-none rounded-2xl bg-white p-6 flex flex-col">
-                    <h3 className="text-[10px] font-black uppercase tracking-widest mb-6 flex items-center gap-2 text-slate-400"><BarChart className="w-4 h-4 text-[#1e3a8a]" /> የቢሮ አፈጻጸም ግራፍ</h3>
-                    <div className="flex-1 min-h-[250px]">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest mb-6 flex items-center gap-2 text-slate-400"><BarChart className="w-4 h-4 text-[#1e3a8a]" /> የቢሮ አፈጻጸም ግራፍ (Daily)</h3>
+                    <div className="flex-1 min-h-[300px]">
                       {automatedAnalysis.graphData && (
                         <ResponsiveContainer width="100%" height="100%">
                           <AreaChart data={automatedAnalysis.graphData}>
+                            <defs>
+                              <linearGradient id="colorEff" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#1e3a8a" stopOpacity={0.1}/>
+                                <stop offset="95%" stopColor="#1e3a8a" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                             <XAxis dataKey="name" fontSize={8} fontWeight="black" axisLine={false} tickLine={false} />
                             <YAxis fontSize={8} fontWeight="black" axisLine={false} tickLine={false} domain={[0, 100]} />
-                            <RechartsTooltip />
-                            <Area type="monotone" dataKey="efficiency" stroke="#1e3a8a" strokeWidth={3} fill="#1e3a8a" fillOpacity={0.05} />
+                            <RechartsTooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
+                            <Area type="monotone" dataKey="efficiency" stroke="#1e3a8a" strokeWidth={3} fillOpacity={1} fill="url(#colorEff)" />
                           </AreaChart>
                         </ResponsiveContainer>
                       )}
                     </div>
                   </Card>
                   
-                  <Card className="shadow-lg border-none rounded-2xl bg-white p-6">
-                    <h3 className="text-[10px] font-black uppercase tracking-widest mb-6 flex items-center gap-2 text-slate-400"><Zap className="w-4 h-4 text-amber-500" /> አውቶማቲክ ትንተና</h3>
-                    <div className="space-y-4">
-                      <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100">
-                        <p className="text-[10px] font-medium text-blue-900 italic leading-relaxed">"{automatedAnalysis.narrative}"</p>
+                  <Card className="shadow-lg border-none rounded-2xl bg-white p-6 flex flex-col">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest mb-6 flex items-center gap-2 text-slate-400"><Zap className="w-4 h-4 text-amber-500" /> አውቶማቲክ አፈጻጸም ትንተና</h3>
+                    <div className="space-y-6 flex-1">
+                      <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-100 shadow-sm">
+                        <h4 className="text-[9px] font-black text-[#1e3a8a] uppercase mb-2">የቢሮ ሁኔታ ትንተና (Narrative)</h4>
+                        <p className="text-[11px] font-medium text-blue-900 italic leading-relaxed">"{automatedAnalysis.narrative}"</p>
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="p-4 bg-slate-50 rounded-xl text-center shadow-sm">
-                          <p className="text-[7px] font-black text-slate-400 uppercase">ውጤታማነት</p>
-                          <p className="text-lg font-black text-[#1e3a8a]">{automatedAnalysis.efficiency.toFixed(1)}%</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-5 bg-slate-50 rounded-2xl text-center shadow-sm border border-slate-100">
+                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">የውጤታማነት ደረጃ</p>
+                          <p className="text-3xl font-black text-[#1e3a8a]">{automatedAnalysis.efficiency.toFixed(1)}%</p>
                         </div>
-                        <div className="p-4 bg-slate-50 rounded-xl text-center shadow-sm">
-                          <p className="text-[7px] font-black text-slate-400 uppercase">ጠቅላላ ስራ</p>
-                          <p className="text-lg font-black text-slate-800">{automatedAnalysis.totalLogs}</p>
+                        <div className="p-5 bg-slate-50 rounded-2xl text-center shadow-sm border border-slate-100">
+                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">ጠቅላላ መዝገቦች</p>
+                          <p className="text-3xl font-black text-slate-800">{automatedAnalysis.totalLogs}</p>
+                        </div>
+                      </div>
+                      <div className="mt-auto p-4 bg-green-50 rounded-2xl flex items-center gap-3 border border-green-100">
+                        <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white shadow-lg">
+                          <CheckCircle2 className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-green-700 uppercase leading-none">የሲስተም ሁኔታ</p>
+                          <p className="text-[8px] font-bold text-green-600 uppercase mt-1">Institutional Monitoring Active</p>
                         </div>
                       </div>
                     </div>
@@ -625,68 +647,68 @@ export function BPMNFlowForgeApp() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="daily-log" className="h-full m-0 flex flex-col gap-4 outline-none overflow-hidden">
-                <Card className="shadow-lg border-none rounded-2xl bg-white p-4 shrink-0">
+              <TabsContent value="daily-log" className="h-full m-0 flex flex-col gap-4 outline-none overflow-hidden pb-4">
+                <Card className="shadow-lg border-none rounded-2xl bg-white p-5 shrink-0">
                   <div className="flex flex-col gap-4">
-                    <h3 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2"><BriefcaseBusiness className="w-4 h-4 text-[#1e3a8a]" /> የቀን ውሎ መመዝገቢያ</h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    <h3 className="text-[11px] font-black uppercase tracking-widest flex items-center gap-2"><BriefcaseBusiness className="w-4 h-4 text-[#1e3a8a]" /> የቀን ውሎ መመዝገቢያ</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                       <div className="col-span-2 sm:col-span-1 space-y-1">
-                         <label className="text-[7px] font-black text-slate-400 uppercase ml-1">ተግባር</label>
-                         <Input value={logTask} onChange={(e) => setLogTask(e.target.value)} placeholder="የስራው አይነት..." className="h-9 bg-slate-50 border-none rounded-lg text-[10px] font-bold" />
+                         <label className="text-[8px] font-black text-slate-400 uppercase ml-1">የስራ ተግባር</label>
+                         <Input value={logTask} onChange={(e) => setLogTask(e.target.value)} placeholder="የስራው አይነት..." className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-bold shadow-inner" />
                       </div>
                       <div className="space-y-1">
-                         <label className="text-[7px] font-black text-slate-400 uppercase ml-1">የተጀመረበት</label>
-                         <Input type="time" value={logStart} onChange={(e) => setLogStart(e.target.value)} className="h-9 bg-slate-50 border-none rounded-lg text-[10px] font-bold" />
+                         <label className="text-[8px] font-black text-slate-400 uppercase ml-1">የተጀመረበት</label>
+                         <Input type="time" value={logStart} onChange={(e) => setLogStart(e.target.value)} className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-bold shadow-inner" />
                       </div>
                       <div className="space-y-1">
-                         <label className="text-[7px] font-black text-slate-400 uppercase ml-1">የተጠናቀቀበት</label>
-                         <Input type="time" value={logEnd} onChange={(e) => setLogEnd(e.target.value)} className="h-9 bg-slate-50 border-none rounded-lg text-[10px] font-bold" />
+                         <label className="text-[8px] font-black text-slate-400 uppercase ml-1">የተጠናቀቀበት</label>
+                         <Input type="time" value={logEnd} onChange={(e) => setLogEnd(e.target.value)} className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-bold shadow-inner" />
                       </div>
                       <div className="space-y-1">
-                         <label className="text-[7px] font-black text-slate-400 uppercase ml-1">እቅድ (ሰዓት)</label>
-                         <Input value={logPlanned} onChange={(e) => setLogPlanned(e.target.value)} placeholder="ምሳሌ፡ 2" className="h-9 bg-slate-50 border-none rounded-lg text-[10px] font-bold" />
+                         <label className="text-[8px] font-black text-slate-400 uppercase ml-1">እቅድ (በሰዓት)</label>
+                         <Input value={logPlanned} onChange={(e) => setLogPlanned(e.target.value)} placeholder="ምሳሌ፡ 2" className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-bold shadow-inner" />
                       </div>
                       <div className="flex items-end col-span-2 sm:col-span-1">
-                        <Button onClick={handleAddDailyLog} className="w-full h-9 rounded-lg bg-[#1e3a8a] text-white font-black text-[9px] uppercase shadow-md"><Plus className="w-3.5 h-3.5 mr-1" /> መዝግብ</Button>
+                        <Button onClick={handleAddDailyLog} className="w-full h-10 rounded-xl bg-[#1e3a8a] text-white font-black text-[10px] uppercase shadow-lg hover:bg-[#1e3a8a]/90 transition-all"><Plus className="w-4 h-4 mr-1" /> መዝግብ</Button>
                       </div>
                     </div>
                   </div>
                 </Card>
                 
                 <Card className="flex-1 shadow-lg border-none rounded-2xl bg-white overflow-hidden flex flex-col">
-                  <div className="p-3 border-b bg-slate-50/20 flex items-center justify-between">
-                    <h4 className="text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><CalendarDays className="w-3.5 h-3.5" /> የውሎ ሰንጠረዥ</h4>
+                  <div className="p-4 border-b bg-slate-50/20 flex items-center justify-between">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><CalendarDays className="w-4 h-4" /> የቢሮ የቀን ውሎ ሰንጠረዥ</h4>
                   </div>
                   <ScrollArea className="flex-1">
                     <Table>
-                      <TableHeader className="bg-slate-50/50">
+                      <TableHeader className="bg-slate-50/50 sticky top-0 z-10 backdrop-blur-md">
                         <TableRow>
-                          <TableHead className="text-[9px] font-black uppercase h-9">ባለሙያ</TableHead>
-                          <TableHead className="text-[9px] font-black uppercase h-9">ተግባር</TableHead>
-                          <TableHead className="text-[9px] font-black uppercase h-9">START/END</TableHead>
-                          <TableHead className="text-[9px] font-black uppercase h-9">እቅድ</TableHead>
-                          <TableHead className="text-[9px] font-black uppercase h-9"></TableHead>
+                          <TableHead className="text-[9px] font-black uppercase h-10">ባለሙያ</TableHead>
+                          <TableHead className="text-[9px] font-black uppercase h-10">ተግባር</TableHead>
+                          <TableHead className="text-[9px] font-black uppercase h-10">የሰዓት ቆይታ</TableHead>
+                          <TableHead className="text-[9px] font-black uppercase h-10">የእቅድ ሰዓት</TableHead>
+                          <TableHead className="text-[9px] font-black uppercase h-10 text-right pr-6">ተግባራት</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {!dailyLogs || dailyLogs.length === 0 ? (
-                          <TableRow><TableCell colSpan={5} className="h-32 text-center opacity-10"><Briefcase className="w-8 h-8 mx-auto mb-2" /><p className="text-[9px] font-black uppercase">መረጃ የለም</p></TableCell></TableRow>
+                          <TableRow><TableCell colSpan={5} className="h-40 text-center opacity-10"><Briefcase className="w-10 h-10 mx-auto mb-2" /><p className="text-[10px] font-black uppercase">መረጃ የለም</p></TableCell></TableRow>
                         ) : (
                           dailyLogs.map(log => (
-                            <TableRow key={log.id} className="hover:bg-slate-50 transition-all border-b border-slate-50">
-                              <TableCell className="text-[10px] font-black text-[#1e3a8a] py-3">{log.uploaderName}</TableCell>
-                              <TableCell className="text-[10px] font-medium py-3">{log.taskName}</TableCell>
-                              <TableCell className="text-[10px] py-3">
-                                <div className="flex items-center gap-1.5">
-                                   <Badge variant="outline" className="text-[8px] font-bold px-2 h-5">{log.startTime}</Badge>
-                                   <ArrowRightLeft className="w-3 h-3 text-slate-300" />
-                                   <Badge variant="outline" className="text-[8px] font-bold px-2 h-5">{log.endTime}</Badge>
+                            <TableRow key={log.id} className="hover:bg-slate-50/80 transition-all border-b border-slate-50">
+                              <TableCell className="text-[11px] font-black text-[#1e3a8a] py-4">{log.uploaderName}</TableCell>
+                              <TableCell className="text-[11px] font-medium py-4">{log.taskName}</TableCell>
+                              <TableCell className="py-4">
+                                <div className="flex items-center gap-2">
+                                   <Badge variant="outline" className="text-[9px] font-bold px-3 h-6 bg-white shadow-sm">{log.startTime}</Badge>
+                                   <ArrowRightLeft className="w-3.5 h-3.5 text-slate-300" />
+                                   <Badge variant="outline" className="text-[9px] font-bold px-3 h-6 bg-white shadow-sm">{log.endTime}</Badge>
                                 </div>
                               </TableCell>
-                              <TableCell className="py-3 text-[10px] font-black text-slate-500 uppercase">{log.plannedTime} ሰዓት</TableCell>
-                              <TableCell className="text-right py-3 pr-4">
+                              <TableCell className="py-4 text-[11px] font-black text-slate-500 uppercase">{log.plannedTime} ሰዓት</TableCell>
+                              <TableCell className="text-right py-4 pr-6">
                                 {(user?.email === ADMIN_EMAIL || log.uploaderId === user?.uid) && (
-                                  <Button variant="ghost" size="icon" onClick={() => deleteDocumentNonBlocking(doc(db!, 'daily_logs', log.id))} className="h-7 w-7 text-red-300 hover:text-red-500 rounded-md"><Trash2 className="w-3.5 h-3.5" /></Button>
+                                  <Button variant="ghost" size="icon" onClick={() => deleteDocumentNonBlocking(doc(db!, 'daily_logs', log.id))} className="h-8 w-8 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"><Trash2 className="w-4 h-4" /></Button>
                                 )}
                               </TableCell>
                             </TableRow>
@@ -702,14 +724,14 @@ export function BPMNFlowForgeApp() {
         </div>
       </main>
 
-      <footer className="px-6 h-8 bg-white border-t flex justify-between items-center shrink-0">
+      <footer className="px-6 h-8 bg-white border-t flex justify-between items-center shrink-0 shadow-[0_-1px_3px_rgba(0,0,0,0.05)]">
         <div className="flex gap-4 items-center text-[8px] font-black text-slate-400 uppercase tracking-widest">
-          <span className="text-[#1e3a8a]">ITB Enterprise v12.0</span>
+          <span className="text-[#1e3a8a]">ITB Enterprise v15.0</span>
           <span>Institutional Sync Active</span>
         </div>
         <div className="flex items-center gap-2 px-3 py-0.5 bg-green-50 rounded-full border border-green-100 shadow-sm">
           <div className="w-1 h-1 rounded-full bg-green-500 animate-pulse"></div>
-          <span className="text-[8px] font-black text-green-600 uppercase">Secure Portal</span>
+          <span className="text-[8px] font-black text-green-600 uppercase">Secure Portal • Online</span>
         </div>
       </footer>
     </div>

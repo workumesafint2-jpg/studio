@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useEffect, useState } from 'react';
@@ -19,7 +18,9 @@ import {
   Trash2,
   ArrowLeft,
   Loader2,
-  ShieldCheck
+  ShieldCheck,
+  TrendingUp,
+  FileSearch
 } from 'lucide-react';
 import { 
   useCollection, 
@@ -89,7 +90,8 @@ export default function AdminPage() {
     totalDocs: allDocs?.length || 0,
     totalUsers: allUsers?.length || 0,
     status: "Active (Institutional)",
-    activeWorkflows: allDocs?.filter(d => d.status !== 'የጸደቀ').length || 0
+    approvedCount: allDocs?.filter(d => d.status === 'የጸደቀ').length || 0,
+    pendingCount: allDocs?.filter(d => d.status !== 'የጸደቀ').length || 0
   }), [allDocs, allUsers]);
 
   const handleOpenFile = (url: string) => {
@@ -135,21 +137,21 @@ export default function AdminPage() {
             </h1>
           </header>
           <div className="w-32 flex justify-end">
-            {isMasterAdmin && <Badge className="bg-green-500 text-white font-black text-[8px] h-8 px-4 rounded-xl uppercase shadow-sm">Master Access</Badge>}
+            {isMasterAdmin && <Badge className="bg-green-500 text-white font-black text-[8px] h-8 px-4 rounded-xl uppercase shadow-sm">Master Admin Access</Badge>}
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard title="ጠቅላላ ሰነዶች" value={docsLoading ? "..." : stats.totalDocs.toString()} icon={<FileText className="w-6 h-6 text-blue-600" />} />
-          <StatCard title="ንቁ ሰራተኞች" value={usersLoading ? "..." : stats.totalUsers.toString()} icon={<Users className="w-6 h-6 text-green-600" />} />
-          <StatCard title="የሲስተም ሁኔታ" value={stats.status} icon={<Activity className="w-6 h-6 text-amber-600" />} />
-          <StatCard title="ንቁ ሂደቶች" value={docsLoading ? "..." : stats.activeWorkflows.toString()} icon={<LayoutDashboard className="w-6 h-6 text-purple-600" />} />
+          <StatCard title="የጸደቁ" value={docsLoading ? "..." : stats.approvedCount.toString()} icon={<CheckCircle2 className="w-6 h-6 text-green-600" />} />
+          <StatCard title="በሂደት ላይ" value={docsLoading ? "..." : stats.pendingCount.toString()} icon={<Clock className="w-6 h-6 text-amber-600" />} />
+          <StatCard title="ተመዝጋቢዎች" value={usersLoading ? "..." : stats.totalUsers.toString()} icon={<Users className="w-6 h-6 text-purple-600" />} />
         </div>
 
         <Card className="shadow-2xl border-none overflow-hidden rounded-[2.5rem] bg-white">
           <CardHeader className="bg-white border-b border-slate-50 py-8 px-10 flex flex-row items-center justify-between">
             <CardTitle className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-3">
-              <Clock className="w-5 h-5" /> የቅርብ ጊዜ የተቋም እንቅስቃሴዎች
+              <FileSearch className="w-5 h-5" /> የተቋም መዝገብ ቤት ቁጥጥር
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -189,7 +191,7 @@ export default function AdminPage() {
                         {docItem.status}
                       </Badge>
                       <div className="flex items-center gap-3">
-                        <Button variant="outline" size="sm" onClick={() => handleOpenFile(docItem.fileUrl)} className="h-12 px-6 text-[11px] font-black rounded-2xl border-slate-200 shadow-sm">
+                        <Button variant="outline" size="sm" onClick={() => handleOpenFile(docItem.fileUrl)} className="h-12 px-6 text-[11px] font-black rounded-2xl border-slate-200 shadow-sm hover:bg-[#1e3a8a] hover:text-white hover:border-transparent transition-all">
                           <Eye className="w-4 h-4 mr-2" /> ክፈት
                         </Button>
                         <DropdownMenu>
