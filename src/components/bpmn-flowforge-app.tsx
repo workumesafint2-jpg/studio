@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -30,7 +31,9 @@ import {
   Briefcase,
   ExternalLink,
   CheckCircle2,
-  LayoutDashboard
+  LayoutDashboard,
+  Clock,
+  Building2
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -147,10 +150,10 @@ export function BPMNFlowForgeApp() {
 
   useEffect(() => {
     setMounted(true);
-    if (user) {
+    if (user && !upExpertName) {
       setUpExpertName(user.displayName || "");
     }
-  }, [user]);
+  }, [user, upExpertName]);
 
   const isAdmin = user?.email === ADMIN_EMAIL;
 
@@ -170,7 +173,7 @@ export function BPMNFlowForgeApp() {
   }, [db]);
 
   const { data: uploadedFilesRaw, isLoading: isDocsLoading } = useCollection<UploadedFile>(documentsQuery);
-  const { data: dailyLogsRaw } = useCollection<DailyLog>(dailyLogQuery);
+  const { data: dailyLogsRaw, isLoading: isLogsLoading } = useCollection<DailyLog>(dailyLogQuery);
   const { data: feedbackMessagesRaw } = useCollection<any>(feedbackQuery);
   
   const uploadedFiles = useMemo(() => uploadedFilesRaw || [], [uploadedFilesRaw]);
@@ -196,7 +199,7 @@ export function BPMNFlowForgeApp() {
       efficiency = Math.min(98, 70 + (totalDocs * 0.5) + (totalLogs / 5));
     }
 
-    const narrative = totalDocs > 0 
+    const narrative = totalDocs > 0 || totalLogs > 0
       ? `በቢሮው ውስጥ በአጠቃላይ ${totalDocs} ሰነዶች እና ${totalLogs} የቀን ውሎ መዝገቦች ተመዝግበዋል። በአሁኑ ሰዓት ያለው የቢሮ ውጤታማነት ${efficiency.toFixed(1)}% ደርሷል። ባለሙያዎች በታቀደላቸው ሰዓት ስራቸውን ለማጠናቀቅ የሚያደርጉት ጥረት በከፍተኛ ደረጃ ላይ ይገኛል።`
       : "በቂ የመረጃ ክምችት የለም፤ ፋይሎችን እና የቀን ውሎ መዝገቦችን በማስገባት ትንተናውን ያሳድጉ።";
 
@@ -362,6 +365,18 @@ export function BPMNFlowForgeApp() {
       console.error(e);
       toast({ title: "ስህተት", description: "መልዕክቱ አልተላከም" }); 
     }
+  };
+
+  const downloadDailyLog = () => {
+    if (!dailyLogs.length) return;
+    const content = dailyLogs.map(l => `${l.uploaderName} | ${l.taskName} | ${l.startTime}-${l.endTime} | እቅድ: ${l.plannedTime}`).join('\n');
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `daily-log-${new Date().toLocaleDateString()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   if (!mounted) return null;
@@ -650,7 +665,12 @@ export function BPMNFlowForgeApp() {
               <TabsContent value="daily-log" className="h-full m-0 flex flex-col gap-4 outline-none overflow-hidden pb-4">
                 <Card className="shadow-lg border-none rounded-2xl bg-white p-5 shrink-0">
                   <div className="flex flex-col gap-4">
-                    <h3 className="text-[11px] font-black uppercase tracking-widest flex items-center gap-2"><BriefcaseBusiness className="w-4 h-4 text-[#1e3a8a]" /> የቀን ውሎ መመዝገቢያ</h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-[11px] font-black uppercase tracking-widest flex items-center gap-2"><BriefcaseBusiness className="w-4 h-4 text-[#1e3a8a]" /> የቀን ውሎ መመዝገቢያ</h3>
+                      <Button variant="outline" size="sm" onClick={downloadDailyLog} className="h-8 rounded-lg text-[9px] font-black uppercase border-slate-200">
+                        <Download className="w-3.5 h-3.5 mr-1.5" /> ሪፖርት አውርድ
+                      </Button>
+                    </div>
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                       <div className="col-span-2 sm:col-span-1 space-y-1">
                          <label className="text-[8px] font-black text-slate-400 uppercase ml-1">የስራ ተግባር</label>
@@ -691,7 +711,9 @@ export function BPMNFlowForgeApp() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {!dailyLogs || dailyLogs.length === 0 ? (
+                        {isLogsLoading ? (
+                          <TableRow><TableCell colSpan={5} className="h-40 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-slate-200" /></TableCell></TableRow>
+                        ) : !dailyLogs || dailyLogs.length === 0 ? (
                           <TableRow><TableCell colSpan={5} className="h-40 text-center opacity-10"><Briefcase className="w-10 h-10 mx-auto mb-2" /><p className="text-[10px] font-black uppercase">መረጃ የለም</p></TableCell></TableRow>
                         ) : (
                           dailyLogs.map(log => (
@@ -726,7 +748,7 @@ export function BPMNFlowForgeApp() {
 
       <footer className="px-6 h-8 bg-white border-t flex justify-between items-center shrink-0 shadow-[0_-1px_3px_rgba(0,0,0,0.05)]">
         <div className="flex gap-4 items-center text-[8px] font-black text-slate-400 uppercase tracking-widest">
-          <span className="text-[#1e3a8a]">ITB Enterprise v15.0</span>
+          <span className="text-[#1e3a8a]">ITB Enterprise v16.0</span>
           <span>Institutional Sync Active</span>
         </div>
         <div className="flex items-center gap-2 px-3 py-0.5 bg-green-50 rounded-full border border-green-100 shadow-sm">
