@@ -1,4 +1,3 @@
-
 # ወርቁ (Worku) - Smart BPMN Generator (Stable Production Build)
 
 Professional BPMN diagram generator with interactive Modeler support, optimized for APK and Desktop deployment.

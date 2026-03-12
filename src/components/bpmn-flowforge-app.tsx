@@ -27,7 +27,10 @@ import {
   X,
   Plus,
   Building2,
-  Clock
+  Clock,
+  User,
+  Eye,
+  ChevronRight
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -89,6 +92,8 @@ interface UploadedFile {
   uploaderId: string;
   expertName?: string;
   sector?: string;
+  directorate?: string;
+  team?: string;
   createdAt?: any;
 }
 
@@ -105,6 +110,8 @@ export function BPMNFlowForgeApp() {
   
   const [upName, setUpName] = useState("");
   const [upSector, setUpSector] = useState("");
+  const [upDirectorate, setUpDirectorate] = useState("");
+  const [upTeam, setUpTeam] = useState("");
   const [upCategory, setUpCategory] = useState("ሪፖርት");
   const [upExpertName, setUpExpertName] = useState("");
 
@@ -220,6 +227,8 @@ export function BPMNFlowForgeApp() {
         uploaderId: user.uid,
         expertName: upExpertName || user.displayName || "ባለሙያ",
         sector: upSector || "አጠቃላይ",
+        directorate: upDirectorate || "አጠቃላይ",
+        team: upTeam || "አጠቃላይ",
         createdAt: Timestamp.now()
       });
       setIsSaving(false);
@@ -287,7 +296,7 @@ export function BPMNFlowForgeApp() {
           <div className="w-10 h-10 bg-[#1e3a8a] rounded-xl flex items-center justify-center shadow-md border-2 border-white mb-1 overflow-hidden">
              <div className="text-white text-[9px] font-black">ITB</div>
           </div>
-          <span className="text-[11px] font-black text-[#1e3a8a] uppercase tracking-tighter">ITB</span>
+          <span className="text-[11px] font-black text-[#1e3a8a] uppercase tracking-tighter">የኢኖቬሽንና ቴክኖሎጂ ቢሮ</span>
           <span className="text-[7px] font-bold text-slate-400 uppercase tracking-[0.3em]">INNOVATION & TECHNOLOGY BUREAU</span>
         </div>
 
@@ -316,12 +325,6 @@ export function BPMNFlowForgeApp() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-
-        {isAdmin && (
-          <div className="absolute top-3 left-6">
-            <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-600 text-[7px] font-black rounded-lg uppercase h-6 px-2">Master Admin</Badge>
-          </div>
-        )}
       </header>
 
       <main className="flex-1 overflow-hidden p-4 space-y-4">
@@ -341,7 +344,7 @@ export function BPMNFlowForgeApp() {
               <CardContent className="p-6 space-y-5">
                 <div className="flex items-center gap-2 mb-1">
                    <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center"><BrainCircuit className="w-4 h-4 text-[#1e3a8a]" /></div>
-                   <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500">AI ረዳት</h2>
+                   <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500">AI ረዳት (BPMN)</h2>
                    <div className="ml-auto flex gap-1">
                      <Button variant="ghost" size="icon" className="h-7 w-7 text-red-300 hover:text-red-500" onClick={() => {setInput(""); setTitle("");}}><X className="w-3.5 h-3.5" /></Button>
                    </div>
@@ -381,6 +384,8 @@ export function BPMNFlowForgeApp() {
                       </div>
                       <Input value={upName} onChange={(e) => setUpName(e.target.value)} placeholder="የሰነዱ ስም..." className="h-10 rounded-xl bg-slate-50 border-none text-[10px] font-bold" />
                       <Input value={upSector} onChange={(e) => setUpSector(e.target.value)} placeholder="ዘርፍ (Sector)..." className="h-10 rounded-xl bg-slate-50 border-none text-[10px] font-bold" />
+                      <Input value={upDirectorate} onChange={(e) => setUpDirectorate(e.target.value)} placeholder="ዳይሬክቶሬት..." className="h-10 rounded-xl bg-slate-50 border-none text-[10px] font-bold" />
+                      <Input value={upTeam} onChange={(e) => setUpTeam(e.target.value)} placeholder="ቡድን (Team)..." className="h-10 rounded-xl bg-slate-50 border-none text-[10px] font-bold" />
                       <Input value={upExpertName} onChange={(e) => setUpExpertName(e.target.value)} placeholder="ባለሙያ..." className="h-10 rounded-xl bg-slate-50 border-none text-[10px] font-bold" />
                       <Button className="w-full h-11 bg-[#1e3a8a] rounded-xl font-black uppercase text-[10px] mt-2 shadow-lg" onClick={handleFileUpload} disabled={isSaving}>
                         {isSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "አጽድቅና መዝግብ"}
@@ -438,7 +443,7 @@ export function BPMNFlowForgeApp() {
                 <TabsList className="bg-white p-1 rounded-xl shadow-lg border border-slate-50 h-auto gap-1">
                   <TabsTrigger value="diagram" className="text-[9px] font-black px-6 py-2 rounded-lg uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white transition-all">ዲያግራም</TabsTrigger>
                   <TabsTrigger value="dashboard" className="text-[9px] font-black px-6 py-2 rounded-lg uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white transition-all">አፈጻጸም</TabsTrigger>
-                  <TabsTrigger value="messenger" className="text-[9px] font-black px-6 py-2 rounded-lg uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white transition-all">ዳሽ ቦርድ</TabsTrigger>
+                  <TabsTrigger value="messenger" className="text-[9px] font-black px-6 py-2 rounded-lg uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white transition-all">መፃፃፊያ</TabsTrigger>
                 </TabsList>
               </div>
 
