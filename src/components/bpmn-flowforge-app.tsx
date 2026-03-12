@@ -290,22 +290,20 @@ export function BPMNFlowForgeApp() {
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden font-sans">
-      <header className="bg-white border-b px-6 py-2 flex items-center justify-between shrink-0 shadow-sm z-50">
+      <header className="bg-white border-b px-6 py-4 flex items-center justify-between shrink-0 shadow-sm z-50">
         <div className="flex flex-col items-center mx-auto text-center">
-          <h1 className="text-[10px] font-black text-[#1e3a8a] uppercase tracking-[0.2em] leading-none mb-1">INNOVATION AND TECHNOLOGY BUREAU</h1>
-          <div className="w-10 h-10 bg-[#1e3a8a] rounded-xl flex items-center justify-center shadow-md border-2 border-white mb-1 overflow-hidden">
-             <div className="text-white text-[9px] font-black">ITB</div>
+          <span className="text-[13px] font-black text-[#1e3a8a] uppercase tracking-tighter mb-2">የኢኖቬሽንና ቴክኖሎጂ ቢሮ</span>
+          <div className="w-10 h-10 bg-[#1e3a8a] rounded-xl flex items-center justify-center shadow-md border-2 border-white overflow-hidden">
+             <div className="text-white text-[10px] font-black">ITB</div>
           </div>
-          <span className="text-[11px] font-black text-[#1e3a8a] uppercase tracking-tighter">የኢኖቬሽንና ቴክኖሎጂ ቢሮ</span>
-          <span className="text-[7px] font-bold text-slate-400 uppercase tracking-[0.3em]">INNOVATION & TECHNOLOGY BUREAU</span>
         </div>
 
-        <div className="absolute top-3 right-6 flex items-center gap-3">
+        <div className="absolute top-4 right-6 flex items-center gap-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-9 w-9 p-0 rounded-xl bg-white border shadow-sm overflow-hidden">
+              <Button variant="ghost" className="h-10 w-10 p-0 rounded-xl bg-white border shadow-sm overflow-hidden">
                 <Avatar className="h-full w-full">
-                  <AvatarFallback className="bg-[#1e3a8a] text-white text-[9px] font-black">{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                  <AvatarFallback className="bg-[#1e3a8a] text-white text-[10px] font-black">{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
@@ -382,7 +380,7 @@ export function BPMNFlowForgeApp() {
                         <label className="text-[9px] font-black text-slate-400 uppercase ml-1">ፋይል ይምረጡ</label>
                         <Input type="file" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} className="h-10 rounded-xl bg-slate-50 border-none text-[9px] pt-2" />
                       </div>
-                      <Input value={upName} onChange={(e) => setUpName(e.target.value)} placeholder="የሰነዱ ስም..." className="h-10 rounded-xl bg-slate-50 border-none text-[10px] font-bold" />
+                      <Input value={upName} onChange={(e) => setUpName(e.target.value)} placeholder="የሰነዱ ስም (ከተፈለገ)..." className="h-10 rounded-xl bg-slate-50 border-none text-[10px] font-bold" />
                       <Input value={upSector} onChange={(e) => setUpSector(e.target.value)} placeholder="ዘርፍ (Sector)..." className="h-10 rounded-xl bg-slate-50 border-none text-[10px] font-bold" />
                       <Input value={upDirectorate} onChange={(e) => setUpDirectorate(e.target.value)} placeholder="ዳይሬክቶሬት..." className="h-10 rounded-xl bg-slate-50 border-none text-[10px] font-bold" />
                       <Input value={upTeam} onChange={(e) => setUpTeam(e.target.value)} placeholder="ቡድን (Team)..." className="h-10 rounded-xl bg-slate-50 border-none text-[10px] font-bold" />
