@@ -2,8 +2,8 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     /**
-     * ITB Pro: Institutional Security Rules v22.0
-     * Fully permissive to avoid 'Insufficient Permissions' errors 
+     * ITB Pro: Institutional Security Rules v25.0
+     * Fully permissive as requested to avoid 'Insufficient Permissions' errors 
      * during institutional deployment and testing.
      */
     match /{allPaths=**} {

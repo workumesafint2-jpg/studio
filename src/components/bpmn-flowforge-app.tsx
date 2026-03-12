@@ -29,7 +29,8 @@ import {
   Briefcase,
   CheckCircle2,
   Building2,
-  Clock
+  Clock,
+  LayoutDashboard
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -373,6 +374,33 @@ export function BPMNFlowForgeApp() {
     URL.revokeObjectURL(url);
   };
 
+  const saveDailyLogToVault = async (log: DailyLog) => {
+    if (!user || !db) return;
+    try {
+      const content = `${log.uploaderName} | ${log.taskName} | ${log.startTime}-${log.endTime} | እቅድ: ${log.plannedTime}`;
+      const dataUri = `data:text/plain;base64,${btoa(unescape(encodeURIComponent(content)))}`;
+      
+      await addDocumentNonBlocking(collection(db, 'documents'), {
+        name: `የቀን ውሎ - ${log.taskName}`,
+        category: 'የቀን ውሎ መዝገብ',
+        fileName: `log-${log.id}.txt`,
+        fileSize: "KB",
+        uploadDate: new Date().toISOString(),
+        fileUrl: dataUri,
+        type: 'text/plain',
+        status: 'የጸደቀ',
+        uploaderId: user.uid,
+        expertName: log.uploaderName,
+        sector: "አጠቃላይ",
+        createdAt: Timestamp.now()
+      });
+      toast({ title: "ተሳክቷል", description: "ውሎው በመዝገብ ቤት ተቀምጧል" });
+    } catch (e) {
+      console.error(e);
+      toast({ title: "ስህተት", description: "መመዝገብ አልተቻለም" });
+    }
+  };
+
   if (!mounted) return null;
 
   return (
@@ -667,24 +695,26 @@ export function BPMNFlowForgeApp() {
                         <Download className="w-3.5 h-3.5 mr-1.5" /> ሪፖርት አውርድ
                       </Button>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                      <div className="col-span-2 sm:col-span-1 space-y-1">
+                    
+                    {/* Direct Input Row Style */}
+                    <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-inner">
+                      <div className="space-y-1">
                          <label className="text-[8px] font-black text-slate-400 uppercase ml-1">የስራ ተግባር</label>
-                         <Input value={logTask} onChange={(e) => setLogTask(e.target.value)} placeholder="የስራው አይነት..." className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-bold shadow-inner" />
+                         <Input value={logTask} onChange={(e) => setLogTask(e.target.value)} placeholder="የስራው አይነት..." className="h-10 bg-white border-none rounded-xl text-[10px] font-bold shadow-sm" />
                       </div>
                       <div className="space-y-1">
                          <label className="text-[8px] font-black text-slate-400 uppercase ml-1">የተጀመረበት</label>
-                         <Input type="time" value={logStart} onChange={(e) => setLogStart(e.target.value)} className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-bold shadow-inner" />
+                         <Input type="time" value={logStart} onChange={(e) => setLogStart(e.target.value)} className="h-10 bg-white border-none rounded-xl text-[10px] font-bold shadow-sm" />
                       </div>
                       <div className="space-y-1">
                          <label className="text-[8px] font-black text-slate-400 uppercase ml-1">የተጠናቀቀበት</label>
-                         <Input type="time" value={logEnd} onChange={(e) => setLogEnd(e.target.value)} className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-bold shadow-inner" />
+                         <Input type="time" value={logEnd} onChange={(e) => setLogEnd(e.target.value)} className="h-10 bg-white border-none rounded-xl text-[10px] font-bold shadow-sm" />
                       </div>
                       <div className="space-y-1">
                          <label className="text-[8px] font-black text-slate-400 uppercase ml-1">እቅድ (በሰዓት)</label>
-                         <Input value={logPlanned} onChange={(e) => setLogPlanned(e.target.value)} placeholder="ምሳሌ፡ 2" className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-bold shadow-inner" />
+                         <Input value={logPlanned} onChange={(e) => setLogPlanned(e.target.value)} placeholder="ምሳሌ፡ 2" className="h-10 bg-white border-none rounded-xl text-[10px] font-bold shadow-sm" />
                       </div>
-                      <div className="flex items-end col-span-2 sm:col-span-1">
+                      <div className="flex items-end">
                         <Button onClick={handleAddDailyLog} className="w-full h-10 rounded-xl bg-[#1e3a8a] text-white font-black text-[10px] uppercase shadow-lg hover:bg-[#1e3a8a]/90 transition-all"><Plus className="w-4 h-4 mr-1" /> መዝግብ</Button>
                       </div>
                     </div>
@@ -702,7 +732,7 @@ export function BPMNFlowForgeApp() {
                           <TableHead className="text-[9px] font-black uppercase h-10">ባለሙያ</TableHead>
                           <TableHead className="text-[9px] font-black uppercase h-10">ተግባር</TableHead>
                           <TableHead className="text-[9px] font-black uppercase h-10">የሰዓት ቆይታ</TableHead>
-                          <TableHead className="text-[9px] font-black uppercase h-10">የእቅድ ሰዓት</TableHead>
+                          <TableHead className="text-[9px] font-black uppercase h-10">እቅድ (Hrs)</TableHead>
                           <TableHead className="text-[9px] font-black uppercase h-10 text-right pr-6">ተግባራት</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -723,11 +753,16 @@ export function BPMNFlowForgeApp() {
                                    <Badge variant="outline" className="text-[9px] font-bold px-3 h-6 bg-white shadow-sm">{log.endTime}</Badge>
                                 </div>
                               </TableCell>
-                              <TableCell className="py-4 text-[11px] font-black text-slate-500 uppercase">{log.plannedTime} ሰዓት</TableCell>
+                              <TableCell className="py-4">
+                                <Badge className="text-[9px] font-black bg-[#1e3a8a]/10 text-[#1e3a8a] border-none px-3 h-6">{log.plannedTime} Hrs</Badge>
+                              </TableCell>
                               <TableCell className="text-right py-4 pr-6">
-                                {(user?.email === ADMIN_EMAIL || log.uploaderId === user?.uid) && (
-                                  <Button variant="ghost" size="icon" onClick={() => deleteDocumentNonBlocking(doc(db!, 'daily_logs', log.id))} className="h-8 w-8 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"><Trash2 className="w-4 h-4" /></Button>
-                                )}
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button variant="ghost" size="icon" onClick={() => saveDailyLogToVault(log)} className="h-8 w-8 text-[#1e3a8a] hover:bg-blue-50 rounded-xl" title="መዝገብ ቤት አስገባ"><Save className="w-4 h-4" /></Button>
+                                  {(isAdmin || log.uploaderId === user?.uid) && (
+                                    <Button variant="ghost" size="icon" onClick={() => deleteDocumentNonBlocking(doc(db!, 'daily_logs', log.id))} className="h-8 w-8 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"><Trash2 className="w-4 h-4" /></Button>
+                                  )}
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))
@@ -744,7 +779,7 @@ export function BPMNFlowForgeApp() {
 
       <footer className="px-6 h-8 bg-white border-t flex justify-between items-center shrink-0 shadow-[0_-1px_3px_rgba(0,0,0,0.05)]">
         <div className="flex gap-4 items-center text-[8px] font-black text-slate-400 uppercase tracking-widest">
-          <span className="text-[#1e3a8a]">ITB Enterprise v16.0</span>
+          <span className="text-[#1e3a8a]">ITB Enterprise v25.0</span>
           <span>Institutional Sync Active</span>
         </div>
         <div className="flex items-center gap-2 px-3 py-0.5 bg-green-50 rounded-full border border-green-100 shadow-sm">
