@@ -2,14 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth, useUser } from '@/firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  updateProfile,
+  sendPasswordResetEmail 
+} from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, AlertCircle, UserPlus, LogIn, Briefcase, User, ShieldCheck, Building2, ChevronDown } from 'lucide-react';
+import { Loader2, AlertCircle, UserPlus, LogIn, Briefcase, User, ShieldCheck, Building2, ChevronDown, KeyRound, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { doc, setDoc, getFirestore } from 'firebase/firestore';
 import {
   Select,
@@ -25,7 +30,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -34,6 +39,7 @@ export default function LoginPage() {
   const [role, setRole] = useState('expert');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isUserLoading && user) {
@@ -47,9 +53,10 @@ export default function LoginPage() {
     
     setLoading(true);
     setErrorMessage(null);
+    setSuccessMessage(null);
     
     try {
-      if (isSignUp) {
+      if (mode === 'signup') {
         if (!firstName || !fatherName || !jobPosition) {
           throw new Error("እባክዎ ሁሉንም መረጃዎች በትክክል ይሙሉ");
         }
@@ -69,15 +76,20 @@ export default function LoginPage() {
         });
 
         toast({ title: "ተመዝግበዋል", description: "የቢሮ አካውንትዎ በትክክል ተከፍቷል" });
-      } else {
+      } else if (mode === 'signin') {
         await signInWithEmailAndPassword(auth, email, password);
         toast({ title: "እንኳን ደህና መጡ", description: "ወደ ሲስተሙ በመግባት ላይ ነዎት" });
+      } else if (mode === 'forgot') {
+        await sendPasswordResetEmail(auth, email);
+        setSuccessMessage("የይለፍ ቃል መቀየሪያ ሊንክ ወደ ኢሜይልዎ ተልኳል። እባክዎ ኢሜይልዎን ይፈትሹ።");
+        toast({ title: "ተልኳል", description: "የይለፍ ቃል ማስተካከያ መመሪያ ወደ ኢሜይልዎ ተልኳል" });
       }
     } catch (err: any) {
       console.error(err);
-      let msg = err.message || "መግባት አልተቻለም።";
+      let msg = err.message || "ክወናው አልተሳካም።";
       if (err.code === 'auth/email-already-in-use') msg = "ይህ ኢሜይል ቀድሞ ተመዝግቧል።";
       if (err.code === 'auth/invalid-credential') msg = "ኢሜይል ወይም የይለፍ ቃል ተሳስቷል፤ ወይም ገና አልተመዘገቡም።";
+      if (err.code === 'auth/user-not-found') msg = "ይህ ኢሜይል በሲስተሙ ውስጥ አልተገኘም።";
       setErrorMessage(msg);
     } finally {
       setLoading(false);
@@ -101,7 +113,9 @@ export default function LoginPage() {
             </CardDescription>
           </div>
           <div className="py-2 px-6 bg-slate-50 rounded-full inline-block mx-auto">
-             <p className="text-[11px] font-bold text-slate-600 uppercase">እንኳን ደህና መጡ!</p>
+             <p className="text-[11px] font-bold text-slate-600 uppercase">
+               {mode === 'forgot' ? 'የይለፍ ቃል መቀየሪያ' : 'እንኳን ደህና መጡ!'}
+             </p>
           </div>
         </CardHeader>
         
@@ -114,9 +128,17 @@ export default function LoginPage() {
             </Alert>
           )}
 
+          {successMessage && (
+            <Alert className="mb-6 bg-green-50 border-green-100 rounded-2xl border">
+              <AlertDescription className="text-[11px] font-bold text-green-900 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-600" /> {successMessage}
+              </AlertDescription>
+            </Alert>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
-            {isSignUp && (
-              <div className="space-y-4 animate-in slide-in-from-top-4 duration-300">
+            {mode === 'signup' && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <label className="text-[9px] font-black text-slate-400 uppercase ml-1">ስም</label>
@@ -155,23 +177,46 @@ export default function LoginPage() {
               <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@itb.gov.et" className="h-11 rounded-xl bg-slate-50 border-none font-bold text-xs" required />
             </div>
             
-            <div className="space-y-1.5">
-              <label className="text-[9px] font-black text-slate-400 uppercase ml-1">የይለፍ ቃል</label>
-              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="h-11 rounded-xl bg-slate-50 border-none font-bold text-xs" required />
-            </div>
+            {mode !== 'forgot' && (
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-slate-400 uppercase ml-1">የይለፍ ቃል</label>
+                <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="h-11 rounded-xl bg-slate-50 border-none font-bold text-xs" required />
+              </div>
+            )}
 
             <Button type="submit" className="w-full h-12 font-black bg-[#1e3a8a] hover:bg-[#1e3a8a]/90 shadow-xl rounded-2xl text-[10px] uppercase mt-4" disabled={loading}>
               {loading ? (
                 <Loader2 className="w-5 h-5 animate-spin mx-auto" />
               ) : (
-                isSignUp ? "አሁኑኑ ይመዝገቡ" : "ወደ መግቢያ ይለፉ"
+                mode === 'signup' ? "አሁኑኑ ይመዝገቡ" : mode === 'signin' ? "ወደ መግቢያ ይለፉ" : "የማስተካከያ ሊንክ ላክ"
               )}
             </Button>
           </form>
           
-          <button type="button" onClick={() => setIsSignUp(!isSignUp)} className="text-[10px] font-black text-[#1e3a8a] uppercase hover:underline block mx-auto mt-6">
-            {isSignUp ? 'አካውንት አለዎት? እዚህ ይግቡ' : 'አዲስ ሰራተኛ ነዎት? እዚህ ይመዝገቡ'}
-          </button>
+          <div className="flex flex-col gap-4 mt-8">
+            {mode === 'signin' && (
+              <>
+                <button type="button" onClick={() => setMode('signup')} className="text-[10px] font-black text-[#1e3a8a] uppercase hover:underline flex items-center justify-center gap-2">
+                  <UserPlus className="w-3.5 h-3.5" /> አዲስ ሰራተኛ ነዎት? እዚህ ይመዝገቡ
+                </button>
+                <button type="button" onClick={() => setMode('forgot')} className="text-[10px] font-black text-slate-400 uppercase hover:text-[#1e3a8a] hover:underline flex items-center justify-center gap-2">
+                  <KeyRound className="w-3.5 h-3.5" /> የይለፍ ቃል ረስተዋል?
+                </button>
+              </>
+            )}
+
+            {mode === 'signup' && (
+              <button type="button" onClick={() => setMode('signin')} className="text-[10px] font-black text-[#1e3a8a] uppercase hover:underline flex items-center justify-center gap-2">
+                <ArrowLeft className="w-3.5 h-3.5" /> አካውንት አለዎት? እዚህ ይግቡ
+              </button>
+            )}
+
+            {mode === 'forgot' && (
+              <button type="button" onClick={() => setMode('signin')} className="text-[10px] font-black text-[#1e3a8a] uppercase hover:underline flex items-center justify-center gap-2">
+                <ArrowLeft className="w-3.5 h-3.5" /> ወደ መግቢያ ገጽ ይመለሱ
+              </button>
+            )}
+          </div>
         </CardContent>
         <div className="bg-slate-50/50 p-4 text-center border-t">
            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">© 2024 INNOVATION & TECHNOLOGY BUREAU • ITB</p>
