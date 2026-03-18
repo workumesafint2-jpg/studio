@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useEffect, useState } from 'react';
@@ -71,6 +72,15 @@ interface DocumentRecord {
   createdAt?: any;
 }
 
+interface AuditLog {
+  id: string;
+  action: string;
+  userName: string;
+  docName: string;
+  details: string;
+  timestamp: any;
+}
+
 export default function AdminPage() {
   const db = useFirestore();
   const { toast } = useToast();
@@ -99,8 +109,8 @@ export default function AdminPage() {
 
   const stats = useMemo(() => ({
     totalDocs: allDocs?.length || 0,
-    headApproved: allDocs?.filter(d => d.status.includes('ኃላፊ')).length || 0,
-    directorApproved: allDocs?.filter(d => d.status.includes('ዳይሬክተር')).length || 0,
+    headApproved: allDocs?.filter(d => d.status === 'በኃላፊ የተፈረመ').length || 0,
+    directorApproved: allDocs?.filter(d => d.status === 'በዳይሬክተር የጸደቀ').length || 0,
     finalized: allDocs?.filter(d => d.status === 'የተጠናቀቀ').length || 0
   }), [allDocs]);
 
@@ -120,7 +130,7 @@ export default function AdminPage() {
     
     const newSignature: SignatureEntry = {
       role: roleName,
-      name: user?.displayName || "ተጠቃሚ",
+      name: user?.displayName || user?.email || "ተጠቃሚ",
       date: new Date().toLocaleString('et-ET'),
       status: 'ተፈርሟል'
     };
@@ -132,8 +142,8 @@ export default function AdminPage() {
       signatures: updatedSignatures
     });
 
-    handleLogAction("SIGNATURE", docItem.name, `${roleName} ፊርማቸውን አኑረዋል`);
-    toast({ title: "ተፈርሟል", description: `ሰነዱ በ${roleName} ተፈርሞ ወደ ቀጣዩ ደረጃ አልፏል` });
+    handleLogAction("SIGNATURE", docItem.name, `${roleName} ፊርማቸውን አኑረዋል - ደረጃው ወደ "${nextStatus}" ተቀይሯል`);
+    toast({ title: "ተፈርሟል", description: `ሰነዱ በ${roleName} ተፈርሞ ወደ "${nextStatus}" ደረጃ ተቀይሯል` });
   };
 
   const handleDelete = (docItem: DocumentRecord) => {
@@ -276,15 +286,18 @@ export default function AdminPage() {
                           </div>
                         </div>
 
-                        {/* Signature Visualization Area */}
+                        {/* Hierarchical Signature Progress Area */}
                         <div className="bg-slate-50/50 rounded-3xl p-6 border border-dashed border-slate-200">
-                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-4">የፊርማ ማረጋገጫ መስመር</p>
+                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-4">የፊርማ ማረጋገጫ መስመር (Hierarchy Track)</p>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {['ቢሮ ኃላፊ', 'ዳይሬክተር', 'ቡድን መሪ', 'ባለሙያ'].map((role) => {
                               const sig = docItem.signatures?.find(s => s.role === role);
                               return (
-                                <div key={role} className={`p-4 rounded-2xl border ${sig ? 'bg-white border-green-100 shadow-sm' : 'bg-slate-100/50 border-transparent opacity-50'}`}>
-                                  <p className="text-[8px] font-black text-slate-400 uppercase mb-2">{role}</p>
+                                <div key={role} className={`p-4 rounded-2xl border transition-all ${sig ? 'bg-white border-green-100 shadow-sm' : 'bg-slate-100/30 border-transparent opacity-40'}`}>
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <div className={`w-2 h-2 rounded-full ${sig ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`} />
+                                    <p className="text-[8px] font-black text-slate-400 uppercase">{role}</p>
+                                  </div>
                                   {sig ? (
                                     <div className="space-y-1">
                                       <p className="text-[10px] font-black text-green-700 flex items-center gap-1.5">
@@ -293,7 +306,7 @@ export default function AdminPage() {
                                       <p className="text-[7px] font-bold text-slate-400">{sig.date}</p>
                                     </div>
                                   ) : (
-                                    <p className="text-[9px] font-bold text-slate-300 italic">ፊርማ ይጠበቃል</p>
+                                    <p className="text-[9px] font-bold text-slate-300 italic">ፊርማ ይጠበቃል...</p>
                                   )}
                                 </div>
                               );
@@ -326,9 +339,11 @@ export default function AdminPage() {
                       <div key={log.id} className="p-6 hover:bg-slate-50 transition-all flex items-center justify-between">
                         <div className="flex items-center gap-4">
                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${
-                            log.action === 'SIGNATURE' ? 'bg-purple-50 text-purple-500' : 'bg-blue-50 text-blue-500'
+                            log.action === 'SIGNATURE' ? 'bg-purple-50 text-purple-500' : 
+                            log.action === 'DELETE' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'
                           }`}>
-                            {log.action === 'SIGNATURE' ? <Stamp className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                            {log.action === 'SIGNATURE' ? <Stamp className="w-5 h-5" /> : 
+                             log.action === 'DELETE' ? <Trash2 className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                           </div>
                           <div className="flex flex-col">
                             <span className="text-[11px] font-black text-slate-800">{log.userName} {log.details}</span>
@@ -337,7 +352,7 @@ export default function AdminPage() {
                         </div>
                         <div className="text-right flex flex-col items-end gap-1">
                           <span className="text-[9px] font-bold text-slate-400">
-                            {log.timestamp?.toDate ? log.timestamp.toDate().toLocaleString() : ""}
+                            {log.timestamp?.toDate ? log.timestamp.toDate().toLocaleString('et-ET') : "ቀን የለም"}
                           </span>
                         </div>
                       </div>

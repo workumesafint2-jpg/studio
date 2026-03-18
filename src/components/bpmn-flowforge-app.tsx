@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -185,7 +186,7 @@ export function BPMNFlowForgeApp() {
 
   const handleFileUpload = async () => {
     if (!selectedFile && !upName.trim()) {
-      toast({ title: "መረጃ ይጎድላል", description: "እባክዎ ፋይል ይምረጡ", variant: "destructive" });
+      toast({ title: "መረጃ ይጎድላል", description: "እባክዎ ፋይል ይምረጡ ወይም ስም ይስጡ", variant: "destructive" });
       return;
     }
     if (!user || !db) return;
@@ -202,14 +203,14 @@ export function BPMNFlowForgeApp() {
       }
       await addDocumentNonBlocking(collection(db, 'documents'), {
         name: finalName,
-        category: "ሪፖርት",
+        category: "ኦፊሴላዊ ሰነድ",
         fileName: selectedFile ? selectedFile.name : finalName,
         fileSize: selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : "N/A",
         uploadDate: new Date().toISOString(),
         fileUrl: fileUrl,
         status: 'በሂደት ላይ',
         uploaderId: user.uid,
-        expertName: user.displayName || "ባለሙያ",
+        expertName: user.displayName || user.email || "ባለሙያ",
         createdAt: Timestamp.now(),
         signatures: []
       });
@@ -260,7 +261,7 @@ export function BPMNFlowForgeApp() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52 p-2 rounded-2xl shadow-2xl border-none">
-              <DropdownMenuLabel className="text-[9px] uppercase font-black px-2 text-slate-400 pb-2">ባለሙያ መቆጣጠሪያ</DropdownMenuLabel>
+              <DropdownMenuLabel className="text-[9px] uppercase font-black px-2 text-slate-400 pb-2">የባለሙያ መቆጣጠሪያ</DropdownMenuLabel>
               <DropdownMenuItem asChild>
                 <Link href="/admin" className="flex items-center w-full p-2 rounded-xl font-bold text-[10px] hover:bg-blue-50">
                   <ShieldCheck className="w-3.5 h-3.5 mr-2 text-blue-600" /> የሥራ ሂደት ቁጥጥር
@@ -280,7 +281,7 @@ export function BPMNFlowForgeApp() {
           <Input 
             value={globalSearch} 
             onChange={(e) => setGlobalSearch(e.target.value)} 
-            placeholder="የተፈረሙ ሰነዶች ፍለጋ..." 
+            placeholder="የተፈረሙ ሰነዶች ፍለጋ (በስም ወይም በባለሙያ)..." 
             className="h-11 w-full pl-11 pr-4 rounded-full border-none shadow-lg bg-white text-[11px] font-bold"
           />
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
@@ -295,8 +296,8 @@ export function BPMNFlowForgeApp() {
                    <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500">BPMN ካርታ ዝግጅት</h2>
                 </div>
                 <div className="space-y-3">
-                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="የአገልግሎት ስም..." className="h-11 rounded-xl bg-slate-50 border-none font-bold text-[11px]" />
-                  <Textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder="የሥራ ሂደቱን ዝርዝር እዚህ ይጻፉ..." className="min-h-[100px] rounded-xl bg-slate-50 border-none text-[11px] font-medium leading-relaxed resize-none p-4" />
+                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="የአገልግሎት ስም (Title)..." className="h-11 rounded-xl bg-slate-50 border-none font-bold text-[11px]" />
+                  <Textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder="የሥራ ሂደቱን ዝርዝር እዚህ ይጻፉ (Steps)..." className="min-h-[100px] rounded-xl bg-slate-50 border-none text-[11px] font-medium leading-relaxed resize-none p-4" />
                   <Button className="w-full h-11 bg-[#1e3a8a] rounded-xl font-black text-[10px] shadow-lg uppercase" onClick={() => {
                     const res = generateBPMN(input, title);
                     if(res) { setXmlResult(res); setActiveTab("diagram"); }
@@ -329,18 +330,25 @@ export function BPMNFlowForgeApp() {
                 </Dialog>
               </CardHeader>
               <CardContent className="p-0">
-                <ScrollArea className="h-[350px]">
+                <ScrollArea className="h-[400px]">
                   {isDocsLoading ? (
                     <div className="flex flex-col items-center justify-center py-12 gap-2">
                       <Loader2 className="w-8 h-8 animate-spin text-[#1e3a8a]/20" />
                     </div>
+                  ) : filteredDocuments.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 opacity-20">
+                      <Archive className="w-12 h-12 mb-2" />
+                      <p className="text-[10px] font-black uppercase">ምንም ሰነድ የለም</p>
+                    </div>
                   ) : (
                     <div className="divide-y divide-slate-50">
                       {filteredDocuments.map(file => (
-                        <div key={file.id} className="p-6 hover:bg-slate-50">
+                        <div key={file.id} className="p-6 hover:bg-slate-50 transition-colors">
                           <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-4">
-                              <FileText className="w-6 h-6 text-slate-400" />
+                              <div className="w-12 h-12 bg-white border rounded-2xl flex items-center justify-center shadow-sm">
+                                <FileText className="w-6 h-6 text-slate-300" />
+                              </div>
                               <div className="flex flex-col">
                                 <p className="text-[11px] font-black text-slate-900">{file.name}</p>
                                 <div className="flex items-center gap-2 mt-1">
@@ -350,23 +358,30 @@ export function BPMNFlowForgeApp() {
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                               <Button variant="ghost" size="icon" onClick={() => handleOpenFile(file)} className="h-9 w-9 text-blue-500 rounded-xl"><Eye className="w-4 h-4" /></Button>
+                               <Button variant="ghost" size="icon" onClick={() => handleOpenFile(file)} className="h-9 w-9 text-blue-500 rounded-xl bg-blue-50/50 hover:bg-blue-100"><Eye className="w-4 h-4" /></Button>
                                {isAdmin && (
                                   <Button variant="ghost" size="icon" onClick={() => deleteDocumentNonBlocking(doc(db!, 'documents', file.id))} className="h-9 w-9 text-red-300 hover:text-red-500 rounded-xl"><Trash2 className="w-4 h-4" /></Button>
                                )}
                             </div>
                           </div>
                           
-                          {/* Hierarchical Signature Progress */}
+                          {/* Hierarchical Signature Progress Visualization */}
                           <div className="grid grid-cols-4 gap-2 pt-4 border-t border-slate-50">
                             {['ቢሮ ኃላፊ', 'ዳይሬክተር', 'ቡድን መሪ', 'ባለሙያ'].map((role) => {
                               const sig = file.signatures?.find(s => s.role === role);
                               return (
-                                <div key={role} className="flex flex-col items-center gap-1.5">
-                                  <div className={`w-7 h-7 rounded-full flex items-center justify-center border ${sig ? 'bg-green-50 border-green-200 text-green-600' : 'bg-slate-50 border-slate-100 text-slate-300'}`}>
+                                <div key={role} className="flex flex-col items-center gap-1.5 group">
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all ${
+                                    sig ? 'bg-green-50 border-green-200 text-green-600 shadow-sm' : 'bg-slate-50 border-slate-100 text-slate-300'
+                                  }`}>
                                     {sig ? <CheckCircle2 className="w-4 h-4" /> : <PenTool className="w-3.5 h-3.5" />}
                                   </div>
-                                  <span className={`text-[6px] font-black uppercase text-center ${sig ? 'text-green-600' : 'text-slate-400'}`}>{role}</span>
+                                  <span className={`text-[6px] font-black uppercase text-center transition-colors ${
+                                    sig ? 'text-green-600' : 'text-slate-400'
+                                  }`}>{role}</span>
+                                  {sig && (
+                                    <span className="text-[5px] font-bold text-slate-400 hidden group-hover:block">{sig.name.split(' ')[0]}</span>
+                                  )}
                                 </div>
                               );
                             })}
@@ -406,8 +421,8 @@ export function BPMNFlowForgeApp() {
                        <div className="h-[200px] w-full">
                           <ResponsiveContainer width="100%" height="100%">
                              <AreaChart data={automatedAnalysis.graphData}>
-                                <XAxis dataKey="name" fontSize={8} />
-                                <YAxis fontSize={8} />
+                                <XAxis dataKey="name" fontSize={8} stroke="#cbd5e1" />
+                                <YAxis fontSize={8} stroke="#cbd5e1" />
                                 <RechartsTooltip />
                                 <Area type="monotone" dataKey="activity" stroke="#1e3a8a" fill="#1e3a8a" fillOpacity={0.1} />
                              </AreaChart>
@@ -415,9 +430,15 @@ export function BPMNFlowForgeApp() {
                        </div>
                     </Card>
                     <Card className="shadow-xl border-none rounded-[2rem] bg-white p-6 flex flex-col justify-center text-center">
-                       <p className="text-[8px] font-black text-slate-400 uppercase mb-2">ውጤታማነት</p>
+                       <p className="text-[8px] font-black text-slate-400 uppercase mb-2">አውቶማቲክ ውጤታማነት</p>
                        <p className="text-4xl font-black text-[#1e3a8a]">{automatedAnalysis.efficiency.toFixed(1)}%</p>
                        <p className="text-[10px] font-bold text-slate-500 mt-4 uppercase tracking-widest">{automatedAnalysis.totalDocs} ሰነዶች ተመዝግበዋል</p>
+                       <div className="mt-6 p-4 bg-slate-50 rounded-2xl">
+                          <p className="text-[8px] font-black text-slate-400 uppercase mb-1 text-left">AI ትንተና (Insights)</p>
+                          <p className="text-[9px] font-bold text-slate-600 text-left leading-relaxed">
+                             ሲስተሙ የተመዘገቡ ሰነዶችንና ዝውውራቸውን በመተንተን {automatedAnalysis.efficiency > 85 ? 'ከፍተኛ' : 'መካከለኛ'} አፈጻጸም መኖሩን እያሳየ ነው። ትኩረት የሚሹ ሰነዶች በመዝገብ ቤት ውስጥ ይገኛሉ።
+                          </p>
+                       </div>
                     </Card>
                  </div>
               </TabsContent>
@@ -426,22 +447,27 @@ export function BPMNFlowForgeApp() {
                 <Card className="h-[400px] shadow-xl border-none rounded-[2rem] bg-white flex flex-col overflow-hidden">
                   <ScrollArea className="flex-1 p-6">
                     <div className="space-y-4">
-                      {feedbackMessages.map(msg => (
+                      {feedbackMessages.length === 0 ? (
+                        <div className="h-full flex flex-col items-center justify-center opacity-10 mt-20">
+                           <MessageSquare className="w-10 h-10" />
+                           <p className="text-[9px] font-black uppercase mt-2">መልዕክት የለም</p>
+                        </div>
+                      ) : feedbackMessages.map(msg => (
                         <div key={msg.id} className={`flex flex-col ${msg.uploaderId === user?.uid ? 'items-end' : 'items-start'}`}>
-                          <div className={`p-3 rounded-2xl text-[11px] font-bold ${msg.uploaderId === user?.uid ? 'bg-[#1e3a8a] text-white' : 'bg-slate-100 text-slate-800'}`}>
+                          <div className={`p-3 rounded-2xl text-[11px] font-bold ${msg.uploaderId === user?.uid ? 'bg-[#1e3a8a] text-white shadow-md' : 'bg-slate-100 text-slate-800'}`}>
                             {msg.content}
                           </div>
-                          <span className="text-[7px] text-slate-400 font-black uppercase mt-1">{msg.senderName}</span>
+                          <span className="text-[7px] text-slate-400 font-black uppercase mt-1 px-1">{msg.senderName}</span>
                         </div>
                       ))}
                     </div>
                   </ScrollArea>
                   <div className="p-4 bg-white border-t flex gap-3">
                     <Input value={feedbackInput} onChange={(e) => setFeedbackInput(e.target.value)} placeholder="መልዕክት ይጻፉ..." className="h-11 bg-slate-50 border-none rounded-xl text-[11px] font-bold" />
-                    <Button className="h-11 w-11 p-0 rounded-xl bg-[#1e3a8a]" onClick={async () => {
+                    <Button className="h-11 w-11 p-0 rounded-xl bg-[#1e3a8a] shadow-lg" onClick={async () => {
                       if(!feedbackInput.trim()) return;
                       await addDocumentNonBlocking(collection(db!, 'feedback'), {
-                        senderName: user?.displayName || "ባለሙያ",
+                        senderName: user?.displayName || user?.email || "ባለሙያ",
                         content: feedbackInput,
                         timestamp: new Date().toISOString(),
                         uploaderId: user?.uid,
@@ -458,7 +484,7 @@ export function BPMNFlowForgeApp() {
       </main>
 
       <footer className="px-6 h-8 bg-white border-t flex justify-between items-center shrink-0">
-        <span className="text-[7px] font-black text-slate-300 uppercase">ITB ENTERPRISE V5.5.0</span>
+        <span className="text-[7px] font-black text-slate-300 uppercase">ITB PRO ENTERPRISE V5.5.5</span>
         <div className="flex items-center gap-1.5 px-2 py-0.5 bg-green-50 rounded-full">
           <div className="w-1 h-1 rounded-full bg-green-500 animate-pulse"></div>
           <span className="text-[7px] font-black text-green-600 uppercase">SECURE NETWORK</span>

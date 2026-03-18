@@ -23,9 +23,16 @@ const LoadingScreen = () => (
 
 /**
  * Enhanced Dynamic Loader with Chunk Recovery Logic.
+ * This prevents the "ChunkLoadError" by retrying the load if it fails due to network issues.
  */
 const BPMNFlowForgeApp = dynamic(
-  () => import("@/components/bpmn-flowforge-app").then((mod) => mod.BPMNFlowForgeApp),
+  () => import("@/components/bpmn-flowforge-app").then((mod) => mod.BPMNFlowForgeApp).catch((err) => {
+    console.error("Chunk load failed, attempting reload...", err);
+    if (typeof window !== 'undefined') {
+      window.location.reload();
+    }
+    return () => <LoadingScreen />;
+  }),
   { 
     ssr: false,
     loading: () => <LoadingScreen />
@@ -37,6 +44,16 @@ export default function Home() {
 
   useEffect(() => {
     setIsClient(true);
+    
+    // Global Chunk Error Listener
+    const handleChunkError = (e: ErrorEvent) => {
+      if (e.message.includes('Loading chunk') || e.message.includes('CSS chunk')) {
+        window.location.reload();
+      }
+    };
+
+    window.addEventListener('error', handleChunkError);
+    return () => window.removeEventListener('error', handleChunkError);
   }, []);
 
   if (!isClient) {
