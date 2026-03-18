@@ -29,7 +29,8 @@ import {
   User,
   Eye,
   PenTool,
-  Archive
+  Archive,
+  Stamp
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -79,6 +80,13 @@ import Link from 'next/link';
 
 const ADMIN_EMAIL = "workumesafint2@gmail.com";
 
+interface SignatureEntry {
+  role: string;
+  name: string;
+  date: string;
+  status: string;
+}
+
 interface UploadedFile {
   id: string;
   name: string;
@@ -87,12 +95,10 @@ interface UploadedFile {
   fileSize: string;
   uploadDate: string;
   fileUrl: string; 
-  type: string;
   status: string;
   uploaderId: string;
   expertName?: string;
-  sector?: string;
-  signedBy?: string;
+  signatures?: SignatureEntry[];
   createdAt?: any;
 }
 
@@ -106,10 +112,7 @@ export function BPMNFlowForgeApp() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [globalSearch, setGlobalSearch] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  
   const [upName, setUpName] = useState("");
-  const [upSector, setUpSector] = useState("");
-  const [upExpertName, setUpExpertName] = useState("");
   const [feedbackInput, setFeedbackInput] = useState("");
 
   const viewerRef = useRef<BPMNViewerRef>(null);
@@ -121,10 +124,7 @@ export function BPMNFlowForgeApp() {
 
   useEffect(() => {
     setMounted(true);
-    if (user && !upExpertName) {
-      setUpExpertName(user.displayName || "");
-    }
-  }, [user, upExpertName]);
+  }, []);
 
   const isAdmin = user?.email === ADMIN_EMAIL;
 
@@ -207,16 +207,17 @@ export function BPMNFlowForgeApp() {
         fileSize: selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : "N/A",
         uploadDate: new Date().toISOString(),
         fileUrl: fileUrl,
-        type: selectedFile ? selectedFile.type : 'institutional/record',
         status: 'በሂደት ላይ',
         uploaderId: user.uid,
-        expertName: upExpertName || user.displayName || "ባለሙያ",
-        sector: upSector || "አጠቃላይ",
-        createdAt: Timestamp.now()
+        expertName: user.displayName || "ባለሙያ",
+        createdAt: Timestamp.now(),
+        signatures: []
       });
       handleLogAction("UPLOAD", finalName, "አዲስ ሰነድ መዝግበዋል");
       setIsSaving(false);
       setIsUploadOpen(false);
+      setUpName("");
+      setSelectedFile(null);
       toast({ title: "ተሳክቷል", description: "ሰነዱ በመዝገብ ቤት ገብቷል።" });
     } catch (e) {
       setIsSaving(false);
@@ -259,14 +260,12 @@ export function BPMNFlowForgeApp() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52 p-2 rounded-2xl shadow-2xl border-none">
-              <DropdownMenuLabel className="text-[9px] uppercase font-black px-2 text-slate-400 pb-2">የባለሙያ መቆጣጠሪያ</DropdownMenuLabel>
-              {isAdmin && (
-                <DropdownMenuItem asChild>
-                  <Link href="/admin" className="flex items-center w-full p-2 rounded-xl font-bold text-[10px] hover:bg-blue-50">
-                    <ShieldCheck className="w-3.5 h-3.5 mr-2 text-blue-600" /> የአስተዳዳሪ ገጽ
-                  </Link>
-                </DropdownMenuItem>
-              )}
+              <DropdownMenuLabel className="text-[9px] uppercase font-black px-2 text-slate-400 pb-2">ባለሙያ መቆጣጠሪያ</DropdownMenuLabel>
+              <DropdownMenuItem asChild>
+                <Link href="/admin" className="flex items-center w-full p-2 rounded-xl font-bold text-[10px] hover:bg-blue-50">
+                  <ShieldCheck className="w-3.5 h-3.5 mr-2 text-blue-600" /> የሥራ ሂደት ቁጥጥር
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-slate-50 my-1" />
               <DropdownMenuItem onClick={handleLogout} className="text-red-600 font-bold p-2 rounded-xl cursor-pointer hover:bg-red-50 text-[10px]">
                 <LogOut className="w-3.5 h-3.5 mr-2" /> ውጣ
@@ -281,7 +280,7 @@ export function BPMNFlowForgeApp() {
           <Input 
             value={globalSearch} 
             onChange={(e) => setGlobalSearch(e.target.value)} 
-            placeholder="መዝገብ ቤት ፈትሽ..." 
+            placeholder="የተፈረሙ ሰነዶች ፍለጋ..." 
             className="h-11 w-full pl-11 pr-4 rounded-full border-none shadow-lg bg-white text-[11px] font-bold"
           />
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
@@ -293,11 +292,11 @@ export function BPMNFlowForgeApp() {
               <CardContent className="p-6 space-y-5">
                 <div className="flex items-center gap-2 mb-1">
                    <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center"><BrainCircuit className="w-4 h-4 text-[#1e3a8a]" /></div>
-                   <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500">AI ረዳት (BPMN)</h2>
+                   <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500">BPMN ካርታ ዝግጅት</h2>
                 </div>
                 <div className="space-y-3">
                   <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="የአገልግሎት ስም..." className="h-11 rounded-xl bg-slate-50 border-none font-bold text-[11px]" />
-                  <Textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder="ዝርዝር ተግባራት..." className="min-h-[100px] rounded-xl bg-slate-50 border-none text-[11px] font-medium leading-relaxed resize-none p-4" />
+                  <Textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder="የሥራ ሂደቱን ዝርዝር እዚህ ይጻፉ..." className="min-h-[100px] rounded-xl bg-slate-50 border-none text-[11px] font-medium leading-relaxed resize-none p-4" />
                   <Button className="w-full h-11 bg-[#1e3a8a] rounded-xl font-black text-[10px] shadow-lg uppercase" onClick={() => {
                     const res = generateBPMN(input, title);
                     if(res) { setXmlResult(res); setActiveTab("diagram"); }
@@ -309,7 +308,7 @@ export function BPMNFlowForgeApp() {
             <Card className="shadow-xl border-none rounded-[2rem] bg-white overflow-hidden">
               <CardHeader className="p-6 flex flex-row items-center justify-between border-b border-slate-50">
                 <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                  <Files className="w-4 h-4" /> መዝገብ ቤት (VAULT)
+                  <Files className="w-4 h-4" /> መዝገብ ቤት (Vault)
                 </CardTitle>
                 <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
                   <DialogTrigger asChild>
@@ -322,16 +321,15 @@ export function BPMNFlowForgeApp() {
                     <div className="space-y-3">
                       <Input type="file" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} className="h-10 rounded-xl bg-slate-50 border-none text-[9px] pt-2" />
                       <Input value={upName} onChange={(e) => setUpName(e.target.value)} placeholder="የሰነዱ ስም..." className="h-10 rounded-xl bg-slate-50 border-none text-[10px] font-bold" />
-                      <Input value={upSector} onChange={(e) => setUpSector(e.target.value)} placeholder="ዘርፍ (Sector)..." className="h-10 rounded-xl bg-slate-50 border-none text-[10px] font-bold" />
                       <Button className="w-full h-11 bg-[#1e3a8a] rounded-xl font-black uppercase text-[10px] mt-2 shadow-lg" onClick={handleFileUpload} disabled={isSaving}>
-                        {isSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "አጽድቅና መዝግብ"}
+                        {isSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "መዝግብ"}
                       </Button>
                     </div>
                   </DialogContent>
                 </Dialog>
               </CardHeader>
               <CardContent className="p-0">
-                <ScrollArea className="h-[300px]">
+                <ScrollArea className="h-[350px]">
                   {isDocsLoading ? (
                     <div className="flex flex-col items-center justify-center py-12 gap-2">
                       <Loader2 className="w-8 h-8 animate-spin text-[#1e3a8a]/20" />
@@ -339,19 +337,39 @@ export function BPMNFlowForgeApp() {
                   ) : (
                     <div className="divide-y divide-slate-50">
                       {filteredDocuments.map(file => (
-                        <div key={file.id} className="p-5 hover:bg-slate-50 flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <FileText className="w-5 h-5 text-slate-400" />
-                            <div className="flex flex-col">
-                              <p className="text-[11px] font-black text-slate-900">{file.name}</p>
-                              <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{file.expertName} • {file.status}</p>
+                        <div key={file.id} className="p-6 hover:bg-slate-50">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-4">
+                              <FileText className="w-6 h-6 text-slate-400" />
+                              <div className="flex flex-col">
+                                <p className="text-[11px] font-black text-slate-900">{file.name}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Badge variant="ghost" className="h-5 px-2 text-[7px] font-black uppercase bg-blue-50 text-blue-600">ደረጃ፦ {file.status}</Badge>
+                                  <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">{file.expertName}</p>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                               <Button variant="ghost" size="icon" onClick={() => handleOpenFile(file)} className="h-9 w-9 text-blue-500 rounded-xl"><Eye className="w-4 h-4" /></Button>
+                               {isAdmin && (
+                                  <Button variant="ghost" size="icon" onClick={() => deleteDocumentNonBlocking(doc(db!, 'documents', file.id))} className="h-9 w-9 text-red-300 hover:text-red-500 rounded-xl"><Trash2 className="w-4 h-4" /></Button>
+                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                             <Button variant="ghost" size="icon" onClick={() => handleOpenFile(file)} className="h-8 w-8 text-blue-500"><Eye className="w-4 h-4" /></Button>
-                             {isAdmin && (
-                                <Button variant="ghost" size="icon" onClick={() => deleteDocumentNonBlocking(doc(db!, 'documents', file.id))} className="h-8 w-8 text-red-300 hover:text-red-500"><Trash2 className="w-4 h-4" /></Button>
-                             )}
+                          
+                          {/* Hierarchical Signature Progress */}
+                          <div className="grid grid-cols-4 gap-2 pt-4 border-t border-slate-50">
+                            {['ቢሮ ኃላፊ', 'ዳይሬክተር', 'ቡድን መሪ', 'ባለሙያ'].map((role) => {
+                              const sig = file.signatures?.find(s => s.role === role);
+                              return (
+                                <div key={role} className="flex flex-col items-center gap-1.5">
+                                  <div className={`w-7 h-7 rounded-full flex items-center justify-center border ${sig ? 'bg-green-50 border-green-200 text-green-600' : 'bg-slate-50 border-slate-100 text-slate-300'}`}>
+                                    {sig ? <CheckCircle2 className="w-4 h-4" /> : <PenTool className="w-3.5 h-3.5" />}
+                                  </div>
+                                  <span className={`text-[6px] font-black uppercase text-center ${sig ? 'text-green-600' : 'text-slate-400'}`}>{role}</span>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       ))}
