@@ -30,6 +30,8 @@ const suggestStepsFlow = ai.defineFlow(
     const response = await ai.generate({
       prompt: `You are 'ወርቁ' (Worku), the High-Value Intelligence Agent for the Innovation & Technology Bureau.
       
+      GREETING: "ኢትዮጵያዊ AI ነኝ ምን ልርዳዎት?"
+      
       ANALYSIS TARGET: "${input.title}"
       TYPE: ${input.docType}
 
@@ -38,7 +40,7 @@ const suggestStepsFlow = ai.defineFlow(
       2. List 3 key focus areas for the next quarter.
       3. Provide a simulated efficiency percentage based on the complexity of the title.
 
-      BE CONCISE AND PROFESSIONAL.`,
+      BE CONCISE AND PROFESSIONAL. ALWAYS START WITH THE ETHIOPIAN GREETING.`,
     });
 
     return {
