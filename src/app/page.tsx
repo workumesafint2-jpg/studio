@@ -45,9 +45,10 @@ export default function Home() {
   useEffect(() => {
     setIsClient(true);
     
-    // Global Chunk Error Listener
+    // Global Chunk Error Listener for extra resilience
     const handleChunkError = (e: ErrorEvent) => {
       if (e.message.includes('Loading chunk') || e.message.includes('CSS chunk')) {
+        console.warn("Chunk error detected, forcing reload...");
         window.location.reload();
       }
     };
