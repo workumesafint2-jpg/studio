@@ -409,7 +409,7 @@ export function BPMNFlowForgeApp() {
 
         <ScrollArea className="h-full">
           <div className="max-w-6xl mx-auto space-y-6 pb-20">
-            {/* V6.0.0 Stats Card */}
+            {/* V6.0.0 Stats Card - BLUE GRADIENT PERFORMANCE CARD */}
             <Card className="shadow-2xl border-none rounded-[3rem] bg-gradient-to-br from-[#1e3a8a] to-[#1e40af] text-white overflow-hidden p-8">
                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                   <div className="space-y-4">
@@ -447,6 +447,7 @@ export function BPMNFlowForgeApp() {
               </div>
 
               <TabsContent value="diagram">
+                {/* LARGE ROUNDED CONTAINER FOR MODELER */}
                 <Card className="min-h-[850px] rounded-[3rem] border-none shadow-2xl overflow-hidden bg-white relative">
                   <div className="absolute top-6 right-8 z-10 flex gap-3">
                      <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="የካርታው ስም..." className="h-11 w-64 rounded-xl bg-white/80 backdrop-blur shadow-md border-none font-bold text-[11px]" />
@@ -473,6 +474,7 @@ export function BPMNFlowForgeApp() {
               <TabsContent value="vault">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2">
+                    {/* SECURE DATA VAULT - LARGE ROUNDED CONTAINER */}
                     <Card className="shadow-2xl border-none rounded-[3rem] bg-white overflow-hidden h-full">
                       <CardHeader className="p-8 flex flex-row items-center justify-between border-b border-slate-50">
                         <div className="flex items-center gap-3">
@@ -622,6 +624,7 @@ export function BPMNFlowForgeApp() {
         </ScrollArea>
       </main>
 
+      {/* SAFETY FIRST: DELETE CONFIRMATION DIALOG */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent className="rounded-[2.5rem] border-none p-8">
           <AlertDialogHeader>
