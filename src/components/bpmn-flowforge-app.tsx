@@ -27,7 +27,9 @@ import {
   CheckCircle,
   FileDown,
   Sparkles,
-  ChevronDown
+  ChevronDown,
+  Download,
+  Printer
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -283,6 +285,27 @@ export function BPMNFlowForgeApp() {
     }
   };
 
+  const handleExportRegistry = () => {
+    const headers = ["ስም", "ዘርፍ", "መዝገብ ቁጥር", "ቀን", "ሁኔታ"];
+    const rows = filteredDocuments.map(d => [
+      d.name,
+      d.sector || "N/A",
+      d.registryNumber || "N/A",
+      new Date(d.uploadDate).toLocaleDateString(),
+      d.status
+    ]);
+    
+    let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "itb_registry_export.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast({ title: "ተሳክቷል", description: "የመዝገብ መረጃዎች ወርደዋል" });
+  };
+
   if (!mounted) return null;
 
   return (
@@ -370,7 +393,7 @@ export function BPMNFlowForgeApp() {
               ዲያግራም አመንጪ
             </Button>
             <Button onClick={handleSaveToVault} disabled={!xmlResult || isSaving} variant="outline" className="h-16 px-10 rounded-2xl border-2 border-slate-100 font-black text-[11px] uppercase flex items-center gap-3">
-              <Save className="w-5 h-5" /> {isSaving ? "መዝግብ (Save)" : "መዝግብ (Save)"}
+              <Save className="w-5 h-5" /> {isSaving ? "በመመዝገብ ላይ..." : "መዝግብ (Save)"}
             </Button>
             <Button variant="outline" onClick={() => {setInput(""); setXmlResult(""); setTitle("");}} className="h-16 w-16 p-0 rounded-2xl border-2 border-slate-100 text-slate-300 hover:text-red-500">
               <Trash2 className="w-6 h-6" />
@@ -378,134 +401,140 @@ export function BPMNFlowForgeApp() {
           </div>
         </Card>
 
-        {/* TABS & ACTIONS */}
-        <div className="flex items-center justify-between">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-auto">
+        {/* TABS & ACTIONS - WRAPPED IN TABS FOR CONTEXT */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-8">
+          <div className="flex items-center justify-between">
             <TabsList className="bg-white p-1 rounded-2xl shadow-lg border border-slate-100 h-auto gap-1">
-              <TabsTrigger value="diagram" className="text-[10px] font-black px-8 py-3 rounded-xl uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white">ዲያግራም</TabsTrigger>
-              <TabsTrigger value="performance" className="text-[10px] font-black px-8 py-3 rounded-xl uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white">ቢሮ አፈጻጸም</TabsTrigger>
+              <TabsTrigger value="diagram" className="text-[10px] font-black px-8 py-3 rounded-xl uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white">የካሙንዳ ዲያግራም</TabsTrigger>
+              <TabsTrigger value="performance" className="text-[10px] font-black px-8 py-3 rounded-xl uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white">የቢሮ መዝገብ ቤት</TabsTrigger>
             </TabsList>
-          </Tabs>
 
-          <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-            <DialogTrigger asChild>
-              <Button className="h-12 px-8 rounded-2xl bg-white text-[#1e3a8a] border-2 border-slate-100 shadow-xl hover:bg-slate-50 font-black text-[10px] uppercase flex items-center gap-2">
-                <Upload className="w-4 h-4" /> አዲስ ፋይል አያይዝ (DMS)
+            <div className="flex items-center gap-3">
+              <Button onClick={handleExportRegistry} variant="outline" className="h-12 px-6 rounded-2xl border-2 border-slate-100 text-[#1e3a8a] font-black text-[10px] uppercase flex items-center gap-2">
+                <FileDown className="w-4 h-4" /> መዝገብ አውርድ (CSV)
               </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md rounded-[2.5rem] p-10 border-none shadow-2xl">
-              <DialogHeader>
-                <DialogTitle className="text-center font-black uppercase text-[#1e3a8a] mb-6">አዲስ ሰነድ መመዝገቢያ</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-6">
-                <div className="border-2 border-dashed border-slate-100 rounded-3xl p-10 flex flex-col items-center justify-center gap-4 bg-slate-50/50">
-                  <Input type="file" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} className="absolute inset-0 opacity-0 cursor-pointer h-full" />
-                  <Upload className="w-10 h-10 text-[#1e3a8a]/20" />
-                  <p className="text-[10px] font-black text-slate-400 uppercase">{selectedFile ? selectedFile.name : "ፋይል ይምረጡ"}</p>
-                </div>
-                <Input value={upName} onChange={(e) => setUpName(e.target.value)} placeholder="የሰነዱ ስም..." className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold" />
-                <Button onClick={handleFileUpload} disabled={isSaving} className="w-full h-14 bg-[#1e3a8a] rounded-xl font-black uppercase text-[10px] shadow-xl">
-                  {isSaving ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "መዝግብ"}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        {/* MAIN VIEWER AREA */}
-        <TabsContent value="diagram">
-          <Card className="min-h-[800px] rounded-[3rem] border-none shadow-2xl bg-white overflow-hidden relative">
-            {xmlResult ? (
-              <div className="w-full h-full min-h-[800px]">
-                <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
-              </div>
-            ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center opacity-20 pointer-events-none">
-                <BrainCircuit className="w-24 h-24 mb-6" />
-                <p className="text-[14px] font-black uppercase tracking-[0.5em]">ዲያግራም የለም</p>
-              </div>
-            )}
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="performance">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <StatCard icon={<BrainCircuit className="text-purple-600" />} label="እቅዶች" value={filteredDocuments.filter(d => d.category === 'እቅድ').length} color="purple" />
-            <StatCard icon={<BarChart className="text-green-600" />} label="ሪፖርቶች" value={filteredDocuments.filter(d => d.category === 'ሪፖርት').length} color="green" />
-            <StatCard icon={<CheckCircle2 className="text-amber-600" />} label="አጠቃላይ አፈጻጸም" value="0%" color="amber" />
+              <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+                <DialogTrigger asChild>
+                  <Button className="h-12 px-8 rounded-2xl bg-[#1e3a8a] text-white shadow-xl hover:bg-[#1e3a8a]/90 font-black text-[10px] uppercase flex items-center gap-2">
+                    <Upload className="w-4 h-4" /> አዲስ ፋይል አያይዝ
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md rounded-[2.5rem] p-10 border-none shadow-2xl">
+                  <DialogHeader>
+                    <DialogTitle className="text-center font-black uppercase text-[#1e3a8a] mb-6">አዲስ ሰነድ መመዝገቢያ</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-6">
+                    <div className="border-2 border-dashed border-slate-100 rounded-3xl p-10 flex flex-col items-center justify-center gap-4 bg-slate-50/50 relative">
+                      <Input type="file" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} className="absolute inset-0 opacity-0 cursor-pointer h-full" />
+                      <Upload className="w-10 h-10 text-[#1e3a8a]/20" />
+                      <p className="text-[10px] font-black text-slate-400 uppercase text-center">{selectedFile ? selectedFile.name : "ፋይል ይምረጡ ወይም እዚህ ይጎትቱ"}</p>
+                    </div>
+                    <Input value={upName} onChange={(e) => setUpName(e.target.value)} placeholder="የሰነዱ ስም..." className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold" />
+                    <Button onClick={handleFileUpload} disabled={isSaving} className="w-full h-14 bg-[#1e3a8a] rounded-xl font-black uppercase text-[10px] shadow-xl">
+                      {isSaving ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "መዝግብ"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
 
-          <Card className="rounded-[3rem] border-none shadow-2xl bg-white overflow-hidden">
-            <div className="divide-y divide-slate-50">
-              {isDocsLoading ? (
-                <div className="p-40 flex justify-center"><Loader2 className="w-10 h-10 animate-spin text-slate-200" /></div>
-              ) : filteredDocuments.length === 0 ? (
-                <div className="p-40 text-center text-slate-300 font-black uppercase tracking-widest text-[10px]">ምንም ሰነድ አልተገኘም</div>
+          <TabsContent value="diagram">
+            <Card className="min-h-[850px] rounded-[3rem] border-none shadow-2xl bg-white overflow-hidden relative">
+              {xmlResult ? (
+                <div className="w-full h-full min-h-[850px]">
+                  <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
+                </div>
               ) : (
-                filteredDocuments.map(doc => (
-                  <div key={doc.id} className="p-8 hover:bg-slate-50 transition-all flex items-center justify-between group">
-                    <div className="flex items-center gap-8">
-                      <div className="w-14 h-14 bg-white border-2 border-slate-50 rounded-2xl flex items-center justify-center shadow-sm">
-                        <FileText className="w-7 h-7 text-slate-300" />
-                      </div>
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-3">
-                          <span className="text-[13px] font-black text-slate-900">{doc.name}</span>
-                          <Badge variant="outline" className="text-[7px] font-black uppercase rounded-full h-5 px-3 bg-slate-50 border-slate-200 text-slate-400">Ver 1</Badge>
-                        </div>
-                        <div className="flex items-center gap-4">
-                           <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{doc.expertName}</span>
-                           <span className="text-[8px] font-black text-slate-400 uppercase">•</span>
-                           <span className="text-[8px] font-black text-slate-400 uppercase">{doc.sector}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-8">
-                      <Badge className={`h-8 px-5 rounded-full text-[8px] font-black uppercase border-none shadow-sm ${
-                        doc.status === 'በዳይሬክተር የጸደቀ' ? 'bg-green-50 text-green-600' :
-                        doc.status === 'በኃላፊ የተፈረመ' ? 'bg-purple-50 text-purple-600' : 'bg-amber-50 text-amber-600'
-                      }`}>
-                        {doc.status}
-                      </Badge>
-                      <span className="text-[10px] font-bold text-slate-400 tabular-nums">
-                        {new Date(doc.uploadDate).toLocaleDateString()}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => handleOpenFile(doc)} className="h-10 w-10 rounded-xl opacity-0 group-hover:opacity-100 text-[#1e3a8a]">
-                          <Eye className="w-5 h-5" />
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-slate-300">
-                              <MoreVertical className="w-5 h-5" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="rounded-2xl border-none shadow-2xl p-2 w-48">
-                             <DropdownMenuItem onClick={() => handleOpenFile(doc)} className="font-bold text-[11px] p-3 rounded-xl cursor-pointer">
-                                <FileDown className="w-4 h-4 mr-2" /> ፋይሉን አውርድ
-                             </DropdownMenuItem>
-                             {(isMasterAdmin || user?.uid === doc.uploaderId) && (
-                               <DropdownMenuItem onClick={() => {setDeleteId(doc.id); setDeleteName(doc.name);}} className="text-red-600 font-bold text-[11px] p-3 rounded-xl cursor-pointer">
-                                  <Trash2 className="w-4 h-4 mr-2" /> ሰርዝ
-                               </DropdownMenuItem>
-                             )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  </div>
-                ))
+                <div className="absolute inset-0 flex flex-col items-center justify-center opacity-20 pointer-events-none">
+                  <BrainCircuit className="w-24 h-24 mb-6" />
+                  <p className="text-[14px] font-black uppercase tracking-[0.5em]">ዲያግራም የለም</p>
+                </div>
               )}
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="performance">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <StatCard icon={<BrainCircuit className="text-purple-600" />} label="የተመዘገቡ ዲያግራሞች" value={filteredDocuments.filter(d => d.category === 'ዲያግራም').length} color="purple" />
+              <StatCard icon={<FileText className="text-green-600" />} label="ኦፊሴላዊ ሰነዶች" value={filteredDocuments.filter(d => d.category === 'ኦፊሴላዊ ሰነድ').length} color="green" />
+              <StatCard icon={<CheckCircle2 className="text-amber-600" />} label="የተጠናቀቁ ስራዎች" value={filteredDocuments.filter(d => d.status === 'የተጠናቀቀ').length} color="amber" />
             </div>
-          </Card>
-        </TabsContent>
+
+            <Card className="rounded-[3rem] border-none shadow-2xl bg-white overflow-hidden">
+              <div className="divide-y divide-slate-50">
+                {isDocsLoading ? (
+                  <div className="p-40 flex justify-center"><Loader2 className="w-10 h-10 animate-spin text-slate-200" /></div>
+                ) : filteredDocuments.length === 0 ? (
+                  <div className="p-40 text-center text-slate-300 font-black uppercase tracking-widest text-[10px]">በዚህ ዘርፍ ምንም ሰነድ አልተገኘም</div>
+                ) : (
+                  filteredDocuments.map(doc => (
+                    <div key={doc.id} className="p-8 hover:bg-slate-50 transition-all flex items-center justify-between group">
+                      <div className="flex items-center gap-8">
+                        <div className="w-14 h-14 bg-white border-2 border-slate-50 rounded-2xl flex items-center justify-center shadow-sm">
+                          <FileText className="w-7 h-7 text-slate-300" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-3">
+                            <span className="text-[13px] font-black text-slate-900">{doc.name}</span>
+                            {doc.registryNumber && (
+                              <Badge variant="outline" className="text-[7px] font-black uppercase rounded-full h-5 px-3 bg-blue-50 border-blue-100 text-blue-600">{doc.registryNumber}</Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-4">
+                             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{doc.expertName}</span>
+                             <span className="text-[8px] font-black text-slate-400 uppercase">•</span>
+                             <span className="text-[8px] font-black text-slate-400 uppercase">{doc.sector}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-8">
+                        <Badge className={`h-8 px-5 rounded-full text-[8px] font-black uppercase border-none shadow-sm ${
+                          doc.status === 'በዳይሬክተር የጸደቀ' ? 'bg-green-50 text-green-600' :
+                          doc.status === 'በኃላፊ የተፈረመ' ? 'bg-purple-50 text-purple-600' : 'bg-amber-50 text-amber-600'
+                        }`}>
+                          {doc.status}
+                        </Badge>
+                        <span className="text-[10px] font-bold text-slate-400 tabular-nums">
+                          {new Date(doc.uploadDate).toLocaleDateString()}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="icon" onClick={() => handleOpenFile(doc)} className="h-10 w-10 rounded-xl opacity-0 group-hover:opacity-100 text-[#1e3a8a]">
+                            <Eye className="w-5 h-5" />
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-slate-300">
+                                <MoreVertical className="w-5 h-5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="rounded-2xl border-none shadow-2xl p-2 w-48">
+                               <DropdownMenuItem onClick={() => handleOpenFile(doc)} className="font-bold text-[11px] p-3 rounded-xl cursor-pointer">
+                                  <FileDown className="w-4 h-4 mr-2" /> ሰነዱን ክፈት
+                               </DropdownMenuItem>
+                               {(isMasterAdmin || user?.uid === doc.uploaderId) && (
+                                 <DropdownMenuItem onClick={() => {setDeleteId(doc.id); setDeleteName(doc.name);}} className="text-red-600 font-bold text-[11px] p-3 rounded-xl cursor-pointer">
+                                    <Trash2 className="w-4 h-4 mr-2" /> ሰርዝ
+                                 </DropdownMenuItem>
+                               )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* FOOTER V3.1.0 */}
-      <footer className="h-20 bg-white border-t flex items-center justify-between px-12 shrink-0">
+      <footer className="h-20 bg-white border-t flex items-center justify-between px-12 shrink-0 mt-20">
         <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
-          ITDB PORTAL V3.1.0 - STABLE PRODUCTION
+          ITDB PORTAL V3.1.0 - INSTITUTIONAL RECOVERY BUILD
         </div>
         <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
           © 2024 INNOVATION AND TECHNOLOGY DEVELOPMENT BUREAU
@@ -516,7 +545,7 @@ export function BPMNFlowForgeApp() {
            </Link>
            <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">ASSISTANT SYNCHRONIZED</span>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">SYSTEM ONLINE</span>
            </div>
         </div>
       </footer>
@@ -540,7 +569,7 @@ export function BPMNFlowForgeApp() {
                  </div>
                  <div className="flex flex-col">
                     <span className="text-white font-black text-[11px] uppercase tracking-widest">የቢሮ መፃፃፊያ</span>
-                    <span className="text-white/50 font-bold text-[8px] uppercase">Online Users: 4</span>
+                    <span className="text-white/50 font-bold text-[8px] uppercase">One-to-One Messenger</span>
                  </div>
               </div>
            </div>
@@ -551,7 +580,14 @@ export function BPMNFlowForgeApp() {
                       <div className={`p-4 rounded-2xl text-[11px] font-bold shadow-sm max-w-[80%] ${msg.uploaderId === user?.uid ? 'bg-[#1e3a8a] text-white' : 'bg-white text-slate-700'}`}>
                          {msg.content}
                       </div>
-                      <span className="mt-1 text-[7px] font-black text-slate-400 uppercase px-2">{msg.senderName}</span>
+                      <div className="flex items-center gap-2 mt-1 px-2">
+                        <span className="text-[7px] font-black text-slate-400 uppercase">{msg.senderName}</span>
+                        {(isMasterAdmin || msg.uploaderId === user?.uid) && (
+                          <button onClick={() => deleteDocumentNonBlocking(doc(db!, 'feedback', msg.id))} className="text-red-400 hover:text-red-600 transition-colors">
+                            <Trash2 className="w-2.5 h-2.5" />
+                          </button>
+                        )}
+                      </div>
                    </div>
                  ))}
               </div>
@@ -629,4 +665,3 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode, label:
     </Card>
   );
 }
-
