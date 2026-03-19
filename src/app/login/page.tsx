@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -35,7 +36,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [fatherName, setFatherName] = useState('');
-  const [jobPosition, setJobPosition] = useState('');
+  const [sector, setSector] = useState('');
   const [role, setRole] = useState('expert');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -57,7 +58,7 @@ export default function LoginPage() {
     
     try {
       if (mode === 'signup') {
-        if (!firstName || !fatherName || !jobPosition) {
+        if (!firstName || !fatherName || !sector) {
           throw new Error("እባክዎ ሁሉንም መረጃዎች በትክክል ይሙሉ");
         }
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -68,7 +69,7 @@ export default function LoginPage() {
         await setDoc(doc(db, 'users', userCredential.user.uid), {
           firstName,
           fatherName,
-          jobPosition,
+          sector,
           email,
           displayName,
           role,
@@ -112,11 +113,6 @@ export default function LoginPage() {
               ITB DIGITAL PORTAL • ዲጂታል መድረክ
             </CardDescription>
           </div>
-          <div className="py-2 px-6 bg-slate-50 rounded-full inline-block mx-auto">
-             <p className="text-[11px] font-bold text-slate-600 uppercase">
-               {mode === 'forgot' ? 'የይለፍ ቃል መቀየሪያ' : 'እንኳን ደህና መጡ!'}
-             </p>
-          </div>
         </CardHeader>
         
         <CardContent className="px-10 pb-12">
@@ -151,23 +147,35 @@ export default function LoginPage() {
                 </div>
                 
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-black text-slate-400 uppercase ml-1">የሥራ ድርሻ</label>
-                  <Select onValueChange={setRole} defaultValue="expert">
+                  <label className="text-[9px] font-black text-slate-400 uppercase ml-1">የሥራ ዘርፍ (Sector)</label>
+                  <Select onValueChange={setSector} defaultValue="">
                     <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none font-bold text-xs">
-                      <SelectValue placeholder="ደረጃ ይምረጡ" />
+                      <SelectValue placeholder="ዘርፍ ይምረጡ" />
                     </SelectTrigger>
                     <SelectContent className="rounded-2xl border-none shadow-2xl">
-                      <SelectItem value="bureau_head">የቢሮ ኃላፊ (Bureau Head)</SelectItem>
-                      <SelectItem value="director">ዳይሬክተር (Director)</SelectItem>
-                      <SelectItem value="team_leader">ቡድን መሪ (Team Leader)</SelectItem>
-                      <SelectItem value="expert">ባለሙያ (Expert)</SelectItem>
+                      <SelectItem value="bureau_head_sector">የቢሮ ኃላፊ (Bureau Head)</SelectItem>
+                      <SelectItem value="tech_innovation">የቴክኖሎጂና ኢኖቬሽን ዘርፍ</SelectItem>
+                      <SelectItem value="ict_infra">የአይሲቲ መሰረተ ልማት ዘርፍ</SelectItem>
+                      <SelectItem value="digital_trans">የዲጂታል ትራንስፎርሜሽን ዘርፍ</SelectItem>
+                      <SelectItem value="smart_city">ስማርት ሲቲ (Smart City)</SelectItem>
+                      <SelectItem value="office_sec">የጽሕፈት ቤት ኃላፊ</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-black text-slate-400 uppercase ml-1">የሥራ መደብ (Job Title)</label>
-                  <Input value={jobPosition} onChange={(e) => setJobPosition(e.target.value)} placeholder="ለምሳሌ፡ ሲስተም አድሚን" className="h-11 rounded-xl bg-slate-50 border-none font-bold text-xs" required />
+                  <label className="text-[9px] font-black text-slate-400 uppercase ml-1">የሥራ ድርሻ (Role)</label>
+                  <Select onValueChange={setRole} defaultValue="expert">
+                    <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none font-bold text-xs">
+                      <SelectValue placeholder="ደረጃ ይምረጡ" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl border-none shadow-2xl">
+                      <SelectItem value="head">ኃላፊ (Head)</SelectItem>
+                      <SelectItem value="director">ዳይሬክተር (Director)</SelectItem>
+                      <SelectItem value="team_leader">ቡድን መሪ (Team Leader)</SelectItem>
+                      <SelectItem value="expert">ባለሙያ (Expert)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             )}
@@ -218,9 +226,6 @@ export default function LoginPage() {
             )}
           </div>
         </CardContent>
-        <div className="bg-slate-50/50 p-4 text-center border-t">
-           <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">© 2024 INNOVATION & TECHNOLOGY BUREAU • ITB</p>
-        </div>
       </Card>
     </div>
   );
