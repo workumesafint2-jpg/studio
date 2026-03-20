@@ -1,7 +1,8 @@
+
 'use server';
 /**
  * @fileOverview AI Registry & Performance Analysis Agent for ITB.
- * Handles letter metadata extraction and plan vs. report analysis.
+ * Enhanced with more robust error handling and prompt logic.
  */
 
 import { ai } from '@/ai/genkit';
@@ -38,27 +39,45 @@ const itbIntelligenceFlow = ai.defineFlow(
     outputSchema: RegistryOutputSchema,
   },
   async (input) => {
-    const prompt = input.action === 'extract' 
-      ? `You are an expert ITB Registry Officer. Extract the following from the letter photo:
+    let systemPrompt = '';
+    let userPrompt = '';
+
+    if (input.action === 'extract') {
+      systemPrompt = 'You are an expert ITB Registry Officer specialized in digitizing documents.';
+      userPrompt = `Please extract the following information from this letter:
          1. Letter Number (የደብዳቤ ቁጥር)
          2. Date (ቀን)
          3. Subject (ጉዳይ)
          4. Sender or Receiver (ላኪ/ተቀባይ - ተቋም ወይም ግለሰብ)
          
-         Document Type: ${input.mailType === 'incoming' ? 'ገቢ ደብዳቤ' : input.mailType === 'outgoing' ? 'ወጪ ደብዳቤ' : 'ሌሎች'}
-         Photo: {{media url=photoDataUri}}`
-      : `Compare the provided office plans and reports. 
-         Generate an efficiency score (0-100), a professional narrative summary in Amharic, 
-         and identify specific "ትኩረት የሚሹ ጉዳዮች" (Focus Areas) if the score is below 70.
-         Context: ${input.additionalContext}`;
+         Document Category: ${input.mailType === 'incoming' ? 'ገቢ ደብዳቤ' : input.mailType === 'outgoing' ? 'ወጪ ደብዳቤ' : 'ሌሎች'}
+         Photo: {{media url=photoDataUri}}`;
+    } else {
+      systemPrompt = 'You are a Senior Bureau Performance Analyst for the Innovation & Technology Bureau.';
+      userPrompt = `Analyze the bureau's office performance based on the following context.
+         Compare office plans and results.
+         Context provided: ${input.additionalContext || 'No specific document data provided. Use historical office benchmarks.'}
+         
+         Tasks:
+         1. Provide a calculated efficiency score (0-100).
+         2. Write a professional narrative summary in Amharic discussing achievements and gaps.
+         3. Identify specific "ትኩረት የሚሹ ጉዳዮች" (Focus Areas) especially if the score is below 70.
+         
+         Ensure the response is strictly valid JSON according to the schema.`;
+    }
 
     const { output } = await ai.generate({
-      prompt: prompt,
+      system: systemPrompt,
+      prompt: userPrompt,
       input: { photoDataUri: input.photoDataUri },
       output: { schema: RegistryOutputSchema }
     });
 
-    return output!;
+    if (!output) {
+      throw new Error('AI failed to generate a response. Check API status.');
+    }
+
+    return output;
   }
 );
 

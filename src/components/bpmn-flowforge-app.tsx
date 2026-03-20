@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -282,13 +283,24 @@ export function BPMNFlowForgeApp() {
   const handlePerformAIAnalysis = async () => {
     setIsAnalyzing(true);
     try {
+      const recentDocsContext = filteredDocuments
+        .slice(0, 10)
+        .map(d => `- ${d.name} (ሁኔታ፦ ${d.status}, ዘርፍ፦ ${d.sector})`)
+        .join('\n');
+
       const result = await processRegistry({
         action: 'analyze_performance',
-        additionalContext: `በመዝገብ ቤቱ ውስጥ ${filteredDocuments.length} ሰነዶች አሉ። ${filteredDocuments.filter(d => d.status === 'በዳይሬክተር የጸደቀ').length} ሰነዶች ጸድቀዋል።`
+        additionalContext: `በመዝገብ ቤቱ ውስጥ ${filteredDocuments.length} ሰነዶች አሉ። የቅርብ ጊዜ ሰነዶች፦\n${recentDocsContext}`
       });
-      setAiAnalysisResult(result.performanceAnalysis);
-      toast({ title: "ትንተና ተጠናቋል", description: "የቢሮው አፈጻጸም በ AI ተጠንቷል" });
+      
+      if (result && result.performanceAnalysis) {
+        setAiAnalysisResult(result.performanceAnalysis);
+        toast({ title: "ትንተና ተጠናቋል", description: "የቢሮው አፈጻጸም በ AI ተጠንቷል" });
+      } else {
+        throw new Error("AI returned empty analysis");
+      }
     } catch (e) {
+      console.error("AI Analysis Error:", e);
       toast({ title: "ስህተት", description: "ትንተናውን መስራት አልተቻለም", variant: "destructive" });
     } finally {
       setIsAnalyzing(false);
@@ -356,12 +368,11 @@ export function BPMNFlowForgeApp() {
       </header>
 
       <main className="flex-1 p-8 space-y-12 max-w-7xl mx-auto w-full">
-        {/* SECTION 1: BPMN ARCHITECT (PAGE 1) */}
+        {/* SECTION 1: BPMN ARCHITECT */}
         <section className="space-y-8 animate-in fade-in duration-700">
            <header className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-black text-[#1e3a8a] uppercase tracking-tight">የኢኖቬሽንና ቴክኖሎጂ ቢሮ ነኝ ምን ልርዳዎት?</h2>
-                <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">BPMN ARCHITECT • የሥራ ሂደት ቀረጻ</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">BPMN ARCHITECT • የሥራ ሂደት ቀረጻ</p>
               </div>
            </header>
 
@@ -411,7 +422,7 @@ export function BPMNFlowForgeApp() {
           </Card>
         </section>
 
-        {/* SECTION 2: INTELLIGENCE HUB (PAGE 2 - SCROLL DOWN) */}
+        {/* SECTION 2: INTELLIGENCE HUB */}
         <section className="pt-20 space-y-10 animate-in slide-in-from-bottom-10 duration-1000">
            <div className="h-px bg-slate-200 w-full mb-10" />
            
@@ -484,7 +495,7 @@ export function BPMNFlowForgeApp() {
                        <Badge className="bg-purple-600 text-white font-black px-4 h-8 rounded-full">{aiAnalysisResult.score}% ውጤታማነት</Badge>
                     </div>
                     <p className="text-sm font-bold text-purple-800 leading-relaxed whitespace-pre-wrap">{aiAnalysisResult.narrative}</p>
-                    {aiAnalysisResult.focusAreas && (
+                    {aiAnalysisResult.focusAreas && aiAnalysisResult.focusAreas.length > 0 && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                         {aiAnalysisResult.focusAreas.map((area: string, idx: number) => (
                           <div key={idx} className="bg-white/50 p-4 rounded-xl border border-purple-100 flex items-center gap-3">
@@ -533,7 +544,7 @@ export function BPMNFlowForgeApp() {
                   </CardTitle>
                 </CardHeader>
                 <div className="space-y-4">
-                  {aiAnalysisResult?.focusAreas ? aiAnalysisResult.focusAreas.slice(0, 3).map((item: string, idx: number) => (
+                  {(aiAnalysisResult?.focusAreas && aiAnalysisResult.focusAreas.length > 0) ? aiAnalysisResult.focusAreas.slice(0, 3).map((item: string, idx: number) => (
                     <div key={idx} className="bg-white/10 p-4 rounded-2xl flex items-start gap-3">
                       <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5" />
                       <p className="text-[11px] font-bold leading-relaxed">{item}</p>
