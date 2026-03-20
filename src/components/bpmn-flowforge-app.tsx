@@ -27,7 +27,8 @@ import {
   TrendingUp,
   AlertTriangle,
   History,
-  ChevronDown
+  ChevronDown,
+  BarChart3
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -353,285 +354,290 @@ export function BPMNFlowForgeApp() {
       </header>
 
       <main className="flex-1 p-8 space-y-12 max-w-7xl mx-auto w-full">
-        {/* SECTION 1: BPMN ARCHITECT */}
-        <section className="space-y-8">
-           <header className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-black text-[#1e3a8a] uppercase tracking-tight">የሥራ ሂደት ቀረጻ (BPMN)</h2>
-                <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">የኢኖቬሽንና ቴክኖሎጂ ቢሮ ነኝ ምን ልርዳዎት?</p>
-              </div>
-           </header>
+        <Tabs defaultValue="bpmn" className="w-full">
+          <TabsList className="bg-white p-1 rounded-2xl shadow-xl border border-slate-100 h-auto gap-1 mb-8">
+            <TabsTrigger value="bpmn" className="text-[10px] font-black px-10 py-3 rounded-xl uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white">የሥራ ሂደት ቀረጻ (BPMN)</TabsTrigger>
+            <TabsTrigger value="intelligence" className="text-[10px] font-black px-10 py-3 rounded-xl uppercase data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white">የመዝገብ ቤትና አፈጻጸም ትንተና</TabsTrigger>
+          </TabsList>
 
-           <Card className="border-none shadow-xl rounded-[2.5rem] bg-white overflow-hidden p-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-4">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">የአገልግሎቱ ስም</label>
-                <Input 
-                  value={title} 
-                  onChange={(e) => setTitle(e.target.value)} 
-                  placeholder="የአገልግሎት ስም..." 
-                  className="h-14 bg-slate-50 border-none rounded-2xl text-xs font-bold px-6"
-                />
-              </div>
-              <div className="space-y-4">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">የሂደቱ ዝርዝር ተግባር</label>
-                <Textarea 
-                  value={input} 
-                  onChange={(e) => setInput(e.target.value)} 
-                  placeholder="ዝርዝሩን እዚህ ያስገቡ..." 
-                  className="min-h-[120px] bg-slate-50 border-none rounded-2xl text-xs font-medium p-6 resize-none"
-                />
-              </div>
-            </div>
+          <TabsContent value="bpmn" className="space-y-8 animate-in fade-in duration-500">
+             <header className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-black text-[#1e3a8a] uppercase tracking-tight">የኢኖቬሽንና ቴክኖሎጂ ቢሮ ነኝ ምን ልርዳዎት?</h2>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">BPMN ARCHITECT • የሥራ ሂደት ቀረጻ</p>
+                </div>
+             </header>
 
-            <div className="flex items-center gap-4 mt-10">
-              <Button onClick={handleGenerate} className="flex-1 h-16 bg-[#4c1d95] hover:bg-[#4c1d95]/90 rounded-2xl text-[12px] font-black uppercase shadow-2xl tracking-widest">
-                ዲያግራም አመንጪ
-              </Button>
-              <Button onClick={handleSaveToVault} disabled={!xmlResult || isSaving} variant="outline" className="h-16 px-10 rounded-2xl border-2 border-slate-100 font-black text-[11px] uppercase flex items-center gap-3">
-                <Save className="w-5 h-5" /> {isSaving ? "በመመዝገብ ላይ..." : "መዝግብ (Save)"}
-              </Button>
-            </div>
-          </Card>
+             <Card className="border-none shadow-xl rounded-[2.5rem] bg-white overflow-hidden p-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">የአገልግሎቱ ስም</label>
+                  <Input 
+                    value={title} 
+                    onChange={(e) => setTitle(e.target.value)} 
+                    placeholder="የአገልግሎት ስም..." 
+                    className="h-14 bg-slate-50 border-none rounded-2xl text-xs font-bold px-6"
+                  />
+                </div>
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">የሂደቱ ዝርዝር ተግባር</label>
+                  <Textarea 
+                    value={input} 
+                    onChange={(e) => setInput(e.target.value)} 
+                    placeholder="ዝርዝሩን እዚህ ያስገቡ..." 
+                    className="min-h-[120px] bg-slate-50 border-none rounded-2xl text-xs font-medium p-6 resize-none"
+                  />
+                </div>
+              </div>
 
-          <Card className="min-h-[700px] rounded-[3rem] border-none shadow-2xl bg-white overflow-hidden relative">
-            {xmlResult ? (
-              <div className="w-full h-full min-h-[700px]">
-                <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
-              </div>
-            ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center opacity-20 pointer-events-none">
-                <BrainCircuit className="w-24 h-24 mb-6" />
-                <p className="text-[14px] font-black uppercase tracking-[0.5em]">ዲያግራም የለም</p>
-              </div>
-            )}
-          </Card>
-        </section>
-
-        {/* SECTION 2: INTELLIGENCE HUB (Registry & Performance) */}
-        <section id="intelligence-hub" className="space-y-10 pt-20 border-t border-slate-200">
-           <header className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-black text-[#1e3a8a] uppercase tracking-tight text-center md:text-left">የመዝገብ ቤትና የአፈጻጸም ትንተና ማዕከል</h2>
-                <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">ITB INTELLIGENCE HUB • የላቀ የመረጃ ትንተና</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <Button onClick={handlePerformAIAnalysis} disabled={isAnalyzing} className="h-12 px-6 rounded-2xl bg-purple-600 text-white shadow-xl hover:bg-purple-700 font-black text-[10px] uppercase flex items-center gap-2">
-                  {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />} AI ትንተና አከናውን
+              <div className="flex items-center gap-4 mt-10">
+                <Button onClick={handleGenerate} className="flex-1 h-16 bg-[#4c1d95] hover:bg-[#4c1d95]/90 rounded-2xl text-[12px] font-black uppercase shadow-2xl tracking-widest">
+                  ዲያግራም አመንጪ
                 </Button>
-                <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="h-12 px-8 rounded-2xl bg-[#1e3a8a] text-white shadow-xl hover:bg-[#1e3a8a]/90 font-black text-[10px] uppercase flex items-center gap-2">
-                      <Mail className="w-4 h-4" /> አዲስ ደብዳቤ መዝግብ
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-md rounded-[2.5rem] p-10 border-none shadow-2xl">
-                    <DialogHeader>
-                      <DialogTitle className="text-center font-black uppercase text-[#1e3a8a] mb-6">የደብዳቤ ምዝገባ (AI REGISTRY)</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-6">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase">የደብዳቤ አይነት</label>
-                        <Select value={mailType} onValueChange={setMailType}>
-                          <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none font-bold text-xs">
-                            <SelectValue placeholder="ይምረጡ" />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-2xl border-none shadow-2xl">
-                            <SelectItem value="incoming">ገቢ ደብዳቤ (Incoming)</SelectItem>
-                            <SelectItem value="outgoing">ወጪ ደብዳቤ (Outgoing)</SelectItem>
-                            <SelectItem value="other">ሌሎች (Other)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="border-2 border-dashed border-slate-100 rounded-3xl p-10 flex flex-col items-center justify-center gap-4 bg-slate-50/50 relative">
-                        <Input 
-                          type="file" 
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleLetterProcess(file);
-                          }} 
-                          className="absolute inset-0 opacity-0 cursor-pointer h-full" 
-                        />
-                        {registryLoading ? (
-                          <Loader2 className="w-10 h-10 animate-spin text-[#1e3a8a]" />
-                        ) : (
-                          <>
-                            <Upload className="w-10 h-10 text-[#1e3a8a]/20" />
-                            <p className="text-[10px] font-black text-slate-400 uppercase text-center">ደብዳቤውን እዚህ ይጫኑ</p>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <Button onClick={handleSaveToVault} disabled={!xmlResult || isSaving} variant="outline" className="h-16 px-10 rounded-2xl border-2 border-slate-100 font-black text-[11px] uppercase flex items-center gap-3">
+                  <Save className="w-5 h-5" /> {isSaving ? "በመመዝገብ ላይ..." : "መዝግብ (Save)"}
+                </Button>
               </div>
-           </header>
+            </Card>
 
-           {aiAnalysisResult && (
-             <Card className="rounded-[2.5rem] border-none shadow-2xl bg-purple-50 p-8 animate-in fade-in slide-in-from-top-4 duration-500">
-                <div className="flex items-start gap-6">
-                  <div className="w-16 h-16 rounded-2xl bg-white shadow-sm flex items-center justify-center shrink-0">
-                    <BrainCircuit className="w-8 h-8 text-purple-600" />
-                  </div>
-                  <div className="space-y-4 flex-1">
-                    <div className="flex items-center justify-between">
-                       <h3 className="text-lg font-black text-purple-900 uppercase">የ AI አፈጻጸም ትንተና ሪፖርት</h3>
-                       <Badge className="bg-purple-600 text-white font-black px-4 h-8 rounded-full">{aiAnalysisResult.score}% ውጤታማነት</Badge>
-                    </div>
-                    <p className="text-sm font-bold text-purple-800 leading-relaxed whitespace-pre-wrap">{aiAnalysisResult.narrative}</p>
-                    {aiAnalysisResult.focusAreas && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                        {aiAnalysisResult.focusAreas.map((area: string, idx: number) => (
-                          <div key={idx} className="bg-white/50 p-4 rounded-xl border border-purple-100 flex items-center gap-3">
-                            <AlertTriangle className="w-4 h-4 text-amber-500" />
-                            <span className="text-[11px] font-black text-purple-700">{area}</span>
-                          </div>
-                        ))}
+            <Card className="min-h-[700px] rounded-[3rem] border-none shadow-2xl bg-white overflow-hidden relative">
+              {xmlResult ? (
+                <div className="w-full h-full min-h-[700px]">
+                  <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
+                </div>
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center opacity-20 pointer-events-none">
+                  <BrainCircuit className="w-24 h-24 mb-6" />
+                  <p className="text-[14px] font-black uppercase tracking-[0.5em]">ዲያግራም የለም</p>
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="intelligence" className="space-y-10 animate-in slide-in-from-bottom-5 duration-500">
+             <header className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-black text-[#1e3a8a] uppercase tracking-tight">የመዝገብ ቤትና የአፈጻጸም ትንተና ማዕከል</h2>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">INTELLIGENCE HUB • የላቀ የመረጃ ትንተና</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button onClick={handlePerformAIAnalysis} disabled={isAnalyzing} className="h-12 px-6 rounded-2xl bg-purple-600 text-white shadow-xl hover:bg-purple-700 font-black text-[10px] uppercase flex items-center gap-2">
+                    {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />} AI ትንተና አከናውን
+                  </Button>
+                  <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="h-12 px-8 rounded-2xl bg-[#1e3a8a] text-white shadow-xl hover:bg-[#1e3a8a]/90 font-black text-[10px] uppercase flex items-center gap-2">
+                        <Mail className="w-4 h-4" /> አዲስ ደብዳቤ መዝግብ
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md rounded-[2.5rem] p-10 border-none shadow-2xl">
+                      <DialogHeader>
+                        <DialogTitle className="text-center font-black uppercase text-[#1e3a8a] mb-6">የደብዳቤ ምዝገባ (AI REGISTRY)</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-6">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black text-slate-400 uppercase">የደብዳቤ አይነት</label>
+                          <Select value={mailType} onValueChange={setMailType}>
+                            <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none font-bold text-xs">
+                              <SelectValue placeholder="ይምረጡ" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-2xl border-none shadow-2xl">
+                              <SelectItem value="incoming">ገቢ ደብዳቤ (Incoming)</SelectItem>
+                              <SelectItem value="outgoing">ወጪ ደብዳቤ (Outgoing)</SelectItem>
+                              <SelectItem value="other">ሌሎች (Other)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="border-2 border-dashed border-slate-100 rounded-3xl p-10 flex flex-col items-center justify-center gap-4 bg-slate-50/50 relative">
+                          <Input 
+                            type="file" 
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleLetterProcess(file);
+                            }} 
+                            className="absolute inset-0 opacity-0 cursor-pointer h-full" 
+                          />
+                          {registryLoading ? (
+                            <Loader2 className="w-10 h-10 animate-spin text-[#1e3a8a]" />
+                          ) : (
+                            <>
+                              <Upload className="w-10 h-10 text-[#1e3a8a]/20" />
+                              <p className="text-[10px] font-black text-slate-400 uppercase text-center">ደብዳቤውን እዚህ ይጫኑ</p>
+                            </>
+                          )}
+                        </div>
                       </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+             </header>
+
+             {aiAnalysisResult && (
+               <Card className="rounded-[2.5rem] border-none shadow-2xl bg-purple-50 p-8 animate-in fade-in slide-in-from-top-4 duration-500">
+                  <div className="flex items-start gap-6">
+                    <div className="w-16 h-16 rounded-2xl bg-white shadow-sm flex items-center justify-center shrink-0">
+                      <BarChart3 className="w-8 h-8 text-purple-600" />
+                    </div>
+                    <div className="space-y-4 flex-1">
+                      <div className="flex items-center justify-between">
+                         <h3 className="text-lg font-black text-purple-900 uppercase">የ AI አፈጻጸም ትንተና ሪፖርት</h3>
+                         <Badge className="bg-purple-600 text-white font-black px-4 h-8 rounded-full">{aiAnalysisResult.score}% ውጤታማነት</Badge>
+                      </div>
+                      <p className="text-sm font-bold text-purple-800 leading-relaxed whitespace-pre-wrap">{aiAnalysisResult.narrative}</p>
+                      {aiAnalysisResult.focusAreas && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                          {aiAnalysisResult.focusAreas.map((area: string, idx: number) => (
+                            <div key={idx} className="bg-white/50 p-4 rounded-xl border border-purple-100 flex items-center gap-3">
+                              <AlertTriangle className="w-4 h-4 text-amber-500" />
+                              <span className="text-[11px] font-black text-purple-700">{area}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+               </Card>
+             )}
+
+             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <Card className="lg:col-span-2 rounded-[2.5rem] border-none shadow-xl bg-white p-8">
+                  <CardHeader className="p-0 mb-8 flex flex-row items-center justify-between">
+                    <CardTitle className="text-[12px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-green-500" /> ሳምንታዊ የቢሮ አፈጻጸም
+                    </CardTitle>
+                  </CardHeader>
+                  <div className="h-[300px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={performanceData}>
+                        <defs>
+                          <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#1e3a8a" stopOpacity={0.1}/>
+                            <stop offset="95%" stopColor="#1e3a8a" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 'bold', fill: '#94a3b8'}} />
+                        <YAxis hide />
+                        <RechartsTooltip />
+                        <Area type="monotone" dataKey="value" stroke="#1e3a8a" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </Card>
+
+                <Card className="rounded-[2.5rem] border-none shadow-xl bg-[#1e3a8a] text-white p-8 overflow-hidden relative">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl" />
+                  <CardHeader className="p-0 mb-6">
+                    <CardTitle className="text-[11px] font-black uppercase tracking-widest text-white/50 flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-400" /> ትኩረት የሚሹ ጉዳዮች (ከ70% በታች)
+                    </CardTitle>
+                  </CardHeader>
+                  <div className="space-y-4">
+                    {aiAnalysisResult?.focusAreas ? aiAnalysisResult.focusAreas.slice(0, 3).map((item: string, idx: number) => (
+                      <div key={idx} className="bg-white/10 p-4 rounded-2xl flex items-start gap-3">
+                        <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5" />
+                        <p className="text-[11px] font-bold leading-relaxed">{item}</p>
+                      </div>
+                    )) : (
+                      <>
+                        <div className="bg-white/10 p-4 rounded-2xl flex items-start gap-3">
+                          <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5" />
+                          <p className="text-[11px] font-bold leading-relaxed">የዲጂታል ትራንስፎርሜሽን ሪፖርት መዘግየት</p>
+                        </div>
+                        <div className="bg-white/10 p-4 rounded-2xl flex items-start gap-3">
+                          <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5" />
+                          <p className="text-[11px] font-bold leading-relaxed">የስማርት ሲቲ ፕሮጀክት እቅድ ማሻሻያ</p>
+                        </div>
+                      </>
                     )}
                   </div>
-                </div>
-             </Card>
-           )}
-
-           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <Card className="lg:col-span-2 rounded-[2.5rem] border-none shadow-xl bg-white p-8">
-                <CardHeader className="p-0 mb-8 flex flex-row items-center justify-between">
-                  <CardTitle className="text-[12px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-green-500" /> ሳምንታዊ የቢሮ አፈጻጸም
-                  </CardTitle>
-                </CardHeader>
-                <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={performanceData}>
-                      <defs>
-                        <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#1e3a8a" stopOpacity={0.1}/>
-                          <stop offset="95%" stopColor="#1e3a8a" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 'bold', fill: '#94a3b8'}} />
-                      <YAxis hide />
-                      <RechartsTooltip />
-                      <Area type="monotone" dataKey="value" stroke="#1e3a8a" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </Card>
-
-              <Card className="rounded-[2.5rem] border-none shadow-xl bg-[#1e3a8a] text-white p-8 overflow-hidden relative">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl" />
-                <CardHeader className="p-0 mb-6">
-                  <CardTitle className="text-[11px] font-black uppercase tracking-widest text-white/50 flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-amber-400" /> ትኩረት የሚሹ ጉዳዮች
-                  </CardTitle>
-                </CardHeader>
-                <div className="space-y-4">
-                  {aiAnalysisResult?.focusAreas ? aiAnalysisResult.focusAreas.slice(0, 3).map((item: string, idx: number) => (
-                    <div key={idx} className="bg-white/10 p-4 rounded-2xl flex items-start gap-3">
-                      <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5" />
-                      <p className="text-[11px] font-bold leading-relaxed">{item}</p>
-                    </div>
-                  )) : (
-                    <>
-                      <div className="bg-white/10 p-4 rounded-2xl flex items-start gap-3">
-                        <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5" />
-                        <p className="text-[11px] font-bold leading-relaxed">የዲጂታል ትራንስፎርሜሽን ሪፖርት መዘግየት</p>
-                      </div>
-                      <div className="bg-white/10 p-4 rounded-2xl flex items-start gap-3">
-                        <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5" />
-                        <p className="text-[11px] font-bold leading-relaxed">የስማርት ሲቲ ፕሮጀክት እቅድ ማሻሻያ</p>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </Card>
-           </div>
-
-           <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden">
-             <div className="p-8 border-b flex items-center justify-between">
-                <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                  <History className="w-4 h-4" /> የቅርብ ጊዜ መዝገቦች
-                </h3>
-                <Badge variant="outline" className="rounded-full bg-blue-50 border-blue-100 text-[#1e3a8a] font-black text-[9px] px-4 h-8 uppercase">
-                  AI SECURE REGISTRY
-                </Badge>
+                </Card>
              </div>
-             <div className="divide-y divide-slate-50">
-               {isDocsLoading ? (
-                 <div className="p-40 flex justify-center"><Loader2 className="w-10 h-10 animate-spin text-slate-200" /></div>
-               ) : filteredDocuments.length === 0 ? (
-                 <div className="p-40 text-center text-slate-300 font-black uppercase tracking-widest text-[10px]">ምንም መረጃ አልተገኘም</div>
-               ) : (
-                 filteredDocuments.map(doc => (
-                   <div key={doc.id} className="p-8 hover:bg-slate-50 transition-all flex items-center justify-between group">
-                     <div className="flex items-center gap-8">
-                       <div className={`w-14 h-14 bg-white border-2 rounded-2xl flex items-center justify-center shadow-sm ${doc.mailType ? 'border-blue-50' : 'border-slate-50'}`}>
-                         {doc.mailType ? <Mail className="w-7 h-7 text-blue-400" /> : <FileText className="w-7 h-7 text-slate-300" />}
-                       </div>
-                       <div className="space-y-1.5">
-                         <div className="flex items-center gap-3">
-                           <span className="text-[13px] font-black text-slate-900">{doc.name}</span>
-                           {doc.registryNumber && (
-                             <Badge variant="outline" className="text-[7px] font-black uppercase rounded-full h-5 px-3 bg-blue-50 border-blue-100 text-blue-600">{doc.registryNumber}</Badge>
-                           )}
-                           {doc.mailType && (
-                             <Badge className={`text-[7px] font-black uppercase h-5 px-3 border-none ${doc.mailType === 'incoming' ? 'bg-green-50 text-green-600' : 'bg-orange-50 text-orange-600'}`}>
-                               {doc.mailType === 'incoming' ? 'ገቢ' : 'ወጪ'}
-                             </Badge>
-                           )}
-                         </div>
-                         <div className="flex items-center gap-4">
-                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{doc.expertName}</span>
-                            <span className="text-[8px] font-black text-slate-400 uppercase">•</span>
-                            <span className="text-[8px] font-black text-slate-400 uppercase">{doc.sector}</span>
-                            {doc.senderReceiver && (
-                              <>
-                                <span className="text-[8px] font-black text-slate-400 uppercase">•</span>
-                                <span className="text-[8px] font-black text-[#1e3a8a] uppercase">ላኪ/ተቀባይ፦ {doc.senderReceiver}</span>
-                              </>
-                            )}
-                         </div>
-                       </div>
-                     </div>
 
-                     <div className="flex items-center gap-8">
-                       <Badge className={`h-8 px-5 rounded-full text-[8px] font-black uppercase border-none shadow-sm ${
-                         doc.status === 'በዳይሬክተር የጸደቀ' ? 'bg-green-50 text-green-600' :
-                         doc.status === 'በኃላፊ የተፈረመ' ? 'bg-purple-50 text-purple-600' : 'bg-amber-50 text-amber-600'
-                       }`}>
-                         {doc.status}
-                       </Badge>
-                       <div className="flex items-center gap-2">
-                         <Button variant="ghost" size="icon" onClick={() => handleOpenFile(doc)} className="h-10 w-10 rounded-xl text-[#1e3a8a]">
-                           <Eye className="w-5 h-5" />
-                         </Button>
-                         <DropdownMenu>
-                           <DropdownMenuTrigger asChild>
-                             <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-slate-300">
-                               <MoreVertical className="w-5 h-5" />
-                             </Button>
-                           </DropdownMenuTrigger>
-                           <DropdownMenuContent align="end" className="rounded-2xl border-none shadow-2xl p-2 w-48">
-                              <DropdownMenuItem onClick={() => handleOpenFile(doc)} className="font-bold text-[11px] p-3 rounded-xl cursor-pointer">
-                                 <FileDown className="w-4 h-4 mr-2" /> ሰነዱን ክፈት
-                              </DropdownMenuItem>
-                              {(isMasterAdmin || user?.uid === doc.uploaderId) && (
-                                <DropdownMenuItem onClick={() => {setDeleteId(doc.id); setDeleteName(doc.name);}} className="text-red-600 font-bold text-[11px] p-3 rounded-xl cursor-pointer">
-                                   <Trash2 className="w-4 h-4 mr-2" /> ሰርዝ
-                                </DropdownMenuItem>
+             <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden">
+               <div className="p-8 border-b flex items-center justify-between">
+                  <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                    <History className="w-4 h-4" /> የቅርብ ጊዜ የ AI መዝገቦች
+                  </h3>
+                  <Badge variant="outline" className="rounded-full bg-blue-50 border-blue-100 text-[#1e3a8a] font-black text-[9px] px-4 h-8 uppercase">
+                    AI SECURE REGISTRY
+                  </Badge>
+               </div>
+               <div className="divide-y divide-slate-50">
+                 {isDocsLoading ? (
+                   <div className="p-40 flex justify-center"><Loader2 className="w-10 h-10 animate-spin text-slate-200" /></div>
+                 ) : filteredDocuments.length === 0 ? (
+                   <div className="p-40 text-center text-slate-300 font-black uppercase tracking-widest text-[10px]">ምንም መረጃ አልተገኘም</div>
+                 ) : (
+                   filteredDocuments.map(doc => (
+                     <div key={doc.id} className="p-8 hover:bg-slate-50 transition-all flex items-center justify-between group">
+                       <div className="flex items-center gap-8">
+                         <div className={`w-14 h-14 bg-white border-2 rounded-2xl flex items-center justify-center shadow-sm ${doc.mailType ? 'border-blue-50' : 'border-slate-50'}`}>
+                           {doc.mailType ? <Mail className="w-7 h-7 text-blue-400" /> : <FileText className="w-7 h-7 text-slate-300" />}
+                         </div>
+                         <div className="space-y-1.5">
+                           <div className="flex items-center gap-3">
+                             <span className="text-[13px] font-black text-slate-900">{doc.name}</span>
+                             {doc.registryNumber && (
+                               <Badge variant="outline" className="text-[7px] font-black uppercase rounded-full h-5 px-3 bg-blue-50 border-blue-100 text-blue-600">{doc.registryNumber}</Badge>
+                             )}
+                             {doc.mailType && (
+                               <Badge className={`text-[7px] font-black uppercase h-5 px-3 border-none ${doc.mailType === 'incoming' ? 'bg-green-50 text-green-600' : 'bg-orange-50 text-orange-600'}`}>
+                                 {doc.mailType === 'incoming' ? 'ገቢ' : 'ወጪ'}
+                               </Badge>
+                             )}
+                           </div>
+                           <div className="flex items-center gap-4">
+                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{doc.expertName}</span>
+                              <span className="text-[8px] font-black text-slate-400 uppercase">•</span>
+                              <span className="text-[8px] font-black text-slate-400 uppercase">{doc.sector}</span>
+                              {doc.senderReceiver && (
+                                <>
+                                  <span className="text-[8px] font-black text-slate-400 uppercase">•</span>
+                                  <span className="text-[8px] font-black text-[#1e3a8a] uppercase">ላኪ/ተቀባይ፦ {doc.senderReceiver}</span>
+                                </>
                               )}
-                           </DropdownMenuContent>
-                         </DropdownMenu>
+                           </div>
+                         </div>
+                       </div>
+
+                       <div className="flex items-center gap-8">
+                         <Badge className={`h-8 px-5 rounded-full text-[8px] font-black uppercase border-none shadow-sm ${
+                           doc.status === 'በዳይሬክተር የጸደቀ' ? 'bg-green-50 text-green-600' :
+                           doc.status === 'በኃላፊ የተፈረመ' ? 'bg-purple-50 text-purple-600' : 'bg-amber-50 text-amber-600'
+                         }`}>
+                           {doc.status}
+                         </Badge>
+                         <div className="flex items-center gap-2">
+                           <Button variant="ghost" size="icon" onClick={() => handleOpenFile(doc)} className="h-10 w-10 rounded-xl text-[#1e3a8a]">
+                             <Eye className="w-5 h-5" />
+                           </Button>
+                           <DropdownMenu>
+                             <DropdownMenuTrigger asChild>
+                               <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-slate-300">
+                                 <MoreVertical className="w-5 h-5" />
+                               </Button>
+                             </DropdownMenuTrigger>
+                             <DropdownMenuContent align="end" className="rounded-2xl border-none shadow-2xl p-2 w-48">
+                                <DropdownMenuItem onClick={() => handleOpenFile(doc)} className="font-bold text-[11px] p-3 rounded-xl cursor-pointer">
+                                   <FileDown className="w-4 h-4 mr-2" /> ሰነዱን ክፈት
+                                </DropdownMenuItem>
+                                {(isMasterAdmin || user?.uid === doc.uploaderId) && (
+                                  <DropdownMenuItem onClick={() => {setDeleteId(doc.id); setDeleteName(doc.name);}} className="text-red-600 font-bold text-[11px] p-3 rounded-xl cursor-pointer">
+                                     <Trash2 className="w-4 h-4 mr-2" /> ሰርዝ
+                                  </DropdownMenuItem>
+                                )}
+                             </DropdownMenuContent>
+                           </DropdownMenu>
+                         </div>
                        </div>
                      </div>
-                   </div>
-                 ))
-               )}
-             </div>
-           </Card>
-        </section>
+                   ))
+                 )}
+               </div>
+             </Card>
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* MESSENGER FAB */}

@@ -34,10 +34,14 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet" />
-        <Script id="error-resilience" strategy="beforeInteractive">
+        <Script id="chunk-error-resilience" strategy="beforeInteractive">
           {`
             window.addEventListener('error', (e) => {
-              if (e.message === 'ResizeObserver loop limit exceeded' || e.message === 'Script error.') {
+              if (e.message.includes('Loading chunk') || e.message.includes('CSS chunk') || e.message.includes('Script error.')) {
+                console.warn('Chunk load error detected, forcing page reload...');
+                window.location.reload();
+              }
+              if (e.message === 'ResizeObserver loop limit exceeded') {
                 e.stopImmediatePropagation();
               }
             });

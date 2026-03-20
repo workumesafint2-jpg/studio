@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
@@ -23,7 +22,6 @@ const LoadingScreen = () => (
 
 /**
  * Enhanced Dynamic Loader with Chunk Recovery Logic.
- * This prevents the "ChunkLoadError" by retrying the load if it fails due to network issues.
  */
 const BPMNFlowForgeApp = dynamic(
   () => import("@/components/bpmn-flowforge-app").then((mod) => mod.BPMNFlowForgeApp).catch((err) => {
@@ -45,10 +43,8 @@ export default function Home() {
   useEffect(() => {
     setIsClient(true);
     
-    // Global Chunk Error Listener for extra resilience
     const handleChunkError = (e: ErrorEvent) => {
       if (e.message.includes('Loading chunk') || e.message.includes('CSS chunk')) {
-        console.warn("Chunk error detected, forcing reload...");
         window.location.reload();
       }
     };
