@@ -72,7 +72,7 @@ import {
   useAuth,
   useDoc
 } from '@/firebase';
-import { collection, query, doc, Timestamp, orderBy } from 'firebase/firestore';
+import { collection, query, doc, Timestamp, orderBy, where } from 'firebase/firestore';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
@@ -133,6 +133,7 @@ export function BPMNFlowForgeApp() {
   }, []);
 
   const isMasterAdmin = user?.email === ADMIN_EMAIL;
+  
   const userDocQuery = useMemoFirebase(() => db && user ? doc(db, 'users', user.uid) : null, [db, user]);
   const { data: userProfile } = useDoc<any>(userDocQuery);
 
@@ -146,11 +147,20 @@ export function BPMNFlowForgeApp() {
     return query(collection(db, 'feedback'), orderBy('createdAt', 'desc'));
   }, [db]);
 
+  const notificationsQuery = useMemoFirebase(() => {
+    if (!db || !userProfile) return null;
+    // Master admin sees all notifications, others see sector-specific
+    if (isMasterAdmin) return query(collection(db, 'notifications'), orderBy('createdAt', 'desc'), where('targetSector', 'in', ['all', 'master', userProfile.sector]));
+    return query(collection(db, 'notifications'), where('targetSector', '==', userProfile.sector), orderBy('createdAt', 'desc'));
+  }, [db, userProfile, isMasterAdmin]);
+
   const { data: allDocs, isLoading: isDocsLoading } = useCollection<UploadedFile>(documentsQuery);
   const { data: feedbackMessages } = useCollection<any>(feedbackQuery);
+  const { data: notifications } = useCollection<any>(notificationsQuery);
   
   const filteredDocuments = useMemo(() => {
     let list = allDocs || [];
+    // CRITICAL: Filter by user's sector unless master admin
     if (!isMasterAdmin && userProfile?.sector) {
       list = list.filter(f => f.sector === userProfile.sector || f.uploaderId === user?.uid);
     }
@@ -310,11 +320,10 @@ export function BPMNFlowForgeApp() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-      {/* HEADER V3.1.0 */}
       <header className="h-20 bg-white border-b flex items-center px-8 shrink-0 sticky top-0 z-50">
         <div className="flex flex-col">
           <h1 className="text-sm font-black text-[#1e3a8a] uppercase leading-none">የኢኖቬሽንና ቴክኖሎጂ ልማት ቢሮ</h1>
-          <span className="text-[9px] font-bold text-slate-400 uppercase mt-1">ITDB INSTITUTIONAL PORTAL V3.1.0</span>
+          <span className="text-[9px] font-bold text-slate-400 uppercase mt-1">ITDB INSTITUTIONAL PORTAL V3.1.5</span>
         </div>
 
         <div className="flex-1 flex justify-center px-12">
@@ -330,9 +339,32 @@ export function BPMNFlowForgeApp() {
         </div>
 
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" className="rounded-full text-slate-400">
-            <Bell className="w-5 h-5" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full text-slate-400 relative">
+                <Bell className="w-5 h-5" />
+                {notifications && notifications.length > 0 && (
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80 p-4 rounded-2xl border-none shadow-2xl">
+              <DropdownMenuLabel className="text-[10px] uppercase font-black px-3 text-slate-400 mb-2">ማሳሰቢያዎች (Notifications)</DropdownMenuLabel>
+              <div className="max-h-60 overflow-y-auto space-y-2">
+                {notifications?.map(notif => (
+                  <div key={notif.id} className="p-3 bg-slate-50 rounded-xl">
+                    <p className="text-[10px] font-black text-slate-800">{notif.title}</p>
+                    <p className="text-[9px] text-slate-500 mt-1">{notif.message}</p>
+                    <p className="text-[7px] text-blue-500 mt-1 font-bold">{new Date(notif.createdAt?.toDate()).toLocaleString()}</p>
+                  </div>
+                ))}
+                {(!notifications || notifications.length === 0) && (
+                  <p className="text-[10px] text-center py-4 text-slate-400 font-bold">ምንም ማሳሰቢያ የለም</p>
+                )}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-10 w-10 p-0 rounded-full border shadow-sm">
@@ -360,7 +392,7 @@ export function BPMNFlowForgeApp() {
       </header>
 
       <main className="flex-1 p-8 space-y-8 max-w-7xl mx-auto w-full">
-        {/* INPUT SECTION V3.1.0 */}
+        {/* INPUT SECTION */}
         <Card className="border-none shadow-xl rounded-[2.5rem] bg-white overflow-hidden p-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-4">
@@ -401,7 +433,6 @@ export function BPMNFlowForgeApp() {
           </div>
         </Card>
 
-        {/* TABS & ACTIONS - WRAPPED IN TABS FOR CONTEXT */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-8">
           <div className="flex items-center justify-between">
             <TabsList className="bg-white p-1 rounded-2xl shadow-lg border border-slate-100 h-auto gap-1">
@@ -455,12 +486,6 @@ export function BPMNFlowForgeApp() {
           </TabsContent>
 
           <TabsContent value="performance">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <StatCard icon={<BrainCircuit className="text-purple-600" />} label="የተመዘገቡ ዲያግራሞች" value={filteredDocuments.filter(d => d.category === 'ዲያግራም').length} color="purple" />
-              <StatCard icon={<FileText className="text-green-600" />} label="ኦፊሴላዊ ሰነዶች" value={filteredDocuments.filter(d => d.category === 'ኦፊሴላዊ ሰነድ').length} color="green" />
-              <StatCard icon={<CheckCircle2 className="text-amber-600" />} label="የተጠናቀቁ ስራዎች" value={filteredDocuments.filter(d => d.status === 'የተጠናቀቀ').length} color="amber" />
-            </div>
-
             <Card className="rounded-[3rem] border-none shadow-2xl bg-white overflow-hidden">
               <div className="divide-y divide-slate-50">
                 {isDocsLoading ? (
@@ -531,13 +556,10 @@ export function BPMNFlowForgeApp() {
         </Tabs>
       </main>
 
-      {/* FOOTER V3.1.0 */}
+      {/* FOOTER */}
       <footer className="h-20 bg-white border-t flex items-center justify-between px-12 shrink-0 mt-20">
         <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
-          ITDB PORTAL V3.1.0 - INSTITUTIONAL RECOVERY BUILD
-        </div>
-        <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
-          © 2024 INNOVATION AND TECHNOLOGY DEVELOPMENT BUREAU
+          ITDB PORTAL V3.1.5 - INSTITUTIONAL RECOVERY BUILD
         </div>
         <div className="flex items-center gap-8">
            <Link href="/admin" className="flex items-center gap-2 text-[9px] font-black text-[#1e3a8a] uppercase tracking-widest hover:underline">
@@ -556,7 +578,6 @@ export function BPMNFlowForgeApp() {
         className="fixed bottom-10 right-10 h-16 w-16 rounded-full bg-[#1e3a8a] shadow-2xl flex items-center justify-center hover:scale-110 transition-transform z-50 p-0"
       >
         <MessageSquare className="w-7 h-7 text-white" />
-        <Badge className="absolute -top-1 -right-1 h-6 w-6 rounded-full bg-red-500 border-4 border-white flex items-center justify-center p-0 text-[10px] font-black">1</Badge>
       </Button>
 
       {/* CHAT PANEL */}
@@ -569,7 +590,7 @@ export function BPMNFlowForgeApp() {
                  </div>
                  <div className="flex flex-col">
                     <span className="text-white font-black text-[11px] uppercase tracking-widest">የቢሮ መፃፃፊያ</span>
-                    <span className="text-white/50 font-bold text-[8px] uppercase">One-to-One Messenger</span>
+                    <span className="text-white/50 font-bold text-[8px] uppercase">Group Messenger</span>
                  </div>
               </div>
            </div>
@@ -580,14 +601,7 @@ export function BPMNFlowForgeApp() {
                       <div className={`p-4 rounded-2xl text-[11px] font-bold shadow-sm max-w-[80%] ${msg.uploaderId === user?.uid ? 'bg-[#1e3a8a] text-white' : 'bg-white text-slate-700'}`}>
                          {msg.content}
                       </div>
-                      <div className="flex items-center gap-2 mt-1 px-2">
-                        <span className="text-[7px] font-black text-slate-400 uppercase">{msg.senderName}</span>
-                        {(isMasterAdmin || msg.uploaderId === user?.uid) && (
-                          <button onClick={() => deleteDocumentNonBlocking(doc(db!, 'feedback', msg.id))} className="text-red-400 hover:text-red-600 transition-colors">
-                            <Trash2 className="w-2.5 h-2.5" />
-                          </button>
-                        )}
-                      </div>
+                      <span className="text-[7px] font-black text-slate-400 mt-1 uppercase px-2">{msg.senderName}</span>
                    </div>
                  ))}
               </div>
@@ -647,21 +661,5 @@ export function BPMNFlowForgeApp() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  );
-}
-
-function StatCard({ icon, label, value, color }: { icon: React.ReactNode, label: string, value: string | number, color: string }) {
-  return (
-    <Card className="border-none shadow-lg rounded-3xl bg-white p-8">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
-          <p className="text-2xl font-black text-slate-900">{value}</p>
-        </div>
-        <div className={`w-14 h-14 bg-${color}-50 rounded-2xl flex items-center justify-center`}>
-          {icon}
-        </div>
-      </div>
-    </Card>
   );
 }

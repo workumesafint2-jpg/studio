@@ -68,17 +68,9 @@ interface DocumentRecord {
   fileUrl: string;
   uploaderId: string;
   expertName?: string;
+  sector?: string;
   signatures?: SignatureEntry[];
   createdAt?: any;
-}
-
-interface AuditLog {
-  id: string;
-  action: string;
-  userName: string;
-  docName: string;
-  details: string;
-  timestamp: any;
 }
 
 export default function AdminPage() {
@@ -105,7 +97,7 @@ export default function AdminPage() {
   }, [db]);
 
   const { data: allDocs, isLoading: docsLoading } = useCollection<DocumentRecord>(docsQuery);
-  const { data: allLogs, isLoading: logsLoading } = useCollection<AuditLog>(auditQuery);
+  const { data: allLogs, isLoading: logsLoading } = useCollection<any>(auditQuery);
 
   const stats = useMemo(() => ({
     totalDocs: allDocs?.length || 0,
@@ -125,7 +117,7 @@ export default function AdminPage() {
     });
   };
 
-  const handleWorkflowAction = (docItem: DocumentRecord, nextStatus: string, roleName: string) => {
+  const handleWorkflowAction = async (docItem: DocumentRecord, nextStatus: string, roleName: string) => {
     if (!db) return;
     
     const newSignature: SignatureEntry = {
@@ -142,8 +134,19 @@ export default function AdminPage() {
       signatures: updatedSignatures
     });
 
+    // CRITICAL: Create Notification for the Sector
+    if (docItem.sector) {
+      await addDocumentNonBlocking(collection(db, 'notifications'), {
+        title: "የሰነድ ፊርማ ማሳሰቢያ",
+        message: `ሰነድ "${docItem.name}" በ${roleName} ተፈርሞ ወደ "${nextStatus}" ደረጃ ተቀይሯል።`,
+        targetSector: docItem.sector,
+        docId: docItem.id,
+        createdAt: Timestamp.now()
+      });
+    }
+
     handleLogAction("SIGNATURE", docItem.name, `${roleName} ፊርማቸውን አኑረዋል - ደረጃው ወደ "${nextStatus}" ተቀይሯል`);
-    toast({ title: "ተፈርሟል", description: `ሰነዱ በ${roleName} ተፈርሞ ወደ "${nextStatus}" ደረጃ ተቀይሯል` });
+    toast({ title: "ተፈርሟል", description: `ሰነዱ በ${roleName} ተፈርሞ ለዘርፉ ሰራተኞች ማሳሰቢያ ተልኳል።` });
   };
 
   const handleDelete = (docItem: DocumentRecord) => {
@@ -160,11 +163,7 @@ export default function AdminPage() {
     handleLogAction("VIEW", docItem.name, "ሰነዱን ተመልክተዋል");
     const win = window.open();
     if (win) {
-      if (docItem.fileUrl.startsWith('data:')) {
-        win.document.write(`<iframe src="${docItem.fileUrl}" frameborder="0" style="border:0; width:100%; height:100%;" allowfullscreen></iframe>`);
-      } else {
-        win.location.href = docItem.fileUrl;
-      }
+      win.document.write(`<iframe src="${docItem.fileUrl}" frameborder="0" style="border:0; width:100%; height:100%;" allowfullscreen></iframe>`);
     }
   };
 
@@ -179,9 +178,6 @@ export default function AdminPage() {
           </Button>
           <header className="flex flex-col items-center">
             <h1 className="text-[14px] font-black text-[#1e3a8a] uppercase tracking-tight mb-2">የኢኖቬሽንና ቴክኖሎጂ ቢሮ</h1>
-            <div className="w-10 h-10 bg-[#1e3a8a] rounded-xl flex items-center justify-center shadow-md border-2 border-white overflow-hidden mb-2">
-               <div className="text-white text-[10px] font-black">ITB</div>
-            </div>
             <h1 className="text-xs font-black text-slate-800 uppercase bg-white px-10 py-3 rounded-full shadow-lg border flex items-center gap-3">
               <ShieldCheck className="w-5 h-5 text-green-500" /> የሥራ ሂደት መቆጣጠሪያ ማዕከል
             </h1>
@@ -189,13 +185,6 @@ export default function AdminPage() {
           <div className="w-32 flex justify-end">
             {isMasterAdmin && <Badge className="bg-green-500 text-white font-black text-[8px] h-8 px-4 rounded-xl uppercase">Master Admin</Badge>}
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <StatCard title="ጠቅላላ ሰነዶች" value={stats.totalDocs.toString()} icon={<FileText className="w-5 h-5 text-blue-600" />} />
-          <StatCard title="በኃላፊ የተፈረሙ" value={stats.headApproved.toString()} icon={<Stamp className="w-5 h-5 text-purple-600" />} />
-          <StatCard title="በዳይሬክተር የጸደቁ" value={stats.directorApproved.toString()} icon={<CheckCircle2 className="w-5 h-5 text-green-600" />} />
-          <StatCard title="የተጠናቀቁ" value={stats.finalized.toString()} icon={<Archive className="w-5 h-5 text-amber-600" />} />
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -208,11 +197,6 @@ export default function AdminPage() {
 
           <TabsContent value="documents">
             <Card className="shadow-2xl border-none overflow-hidden rounded-[2.5rem] bg-white">
-              <CardHeader className="bg-white border-b border-slate-50 py-8 px-10">
-                <CardTitle className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-3">
-                  <FileSearch className="w-5 h-5" /> የተዋረዳዊ የሥራ ሂደት ክትትል
-                </CardTitle>
-              </CardHeader>
               <CardContent className="p-0">
                 {docsLoading ? (
                   <div className="flex flex-col items-center justify-center py-40 gap-6">
@@ -234,7 +218,7 @@ export default function AdminPage() {
                                   <User className="w-3.5 h-3.5" /> {docItem.expertName || "ባለሙያ"}
                                 </span>
                                 <Badge variant="outline" className="text-[8px] font-black uppercase rounded-full bg-blue-50 text-blue-600">
-                                  ደረጃ፦ {docItem.status}
+                                  ዘርፍ፦ {docItem.sector}
                                 </Badge>
                               </div>
                             </div>
@@ -266,14 +250,8 @@ export default function AdminPage() {
                                 )}
 
                                 {docItem.status === 'በዳይሬክተር የጸደቀ' && (
-                                  <DropdownMenuItem onClick={() => handleWorkflowAction(docItem, 'በቡድን መሪ የታየ', 'ቡድን መሪ')} className="text-[11px] font-black cursor-pointer bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-2xl mb-2 p-4">
-                                    <Users className="w-4 h-4 mr-2" /> ቡድን መሪ ይመልከቱ
-                                  </DropdownMenuItem>
-                                )}
-
-                                {docItem.status === 'በቡድን መሪ የታየ' && (
                                   <DropdownMenuItem onClick={() => handleWorkflowAction(docItem, 'የተጠናቀቀ', 'ባለሙያ')} className="text-[11px] font-black cursor-pointer bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-2xl mb-2 p-4">
-                                    <Archive className="w-4 h-4 mr-2" /> ወደ ባለሙያ (መጨረሻ)
+                                    <Archive className="w-4 h-4 mr-2" /> ጨርስ (Finalize)
                                   </DropdownMenuItem>
                                 )}
 
@@ -288,9 +266,9 @@ export default function AdminPage() {
 
                         {/* Hierarchical Signature Progress Area */}
                         <div className="bg-slate-50/50 rounded-3xl p-6 border border-dashed border-slate-200">
-                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-4">የፊርማ ማረጋገጫ መስመር (Hierarchy Track)</p>
+                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-4">የፊርማ ማረጋገጫ መስመር</p>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {['ቢሮ ኃላፊ', 'ዳይሬክተር', 'ቡድን መሪ', 'ባለሙያ'].map((role) => {
+                            {['ባለሙያ', 'ቢሮ ኃላፊ', 'ዳይሬክተር', 'ቡድን መሪ'].map((role) => {
                               const sig = docItem.signatures?.find(s => s.role === role);
                               return (
                                 <div key={role} className={`p-4 rounded-2xl border transition-all ${sig ? 'bg-white border-green-100 shadow-sm' : 'bg-slate-100/30 border-transparent opacity-40'}`}>
@@ -323,11 +301,6 @@ export default function AdminPage() {
 
           <TabsContent value="audit">
              <Card className="shadow-2xl border-none overflow-hidden rounded-[2.5rem] bg-white">
-              <CardHeader className="bg-white border-b border-slate-50 py-8 px-10">
-                <CardTitle className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-3">
-                  <History className="w-5 h-5" /> የክትትልና ቁጥጥር መዝገብ (Audit Log)
-                </CardTitle>
-              </CardHeader>
               <CardContent className="p-0">
                 {logsLoading ? (
                   <div className="flex flex-col items-center justify-center py-40 gap-6">
@@ -335,15 +308,11 @@ export default function AdminPage() {
                   </div>
                 ) : (
                   <div className="divide-y divide-slate-50">
-                    {allLogs?.map((log) => (
+                    {allLogs?.map((log: any) => (
                       <div key={log.id} className="p-6 hover:bg-slate-50 transition-all flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${
-                            log.action === 'SIGNATURE' ? 'bg-purple-50 text-purple-500' : 
-                            log.action === 'DELETE' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'
-                          }`}>
-                            {log.action === 'SIGNATURE' ? <Stamp className="w-5 h-5" /> : 
-                             log.action === 'DELETE' ? <Trash2 className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center">
+                            <History className="w-5 h-5" />
                           </div>
                           <div className="flex flex-col">
                             <span className="text-[11px] font-black text-slate-800">{log.userName} {log.details}</span>
@@ -365,21 +334,5 @@ export default function AdminPage() {
         </Tabs>
       </div>
     </AuthGuard>
-  );
-}
-
-function StatCard({ title, value, icon }: { title: string, value: string, icon: React.ReactNode }) {
-  return (
-    <Card className="border-none shadow-xl bg-white overflow-hidden rounded-2xl">
-      <CardContent className="p-6 flex items-center justify-between">
-        <div>
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{title}</p>
-          <h3 className="text-xl font-black text-slate-900">{value}</h3>
-        </div>
-        <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center shadow-inner">
-          {icon}
-        </div>
-      </CardContent>
-    </Card>
   );
 }

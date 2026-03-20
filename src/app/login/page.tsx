@@ -12,10 +12,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, AlertCircle, UserPlus, LogIn, Briefcase, User, ShieldCheck, Building2, ChevronDown, KeyRound, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Loader2, AlertCircle, UserPlus, LogIn, Building2, KeyRound, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { doc, setDoc, getFirestore } from 'firebase/firestore';
 import {
   Select,
@@ -82,15 +82,14 @@ export default function LoginPage() {
         toast({ title: "እንኳን ደህና መጡ", description: "ወደ ሲስተሙ በመግባት ላይ ነዎት" });
       } else if (mode === 'forgot') {
         await sendPasswordResetEmail(auth, email);
-        setSuccessMessage("የይለፍ ቃል መቀየሪያ ሊንክ ወደ ኢሜይልዎ ተልኳል። እባክዎ ኢሜይልዎን ይፈትሹ።");
-        toast({ title: "ተልኳል", description: "የይለፍ ቃል ማስተካከያ መመሪያ ወደ ኢሜይልዎ ተልኳል" });
+        setSuccessMessage("የይለፍ ቃል መቀየሪያ ሊንክ ወደ ኢሜይልዎ ተልኳል።");
+        toast({ title: "ተልኳል", description: "የይለፍ ቃል ማስተካከያ መመሪያ ተልኳል" });
       }
     } catch (err: any) {
       console.error(err);
       let msg = err.message || "ክወናው አልተሳካም።";
       if (err.code === 'auth/email-already-in-use') msg = "ይህ ኢሜይል ቀድሞ ተመዝግቧል።";
-      if (err.code === 'auth/invalid-credential') msg = "ኢሜይል ወይም የይለፍ ቃል ተሳስቷል፤ ወይም ገና አልተመዘገቡም።";
-      if (err.code === 'auth/user-not-found') msg = "ይህ ኢሜይል በሲስተሙ ውስጥ አልተገኘም።";
+      if (err.code === 'auth/invalid-credential') msg = "ኢሜይል ወይም የይለፍ ቃል ተሳስቷል።";
       setErrorMessage(msg);
     } finally {
       setLoading(false);
@@ -118,16 +117,16 @@ export default function LoginPage() {
         <CardContent className="px-10 pb-12">
           {errorMessage && (
             <Alert variant="destructive" className="mb-6 bg-red-50 border-none rounded-2xl">
-              <AlertDescription className="text-[11px] font-bold text-red-900 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4" /> {errorMessage}
+              <AlertDescription className="text-[11px] font-bold text-red-900">
+                {errorMessage}
               </AlertDescription>
             </Alert>
           )}
 
           {successMessage && (
             <Alert className="mb-6 bg-green-50 border-green-100 rounded-2xl border">
-              <AlertDescription className="text-[11px] font-bold text-green-900 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-600" /> {successMessage}
+              <AlertDescription className="text-[11px] font-bold text-green-900">
+                {successMessage}
               </AlertDescription>
             </Alert>
           )}
