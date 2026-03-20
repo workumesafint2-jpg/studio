@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -408,11 +407,9 @@ export function BPMNFlowForgeApp() {
             </div>
           </Card>
 
-          <Card className="min-h-[700px] rounded-[3rem] border-none shadow-2xl bg-white overflow-hidden relative">
+          <Card className="min-h-[850px] rounded-[3.5rem] border-none shadow-2xl bg-white relative overflow-hidden">
             {xmlResult ? (
-              <div className="w-full h-full min-h-[700px]">
-                <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
-              </div>
+              <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center opacity-20 pointer-events-none">
                 <BrainCircuit className="w-24 h-24 mb-6" />

@@ -92,9 +92,11 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
 
   useEffect(() => {
     if (!containerRef.current) return;
-    // Fix: Keyboard binding is now implicit in newer bpmn-js versions
     const modeler = new BpmnModeler({ 
-      container: containerRef.current
+      container: containerRef.current,
+      keyboard: {
+        bindTo: window
+      }
     });
     modelerRef.current = modeler;
     return () => { modeler.destroy(); };
@@ -107,22 +109,60 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
   }, [xml]);
 
   return (
-    <div className="w-full h-full relative bg-white border rounded-xl overflow-hidden">
-      <div ref={containerRef} className="w-full h-full min-h-[600px] bpmn-modeler-container" />
+    <div className="absolute inset-0 w-full h-full bg-white overflow-hidden rounded-[3.5rem]">
+      <div ref={containerRef} className="w-full h-full bpmn-modeler-container" />
       <style jsx global>{`
-        .bpmn-modeler-container .bjs-powered-by { display: none; }
+        .bpmn-modeler-container {
+          height: 100% !important;
+          width: 100% !important;
+          outline: none !important;
+        }
+        .bpmn-modeler-container .bjs-powered-by {
+          display: none !important;
+        }
         .djs-palette {
-          top: 20px !important;
-          left: 20px !important;
-          border-radius: 12px !important;
-          border: 1px solid #e2e8f0 !important;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.05) !important;
-          padding: 8px !important;
+          top: 40px !important;
+          left: 40px !important;
+          border-radius: 24px !important;
+          border: 1px solid #f1f5f9 !important;
+          box-shadow: 0 20px 40px rgba(0,0,0,0.06) !important;
+          padding: 16px !important;
           background: white !important;
+          height: auto !important;
+          max-height: calc(100% - 80px) !important;
+          overflow-y: auto !important;
+          width: auto !important;
+        }
+        .djs-palette-entries {
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 16px !important;
+        }
+        .djs-palette .entry {
+          width: 36px !important;
+          height: 36px !important;
+          line-height: 36px !important;
+          font-size: 22px !important;
+          color: #64748b !important;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+        .djs-palette .entry:hover {
+          color: #1e3a8a !important;
+          transform: scale(1.15);
+          background-color: #f8fafc !important;
+          border-radius: 12px !important;
         }
         .djs-context-pad {
-          border-radius: 8px !important;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+          border-radius: 16px !important;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+          border: 1px solid #f1f5f9 !important;
+        }
+        .djs-outline {
+          stroke: #1e3a8a !important;
+          stroke-opacity: 0.1 !important;
         }
       `}</style>
     </div>
