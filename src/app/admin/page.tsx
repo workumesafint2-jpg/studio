@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useEffect, useState } from 'react';
@@ -24,7 +23,8 @@ import {
   Archive,
   Search,
   CheckCircle,
-  Stamp
+  Stamp,
+  Mail
 } from 'lucide-react';
 import { 
   useCollection, 
@@ -69,6 +69,9 @@ interface DocumentRecord {
   uploaderId: string;
   expertName?: string;
   sector?: string;
+  registryNumber?: string;
+  mailType?: string;
+  senderReceiver?: string;
   signatures?: SignatureEntry[];
   createdAt?: any;
 }
@@ -99,13 +102,6 @@ export default function AdminPage() {
   const { data: allDocs, isLoading: docsLoading } = useCollection<DocumentRecord>(docsQuery);
   const { data: allLogs, isLoading: logsLoading } = useCollection<any>(auditQuery);
 
-  const stats = useMemo(() => ({
-    totalDocs: allDocs?.length || 0,
-    headApproved: allDocs?.filter(d => d.status === 'በኃላፊ የተፈረመ').length || 0,
-    directorApproved: allDocs?.filter(d => d.status === 'በዳይሬክተር የጸደቀ').length || 0,
-    finalized: allDocs?.filter(d => d.status === 'የተጠናቀቀ').length || 0
-  }), [allDocs]);
-
   const handleLogAction = async (action: string, docName: string, details: string) => {
     if (!db || !user) return;
     await addDocumentNonBlocking(collection(db, 'audit_logs'), {
@@ -134,7 +130,6 @@ export default function AdminPage() {
       signatures: updatedSignatures
     });
 
-    // CRITICAL: Create Notification for the Sector
     if (docItem.sector) {
       await addDocumentNonBlocking(collection(db, 'notifications'), {
         title: "የሰነድ ፊርማ ማሳሰቢያ",
@@ -145,8 +140,8 @@ export default function AdminPage() {
       });
     }
 
-    handleLogAction("SIGNATURE", docItem.name, `${roleName} ፊርማቸውን አኑረዋል - ደረጃው ወደ "${nextStatus}" ተቀይሯል`);
-    toast({ title: "ተፈርሟል", description: `ሰነዱ በ${roleName} ተፈርሞ ለዘርፉ ሰራተኞች ማሳሰቢያ ተልኳል።` });
+    handleLogAction("SIGNATURE", docItem.name, `${roleName} ፊርማቸውን አኑረዋል`);
+    toast({ title: "ተፈርሟል", description: `ሰነዱ በ${roleName} ተፈርሟል።` });
   };
 
   const handleDelete = (docItem: DocumentRecord) => {
@@ -160,7 +155,6 @@ export default function AdminPage() {
 
   const handleOpenFile = (docItem: DocumentRecord) => {
     if (!docItem.fileUrl) return;
-    handleLogAction("VIEW", docItem.name, "ሰነዱን ተመልክተዋል");
     const win = window.open();
     if (win) {
       win.document.write(`<iframe src="${docItem.fileUrl}" frameborder="0" style="border:0; width:100%; height:100%;" allowfullscreen></iframe>`);
@@ -208,8 +202,8 @@ export default function AdminPage() {
                       <div key={docItem.id} className="p-8 hover:bg-slate-50/80 transition-all">
                         <div className="flex items-center justify-between mb-6">
                           <div className="flex items-center gap-6">
-                            <div className="w-14 h-14 bg-white border rounded-2xl flex items-center justify-center shadow-md">
-                              <FileText className="w-7 h-7 text-slate-400" />
+                            <div className={`w-14 h-14 bg-white border rounded-2xl flex items-center justify-center shadow-md ${docItem.mailType ? 'border-blue-100' : ''}`}>
+                              {docItem.mailType ? <Mail className="w-7 h-7 text-blue-400" /> : <FileText className="w-7 h-7 text-slate-400" />}
                             </div>
                             <div className="flex flex-col gap-1.5">
                               <span className="text-sm font-black text-slate-900">{docItem.name}</span>
@@ -220,13 +214,16 @@ export default function AdminPage() {
                                 <Badge variant="outline" className="text-[8px] font-black uppercase rounded-full bg-blue-50 text-blue-600">
                                   ዘርፍ፦ {docItem.sector}
                                 </Badge>
+                                {docItem.registryNumber && (
+                                  <Badge className="text-[8px] font-black bg-slate-100 text-slate-600 border-none">ቁጥር፦ {docItem.registryNumber}</Badge>
+                                )}
                               </div>
                             </div>
                           </div>
                           
                           <div className="flex items-center gap-4">
                             <Button variant="outline" size="sm" onClick={() => handleOpenFile(docItem)} className="h-11 px-6 text-[10px] font-black rounded-xl border-slate-200 shadow-sm">
-                              <Eye className="w-4 h-4 mr-2" /> ሰነዱን ክፈት
+                              <Eye className="w-4 h-4 mr-2" /> ክፈት
                             </Button>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -237,23 +234,13 @@ export default function AdminPage() {
                               <DropdownMenuContent align="end" className="w-64 p-3 rounded-[2rem] shadow-2xl border-none">
                                 <DropdownMenuLabel className="text-[9px] uppercase text-slate-400 px-4 py-3 font-black">የሥራ ሂደት አስተዳደር</DropdownMenuLabel>
                                 
-                                {docItem.status === 'በሂደት ላይ' && (
-                                  <DropdownMenuItem onClick={() => handleWorkflowAction(docItem, 'በኃላፊ የተፈረመ', 'ቢሮ ኃላፊ')} className="text-[11px] font-black cursor-pointer bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-2xl mb-2 p-4">
-                                    <Stamp className="w-4 h-4 mr-2" /> ቢሮ ኃላፊ ይፈርሙ
-                                  </DropdownMenuItem>
-                                )}
+                                <DropdownMenuItem onClick={() => handleWorkflowAction(docItem, 'በኃላፊ የተፈረመ', 'ቢሮ ኃላፊ')} className="text-[11px] font-black cursor-pointer bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-2xl mb-2 p-4">
+                                  <Stamp className="w-4 h-4 mr-2" /> ቢሮ ኃላፊ ይፈርሙ
+                                </DropdownMenuItem>
                                 
-                                {docItem.status === 'በኃላፊ የተፈረመ' && (
-                                  <DropdownMenuItem onClick={() => handleWorkflowAction(docItem, 'በዳይሬክተር የጸደቀ', 'ዳይሬክተር')} className="text-[11px] font-black cursor-pointer bg-green-50 text-green-700 hover:bg-green-100 rounded-2xl mb-2 p-4">
-                                    <CheckCircle className="w-4 h-4 mr-2" /> ዳይሬክተር ያጽድቁ
-                                  </DropdownMenuItem>
-                                )}
-
-                                {docItem.status === 'በዳይሬክተር የጸደቀ' && (
-                                  <DropdownMenuItem onClick={() => handleWorkflowAction(docItem, 'የተጠናቀቀ', 'ባለሙያ')} className="text-[11px] font-black cursor-pointer bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-2xl mb-2 p-4">
-                                    <Archive className="w-4 h-4 mr-2" /> ጨርስ (Finalize)
-                                  </DropdownMenuItem>
-                                )}
+                                <DropdownMenuItem onClick={() => handleWorkflowAction(docItem, 'በዳይሬክተር የጸደቀ', 'ዳይሬክተር')} className="text-[11px] font-black cursor-pointer bg-green-50 text-green-700 hover:bg-green-100 rounded-2xl mb-2 p-4">
+                                  <CheckCircle className="w-4 h-4 mr-2" /> ዳይሬክተር ያጽድቁ
+                                </DropdownMenuItem>
 
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => handleDelete(docItem)} className="text-[11px] font-black cursor-pointer text-red-600 p-4">
@@ -264,7 +251,7 @@ export default function AdminPage() {
                           </div>
                         </div>
 
-                        {/* Hierarchical Signature Progress Area */}
+                        {/* Signature Progress Area */}
                         <div className="bg-slate-50/50 rounded-3xl p-6 border border-dashed border-slate-200">
                           <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-4">የፊርማ ማረጋገጫ መስመር</p>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
