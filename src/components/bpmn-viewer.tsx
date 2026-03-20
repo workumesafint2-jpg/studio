@@ -92,9 +92,9 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
 
   useEffect(() => {
     if (!containerRef.current) return;
+    // Fix: Keyboard binding is now implicit in newer bpmn-js versions
     const modeler = new BpmnModeler({ 
-      container: containerRef.current,
-      keyboard: { bindTo: window }
+      container: containerRef.current
     });
     modelerRef.current = modeler;
     return () => { modeler.destroy(); };

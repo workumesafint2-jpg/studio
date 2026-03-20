@@ -10,7 +10,6 @@ import {
   Search,
   Loader2,
   Upload,
-  BarChart,
   FileText,
   BrainCircuit,
   MessageSquare,
@@ -19,21 +18,16 @@ import {
   ShieldCheck,
   Save,
   CheckCircle2,
-  Archive,
   Eye,
-  Bell,
   MoreVertical,
-  CheckCircle,
   FileDown,
   Sparkles,
-  ChevronDown,
-  Download,
-  Printer,
+  Mail,
+  ArrowRight,
   TrendingUp,
   AlertTriangle,
   History,
-  Mail,
-  ArrowRight
+  ChevronDown
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -93,13 +87,6 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 
 const ADMIN_EMAIL = "workumesafint2@gmail.com";
 
-interface SignatureEntry {
-  role: string;
-  name: string;
-  date: string;
-  status: string;
-}
-
 interface UploadedFile {
   id: string;
   name: string;
@@ -117,7 +104,6 @@ interface UploadedFile {
   subject?: string;
   senderReceiver?: string;
   mailType?: string;
-  signatures?: SignatureEntry[];
   createdAt?: any;
 }
 
@@ -126,18 +112,17 @@ export function BPMNFlowForgeApp() {
   const [input, setInput] = useState("");
   const [title, setTitle] = useState("");
   const [xmlResult, setXmlResult] = useState("");
-  const [activeTab, setActiveTab] = useState("diagram");
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [globalSearch, setGlobalSearch] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [upName, setUpName] = useState("");
   const [mailType, setMailType] = useState("incoming");
   const [registryLoading, setRegistryLoading] = useState(false);
   const [feedbackInput, setFeedbackInput] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteName, setDeleteName] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiAnalysisResult, setAiAnalysisResult] = useState<any>(null);
 
   const viewerRef = useRef<BPMNViewerRef>(null);
   const { toast } = useToast();
@@ -165,15 +150,8 @@ export function BPMNFlowForgeApp() {
     return query(collection(db, 'feedback'), orderBy('createdAt', 'desc'));
   }, [db]);
 
-  const notificationsQuery = useMemoFirebase(() => {
-    if (!db || !userProfile) return null;
-    if (isMasterAdmin) return query(collection(db, 'notifications'), orderBy('createdAt', 'desc'), where('targetSector', 'in', ['all', 'master', userProfile.sector]));
-    return query(collection(db, 'notifications'), where('targetSector', '==', userProfile.sector), orderBy('createdAt', 'desc'));
-  }, [db, userProfile, isMasterAdmin]);
-
   const { data: allDocs, isLoading: isDocsLoading } = useCollection<UploadedFile>(documentsQuery);
   const { data: feedbackMessages } = useCollection<any>(feedbackQuery);
-  const { data: notifications } = useCollection<any>(notificationsQuery);
   
   const filteredDocuments = useMemo(() => {
     let list = allDocs || [];
@@ -185,7 +163,8 @@ export function BPMNFlowForgeApp() {
     return list.filter(f => 
       f.name?.toLowerCase().includes(q) || 
       f.expertName?.toLowerCase().includes(q) ||
-      f.status?.toLowerCase().includes(q)
+      f.status?.toLowerCase().includes(q) ||
+      f.registryNumber?.toLowerCase().includes(q)
     );
   }, [allDocs, globalSearch, isMasterAdmin, userProfile, user]);
 
@@ -196,18 +175,6 @@ export function BPMNFlowForgeApp() {
     { name: 'ሐሙስ', value: 91 },
     { name: 'አርብ', value: 78 },
   ], []);
-
-  const handleLogAction = async (action: string, docName: string, details: string) => {
-    if (!db || !user) return;
-    await addDocumentNonBlocking(collection(db, 'audit_logs'), {
-      action,
-      userName: user.displayName || user.email || "ባለሙያ",
-      docName,
-      details,
-      timestamp: Timestamp.now(),
-      sector: userProfile?.sector || "N/A"
-    });
-  };
 
   const handleLogout = async () => {
     if (!auth) return;
@@ -253,7 +220,6 @@ export function BPMNFlowForgeApp() {
         createdAt: Timestamp.now(),
         signatures: []
       });
-      handleLogAction("SAVE_DIAGRAM", diagramName, "አዲስ የBPMN ዲያግራም ተመዝግቧል");
       setIsSaving(false);
       toast({ title: "ተሳክቷል", description: "ዲያግራሙ በመዝገብ ቤት ተቀምጧል" });
     } catch (e) {
@@ -301,7 +267,6 @@ export function BPMNFlowForgeApp() {
         signatures: []
       });
 
-      handleLogAction("REGISTRY", finalName, "በ AI የታገዘ የደብዳቤ ምዝገባ ተከናውኗል");
       toast({ title: "ተሳክቷል", description: "ደብዳቤው በ AI ተለይቶ ተመዝግቧል" });
     } catch (e) {
       toast({ title: "ስህተት", description: "ደብዳቤውን መመዝገብ አልተቻለም", variant: "destructive" });
@@ -311,27 +276,20 @@ export function BPMNFlowForgeApp() {
     }
   };
 
-  const handleExportRegistry = () => {
-    const headers = ["ስም", "ዘርፍ", "መዝገብ ቁጥር", "ቀን", "ጉዳይ", "ላኪ/ተቀባይ", "ሁኔታ"];
-    const rows = filteredDocuments.map(d => [
-      d.name,
-      d.sector || "N/A",
-      d.registryNumber || "N/A",
-      new Date(d.uploadDate).toLocaleDateString(),
-      d.subject || "N/A",
-      d.senderReceiver || "N/A",
-      d.status
-    ]);
-    
-    let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "itb_registry_export.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast({ title: "ተሳክቷል", description: "የመዝገብ መረጃዎች ወርደዋል" });
+  const handlePerformAIAnalysis = async () => {
+    setIsAnalyzing(true);
+    try {
+      const result = await processRegistry({
+        action: 'analyze_performance',
+        additionalContext: `በመዝገብ ቤቱ ውስጥ ${filteredDocuments.length} ሰነዶች አሉ። ${filteredDocuments.filter(d => d.status === 'በዳይሬክተር የጸደቀ').length} ሰነዶች ጸድቀዋል።`
+      });
+      setAiAnalysisResult(result.performanceAnalysis);
+      toast({ title: "ትንተና ተጠናቋል", description: "የቢሮው አፈጻጸም በ AI ተጠንቷል" });
+    } catch (e) {
+      toast({ title: "ስህተት", description: "ትንተናውን መስራት አልተቻለም", variant: "destructive" });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const handleOpenFile = (file: UploadedFile) => {
@@ -349,7 +307,7 @@ export function BPMNFlowForgeApp() {
       <header className="h-20 bg-white border-b flex items-center px-8 shrink-0 sticky top-0 z-[100] shadow-sm">
         <div className="flex flex-col">
           <h1 className="text-sm font-black text-[#1e3a8a] uppercase leading-none">የኢኖቬሽንና ቴክኖሎጂ ቢሮ</h1>
-          <span className="text-[9px] font-bold text-slate-400 uppercase mt-1">ITB DIGITAL PORTAL V4.0.0</span>
+          <span className="text-[9px] font-bold text-slate-400 uppercase mt-1">ITB DIGITAL PORTAL V5.0.0</span>
         </div>
 
         <div className="flex-1 flex justify-center px-12">
@@ -380,7 +338,6 @@ export function BPMNFlowForgeApp() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border-none shadow-2xl">
-              <DropdownMenuLabel className="text-[10px] uppercase font-black px-3 text-slate-400">የባለሙያ መቆጣጠሪያ</DropdownMenuLabel>
               <DropdownMenuItem asChild>
                 <Link href="/admin" className="flex items-center w-full p-3 rounded-xl font-bold text-[11px] cursor-pointer hover:bg-slate-50">
                   <ShieldCheck className="w-4 h-4 mr-2 text-blue-600" /> የሥራ ሂደት ቁጥጥር
@@ -397,15 +354,12 @@ export function BPMNFlowForgeApp() {
 
       <main className="flex-1 p-8 space-y-12 max-w-7xl mx-auto w-full">
         {/* SECTION 1: BPMN ARCHITECT */}
-        <div className="space-y-8">
+        <section className="space-y-8">
            <header className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-black text-[#1e3a8a] uppercase tracking-tight">የሥራ ሂደት ቀረጻ (BPMN)</h2>
                 <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">የኢኖቬሽንና ቴክኖሎጂ ቢሮ ነኝ ምን ልርዳዎት?</p>
               </div>
-              <Badge className="bg-blue-50 text-blue-600 border-blue-100 rounded-full h-8 px-4 text-[9px] font-black uppercase">
-                V4.0 INTELLIGENCE ACTIVE
-              </Badge>
            </header>
 
            <Card className="border-none shadow-xl rounded-[2.5rem] bg-white overflow-hidden p-8">
@@ -420,10 +374,7 @@ export function BPMNFlowForgeApp() {
                 />
               </div>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">የሂደቱ ዝርዝር ተግባር</label>
-                  <Sparkles className="w-4 h-4 text-purple-400" />
-                </div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">የሂደቱ ዝርዝር ተግባር</label>
                 <Textarea 
                   value={input} 
                   onChange={(e) => setInput(e.target.value)} 
@@ -443,9 +394,9 @@ export function BPMNFlowForgeApp() {
             </div>
           </Card>
 
-          <Card className="min-h-[800px] rounded-[3rem] border-none shadow-2xl bg-white overflow-hidden relative">
+          <Card className="min-h-[700px] rounded-[3rem] border-none shadow-2xl bg-white overflow-hidden relative">
             {xmlResult ? (
-              <div className="w-full h-full min-h-[800px]">
+              <div className="w-full h-full min-h-[700px]">
                 <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
               </div>
             ) : (
@@ -455,18 +406,18 @@ export function BPMNFlowForgeApp() {
               </div>
             )}
           </Card>
-        </div>
+        </section>
 
         {/* SECTION 2: INTELLIGENCE HUB (Registry & Performance) */}
-        <div id="intelligence-hub" className="space-y-10 pt-10 border-t border-slate-200">
+        <section id="intelligence-hub" className="space-y-10 pt-20 border-t border-slate-200">
            <header className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-black text-[#1e3a8a] uppercase tracking-tight">የመዝገብ ቤትና የአፈጻጸም ትንተና</h2>
+                <h2 className="text-lg font-black text-[#1e3a8a] uppercase tracking-tight text-center md:text-left">የመዝገብ ቤትና የአፈጻጸም ትንተና ማዕከል</h2>
                 <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">ITB INTELLIGENCE HUB • የላቀ የመረጃ ትንተና</p>
               </div>
               <div className="flex items-center gap-3">
-                <Button onClick={handleExportRegistry} variant="outline" className="h-12 px-6 rounded-2xl border-2 border-slate-100 text-[#1e3a8a] font-black text-[10px] uppercase flex items-center gap-2">
-                  <FileDown className="w-4 h-4" /> ሪፖርት አውርድ (CSV)
+                <Button onClick={handlePerformAIAnalysis} disabled={isAnalyzing} className="h-12 px-6 rounded-2xl bg-purple-600 text-white shadow-xl hover:bg-purple-700 font-black text-[10px] uppercase flex items-center gap-2">
+                  {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />} AI ትንተና አከናውን
                 </Button>
                 <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
                   <DialogTrigger asChild>
@@ -510,23 +461,45 @@ export function BPMNFlowForgeApp() {
                           </>
                         )}
                       </div>
-                      <p className="text-[8px] text-center text-slate-400 font-bold uppercase italic">
-                        * AI የደብዳቤ ቁጥር፣ ቀን እና ጉዳይን በራሱ ይለያል
-                      </p>
                     </div>
                   </DialogContent>
                 </Dialog>
               </div>
            </header>
 
+           {aiAnalysisResult && (
+             <Card className="rounded-[2.5rem] border-none shadow-2xl bg-purple-50 p-8 animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="flex items-start gap-6">
+                  <div className="w-16 h-16 rounded-2xl bg-white shadow-sm flex items-center justify-center shrink-0">
+                    <BrainCircuit className="w-8 h-8 text-purple-600" />
+                  </div>
+                  <div className="space-y-4 flex-1">
+                    <div className="flex items-center justify-between">
+                       <h3 className="text-lg font-black text-purple-900 uppercase">የ AI አፈጻጸም ትንተና ሪፖርት</h3>
+                       <Badge className="bg-purple-600 text-white font-black px-4 h-8 rounded-full">{aiAnalysisResult.score}% ውጤታማነት</Badge>
+                    </div>
+                    <p className="text-sm font-bold text-purple-800 leading-relaxed whitespace-pre-wrap">{aiAnalysisResult.narrative}</p>
+                    {aiAnalysisResult.focusAreas && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        {aiAnalysisResult.focusAreas.map((area: string, idx: number) => (
+                          <div key={idx} className="bg-white/50 p-4 rounded-xl border border-purple-100 flex items-center gap-3">
+                            <AlertTriangle className="w-4 h-4 text-amber-500" />
+                            <span className="text-[11px] font-black text-purple-700">{area}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+             </Card>
+           )}
+
            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* PERFORMANCE CHART */}
               <Card className="lg:col-span-2 rounded-[2.5rem] border-none shadow-xl bg-white p-8">
                 <CardHeader className="p-0 mb-8 flex flex-row items-center justify-between">
                   <CardTitle className="text-[12px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-green-500" /> ሳምንታዊ የቢሮ አፈጻጸም
                   </CardTitle>
-                  <Badge className="bg-green-50 text-green-600 border-none font-black text-[10px]">89.4% ውጤታማ</Badge>
                 </CardHeader>
                 <div className="h-[300px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
@@ -547,39 +520,42 @@ export function BPMNFlowForgeApp() {
                 </div>
               </Card>
 
-              {/* FOCUS AREAS (IF < 70) */}
-              <Card className="rounded-[2.5rem] border-none shadow-xl bg-[#1e3a8a] text-white p-8">
+              <Card className="rounded-[2.5rem] border-none shadow-xl bg-[#1e3a8a] text-white p-8 overflow-hidden relative">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl" />
                 <CardHeader className="p-0 mb-6">
                   <CardTitle className="text-[11px] font-black uppercase tracking-widest text-white/50 flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-amber-400" /> ትኩረት የሚሹ ጉዳዮች
                   </CardTitle>
                 </CardHeader>
                 <div className="space-y-4">
-                  {[
-                    "የዲጂታል ትራንስፎርሜሽን ሪፖርት መዘግየት",
-                    "የስማርት ሲቲ ፕሮጀክት እቅድ ማሻሻያ",
-                    "የገቢ ደብዳቤዎች ምላሽ አሰጣጥ ፍጥነት"
-                  ].map((item, idx) => (
+                  {aiAnalysisResult?.focusAreas ? aiAnalysisResult.focusAreas.slice(0, 3).map((item: string, idx: number) => (
                     <div key={idx} className="bg-white/10 p-4 rounded-2xl flex items-start gap-3">
                       <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5" />
                       <p className="text-[11px] font-bold leading-relaxed">{item}</p>
                     </div>
-                  ))}
-                  <Button variant="ghost" className="w-full text-white/50 text-[10px] font-black uppercase mt-4 hover:bg-white/5">
-                    ሙሉ ትንተናውን ይመልከቱ <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
+                  )) : (
+                    <>
+                      <div className="bg-white/10 p-4 rounded-2xl flex items-start gap-3">
+                        <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5" />
+                        <p className="text-[11px] font-bold leading-relaxed">የዲጂታል ትራንስፎርሜሽን ሪፖርት መዘግየት</p>
+                      </div>
+                      <div className="bg-white/10 p-4 rounded-2xl flex items-start gap-3">
+                        <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5" />
+                        <p className="text-[11px] font-bold leading-relaxed">የስማርት ሲቲ ፕሮጀክት እቅድ ማሻሻያ</p>
+                      </div>
+                    </>
+                  )}
                 </div>
               </Card>
            </div>
 
-           {/* REGISTRY TABLE */}
            <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden">
              <div className="p-8 border-b flex items-center justify-between">
                 <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
                   <History className="w-4 h-4" /> የቅርብ ጊዜ መዝገቦች
                 </h3>
                 <Badge variant="outline" className="rounded-full bg-blue-50 border-blue-100 text-[#1e3a8a] font-black text-[9px] px-4 h-8 uppercase">
-                  SECURE REGISTRY VAULT
+                  AI SECURE REGISTRY
                 </Badge>
              </div>
              <div className="divide-y divide-slate-50">
@@ -655,23 +631,8 @@ export function BPMNFlowForgeApp() {
                )}
              </div>
            </Card>
-        </div>
+        </section>
       </main>
-
-      <footer className="h-20 bg-white border-t flex items-center justify-between px-12 shrink-0 mt-20">
-        <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
-          ITDB INSTITUTIONAL PORTAL V4.0.0 - RECOVERY BUILD
-        </div>
-        <div className="flex items-center gap-8">
-           <Link href="/admin" className="flex items-center gap-2 text-[9px] font-black text-[#1e3a8a] uppercase tracking-widest hover:underline">
-              <ShieldCheck className="w-3.5 h-3.5" /> ADMIN CONSOLE
-           </Link>
-           <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">SYSTEM ONLINE</span>
-           </div>
-        </div>
-      </footer>
 
       {/* MESSENGER FAB */}
       <Button 
@@ -691,7 +652,6 @@ export function BPMNFlowForgeApp() {
                  </div>
                  <div className="flex flex-col">
                     <span className="text-white font-black text-[11px] uppercase tracking-widest">የቢሮ መፃፃፊያ</span>
-                    <span className="text-white/50 font-bold text-[8px] uppercase">Group Messenger</span>
                  </div>
               </div>
            </div>
@@ -702,14 +662,7 @@ export function BPMNFlowForgeApp() {
                       <div className={`p-4 rounded-2xl text-[11px] font-bold shadow-sm max-w-[80%] ${msg.uploaderId === user?.uid ? 'bg-[#1e3a8a] text-white' : 'bg-white text-slate-700'}`}>
                          {msg.content}
                       </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[7px] font-black text-slate-400 uppercase">{msg.senderName}</span>
-                        {(isMasterAdmin || user?.uid === msg.uploaderId) && (
-                          <button onClick={() => deleteDocumentNonBlocking(doc(db!, 'feedback', msg.id))} className="text-red-400 hover:text-red-600">
-                            <Trash2 className="w-2.5 h-2.5" />
-                          </button>
-                        )}
-                      </div>
+                      <span className="text-[7px] font-black text-slate-400 uppercase mt-1">{msg.senderName}</span>
                    </div>
                  ))}
               </div>
@@ -756,9 +709,8 @@ export function BPMNFlowForgeApp() {
               onClick={async () => {
                 if(deleteId && db) {
                   await deleteDocumentNonBlocking(doc(db, 'documents', deleteId));
-                  handleLogAction("DELETE", deleteName, "ሰነዱ ተሰርዟል");
-                  toast({ title: "ተሰርዟል", description: "ሰነዱ በትክክል ተሰርዟል" });
                   setDeleteId(null);
+                  toast({ title: "ተሰርዟል", description: "ሰነዱ በትክክል ተሰርዟል" });
                 }
               }}
               className="flex-1 h-12 bg-red-600 hover:bg-red-700 rounded-xl font-black uppercase text-[10px]"
