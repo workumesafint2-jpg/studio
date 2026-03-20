@@ -43,9 +43,9 @@ const itbIntelligenceFlow = ai.defineFlow(
          1. Letter Number (የደብዳቤ ቁጥር)
          2. Date (ቀን)
          3. Subject (ጉዳይ)
-         4. Sender or Receiver (ላኪ/ተቀባይ)
+         4. Sender or Receiver (ላኪ/ተቀባይ - ተቋም ወይም ግለሰብ)
          
-         Document Type: ${input.mailType === 'incoming' ? 'ገቢ ደብዳቤ' : 'ወጪ ደብዳቤ'}
+         Document Type: ${input.mailType === 'incoming' ? 'ገቢ ደብዳቤ' : input.mailType === 'outgoing' ? 'ወጪ ደብዳቤ' : 'ሌሎች'}
          Photo: {{media url=photoDataUri}}`
       : `Compare the provided office plans and reports. 
          Generate an efficiency score (0-100), a professional narrative summary in Amharic, 
