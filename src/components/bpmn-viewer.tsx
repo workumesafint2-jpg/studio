@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
@@ -93,10 +94,7 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
   useEffect(() => {
     if (!containerRef.current) return;
     const modeler = new BpmnModeler({ 
-      container: containerRef.current,
-      keyboard: {
-        bindTo: window
-      }
+      container: containerRef.current
     });
     modelerRef.current = modeler;
     return () => { modeler.destroy(); };
@@ -131,18 +129,18 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
           height: auto !important;
           max-height: calc(100% - 80px) !important;
           overflow-y: auto !important;
-          width: auto !important;
+          width: 48px !important;
         }
         .djs-palette-entries {
           display: flex !important;
           flex-direction: column !important;
-          gap: 16px !important;
+          gap: 12px !important;
         }
         .djs-palette .entry {
-          width: 36px !important;
-          height: 36px !important;
-          line-height: 36px !important;
-          font-size: 22px !important;
+          width: 32px !important;
+          height: 32px !important;
+          line-height: 32px !important;
+          font-size: 20px !important;
           color: #64748b !important;
           transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
           display: flex !important;
@@ -153,16 +151,11 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
           color: #1e3a8a !important;
           transform: scale(1.15);
           background-color: #f8fafc !important;
-          border-radius: 12px !important;
+          border-radius: 8px !important;
         }
         .djs-context-pad {
-          border-radius: 16px !important;
+          border-radius: 12px !important;
           box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
-          border: 1px solid #f1f5f9 !important;
-        }
-        .djs-outline {
-          stroke: #1e3a8a !important;
-          stroke-opacity: 0.1 !important;
         }
       `}</style>
     </div>

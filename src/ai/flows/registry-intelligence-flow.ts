@@ -2,7 +2,7 @@
 'use server';
 /**
  * @fileOverview AI Registry & Performance Analysis Agent for ITB.
- * Enhanced with more robust error handling and prompt logic.
+ * Enhanced with deep performance comparison logic.
  */
 
 import { ai } from '@/ai/genkit';
@@ -10,22 +10,22 @@ import { z } from 'genkit';
 
 const RegistryInputSchema = z.object({
   photoDataUri: z.string().optional().describe("A photo of the letter as a data URI."),
-  mailType: z.enum(['incoming', 'outgoing', 'other']).default('incoming'),
+  category: z.enum(['plan', 'report', 'incoming_letter', 'outgoing_letter', 'reform', 'service', 'other']).default('other'),
   action: z.enum(['extract', 'analyze_performance']).default('extract'),
-  additionalContext: z.string().optional(),
+  additionalContext: z.string().optional().describe("Context from the document vault for analysis."),
 });
 
 const RegistryOutputSchema = z.object({
   letterInfo: z.object({
-    letterNumber: z.string().optional().describe("Extracted letter number (e.g., ITB/001/2024)."),
-    letterDate: z.string().optional().describe("Extracted date from the letter."),
-    subject: z.string().optional().describe("Extracted subject or title of the letter."),
-    senderReceiver: z.string().optional().describe("The institution or person who sent or receives the letter."),
+    letterNumber: z.string().optional().describe("Extracted letter number."),
+    letterDate: z.string().optional().describe("Extracted date."),
+    subject: z.string().optional().describe("Extracted subject."),
+    senderReceiver: z.string().optional().describe("Sender or Receiver institution/person."),
   }).optional(),
   performanceAnalysis: z.object({
-    score: z.number().optional().describe("Calculated efficiency score out of 100."),
-    narrative: z.string().optional().describe("Amharic narrative analysis of performance."),
-    focusAreas: z.array(z.string()).optional().describe("List of areas requiring attention (if score < 70)."),
+    score: z.number().describe("Calculated efficiency score out of 100."),
+    narrative: z.string().describe("Amharic narrative analysis based on plans vs results."),
+    focusAreas: z.array(z.string()).describe("Areas requiring urgent attention (especially if score < 70)."),
   }).optional(),
 });
 
@@ -43,27 +43,28 @@ const itbIntelligenceFlow = ai.defineFlow(
     let userPrompt = '';
 
     if (input.action === 'extract') {
-      systemPrompt = 'You are an expert ITB Registry Officer specialized in digitizing documents.';
-      userPrompt = `Please extract the following information from this letter:
+      systemPrompt = 'You are an expert ITB Registry Officer. Extract Amharic and English details from the provided document image.';
+      userPrompt = `Please extract:
          1. Letter Number (የደብዳቤ ቁጥር)
          2. Date (ቀን)
          3. Subject (ጉዳይ)
-         4. Sender or Receiver (ላኪ/ተቀባይ - ተቋም ወይም ግለሰብ)
+         4. Sender or Receiver (ላኪ/ተቀባይ)
          
-         Document Category: ${input.mailType === 'incoming' ? 'ገቢ ደብዳቤ' : input.mailType === 'outgoing' ? 'ወጪ ደብዳቤ' : 'ሌሎች'}
+         Document Category: ${input.category}
          Photo: {{media url=photoDataUri}}`;
     } else {
-      systemPrompt = 'You are a Senior Bureau Performance Analyst for the Innovation & Technology Bureau.';
-      userPrompt = `Analyze the bureau's office performance based on the following context.
-         Compare office plans and results.
-         Context provided: ${input.additionalContext || 'No specific document data provided. Use historical office benchmarks.'}
+      systemPrompt = 'You are a Senior Bureau Performance Analyst. You will be given a context of current documents (Plans, Reports, Letters) in the vault. Your task is to analyze the office productivity.';
+      userPrompt = `Analyze the bureau's office performance based on the following vault metadata:
          
-         Tasks:
-         1. Provide a calculated efficiency score (0-100).
-         2. Write a professional narrative summary in Amharic discussing achievements and gaps.
-         3. Identify specific "ትኩረት የሚሹ ጉዳዮች" (Focus Areas) especially if the score is below 70.
+         VAULT CONTEXT:
+         ${input.additionalContext || 'No specific vault data provided.'}
          
-         Ensure the response is strictly valid JSON according to the schema.`;
+         TASKS:
+         1. Calculate an overall efficiency score (0-100) based on the ratio of Reports to Plans and overall activity.
+         2. Provide a professional Amharic narrative analysis.
+         3. Identify specific "ትኩረት የሚሹ ጉዳዮች" (Focus Areas) based on missing reports or slow progress.
+         
+         Ensure the response is strictly valid JSON matching the schema.`;
     }
 
     const { output } = await ai.generate({
@@ -74,7 +75,7 @@ const itbIntelligenceFlow = ai.defineFlow(
     });
 
     if (!output) {
-      throw new Error('AI failed to generate a response. Check API status.');
+      throw new Error('AI Analysis failed to generate a result.');
     }
 
     return output;
