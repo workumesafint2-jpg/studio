@@ -2,30 +2,30 @@
 'use server';
 /**
  * @fileOverview AI Registry & Performance Analysis Agent for ITB.
- * Enhanced with deep performance comparison logic.
+ * Optimized for robustness and deeper data analysis.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const RegistryInputSchema = z.object({
-  photoDataUri: z.string().optional().describe("A photo of the letter as a data URI."),
+  photoDataUri: z.string().optional().describe("A photo of the document as a data URI."),
   category: z.enum(['plan', 'report', 'incoming_letter', 'outgoing_letter', 'reform', 'service', 'other']).default('other'),
   action: z.enum(['extract', 'analyze_performance']).default('extract'),
-  additionalContext: z.string().optional().describe("Context from the document vault for analysis."),
+  additionalContext: z.string().optional().describe("Vault context or efficiency metadata."),
 });
 
 const RegistryOutputSchema = z.object({
   letterInfo: z.object({
-    letterNumber: z.string().optional().describe("Extracted letter number."),
-    letterDate: z.string().optional().describe("Extracted date."),
-    subject: z.string().optional().describe("Extracted subject."),
+    letterNumber: z.string().optional().describe("Extracted letter number (የደብዳቤ ቁጥር)."),
+    letterDate: z.string().optional().describe("Extracted date (ቀን)."),
+    subject: z.string().optional().describe("Extracted subject (ጉዳይ)."),
     senderReceiver: z.string().optional().describe("Sender or Receiver institution/person."),
   }).optional(),
   performanceAnalysis: z.object({
-    score: z.number().describe("Calculated efficiency score out of 100."),
-    narrative: z.string().describe("Amharic narrative analysis based on plans vs results."),
-    focusAreas: z.array(z.string()).describe("Areas requiring urgent attention (especially if score < 70)."),
+    score: z.number().describe("Efficiency score (0-100)."),
+    narrative: z.string().describe("Amharic professional analysis of the current status."),
+    focusAreas: z.array(z.string()).describe("Focus areas based on plan/report gaps."),
   }).optional(),
 });
 
@@ -43,8 +43,8 @@ const itbIntelligenceFlow = ai.defineFlow(
     let userPrompt = '';
 
     if (input.action === 'extract') {
-      systemPrompt = 'You are an expert ITB Registry Officer. Extract Amharic and English details from the provided document image.';
-      userPrompt = `Please extract:
+      systemPrompt = 'You are an expert ITB Registry Officer. Extract Amharic and English details from the provided document image. Be precise with letter numbers and subjects.';
+      userPrompt = `Please extract the following fields:
          1. Letter Number (የደብዳቤ ቁጥር)
          2. Date (ቀን)
          3. Subject (ጉዳይ)
@@ -53,32 +53,55 @@ const itbIntelligenceFlow = ai.defineFlow(
          Document Category: ${input.category}
          Photo: {{media url=photoDataUri}}`;
     } else {
-      systemPrompt = 'You are a Senior Bureau Performance Analyst. You will be given a context of current documents (Plans, Reports, Letters) in the vault. Your task is to analyze the office productivity.';
-      userPrompt = `Analyze the bureau's office performance based on the following vault metadata:
+      systemPrompt = 'You are a Senior Bureau Performance Analyst. You will be provided with vault metadata. Analyze productivity and provide a high-value Amharic narrative.';
+      userPrompt = `Analyze the bureau's performance based on this context:
          
-         VAULT CONTEXT:
-         ${input.additionalContext || 'No specific vault data provided.'}
+         VAULT DATA:
+         ${input.additionalContext || 'No context.'}
          
-         TASKS:
-         1. Calculate an overall efficiency score (0-100) based on the ratio of Reports to Plans and overall activity.
-         2. Provide a professional Amharic narrative analysis.
-         3. Identify specific "ትኩረት የሚሹ ጉዳዮች" (Focus Areas) based on missing reports or slow progress.
+         INSTRUCTIONS:
+         1. Summarize efficiency based on the ratio of Reports to Plans.
+         2. Provide a narrative in Amharic (ፕሮፌሽናል የአማርኛ ትንተና).
+         3. List specific Focus Areas (ትኩረት የሚሹ ጉዳዮች) if gaps are found.
          
-         Ensure the response is strictly valid JSON matching the schema.`;
+         The response must be valid JSON matching the output schema.`;
     }
 
-    const { output } = await ai.generate({
-      system: systemPrompt,
-      prompt: userPrompt,
-      input: { photoDataUri: input.photoDataUri },
-      output: { schema: RegistryOutputSchema }
-    });
+    try {
+      const { output } = await ai.generate({
+        system: systemPrompt,
+        prompt: userPrompt,
+        input: { photoDataUri: input.photoDataUri },
+        output: { schema: RegistryOutputSchema },
+        config: {
+          safetySettings: [
+            { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' }
+          ]
+        }
+      });
 
-    if (!output) {
-      throw new Error('AI Analysis failed to generate a result.');
+      if (!output) {
+        throw new Error('AI Analysis failed to generate a result.');
+      }
+
+      return output;
+    } catch (err) {
+      console.error("Genkit Flow Error:", err);
+      // Return a basic structure instead of throwing to avoid UI crash
+      if (input.action === 'analyze_performance') {
+        return {
+          performanceAnalysis: {
+            score: 0,
+            narrative: "AI ትንተናውን በአሁኑ ሰዓት ማከናወን አልቻለም። እባክዎ ዳታውን በሲስተሙ በኩል ይመልከቱ።",
+            focusAreas: ["የኔትወርክ ግንኙነት ይፈትሹ", "መረጃዎችን በትክክል መጫናቸውን ያረጋግጡ"]
+          }
+        };
+      }
+      throw err;
     }
-
-    return output;
   }
 );
 
