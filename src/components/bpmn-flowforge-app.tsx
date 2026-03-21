@@ -175,7 +175,6 @@ export function BPMNFlowForgeApp() {
     const reports = filteredDocuments.filter(d => d.category.includes('ሪፖርት')).length;
     const score = plans > 0 ? Math.min(Math.round((reports / plans) * 100), 100) : 0;
     
-    // Simple focus area logic: sectors with plans but no reports
     const focus = [];
     if (score < 70) focus.push("የሪፖርት አቀራረብ መዘግየት በግልጽ ይታያል።");
     if (plans > reports) focus.push(`${plans - reports} እቅዶች እስካሁን ሪፖርት አልቀረበባቸውም።`);
@@ -309,7 +308,6 @@ export function BPMNFlowForgeApp() {
         throw new Error("No output from AI");
       }
     } catch (e) {
-      // Fallback to system-calculated results if AI fails
       setAiAnalysisResult({
         score: performanceStats.score,
         narrative: `በመዝገብ ቤት ውስጥ ባለው ዳታ መሰረት የቢሮው አፈጻጸም ${performanceStats.score}% ነው። በአጠቃላይ ${performanceStats.plans} እቅዶች እና ${performanceStats.reports} ሪፖርቶች ተመዝግበዋል።`,
@@ -353,7 +351,7 @@ export function BPMNFlowForgeApp() {
       <header className="h-20 bg-white border-b flex items-center px-8 shrink-0 sticky top-0 z-[100] shadow-sm">
         <div className="flex flex-col">
           <h1 className="text-sm font-black text-[#1e3a8a] uppercase leading-none tracking-tight">የኢኖቬሽንና ቴክኖሎጂ ቢሮ</h1>
-          <span className="text-[9px] font-bold text-slate-400 uppercase mt-1">ITB DIGITAL PORTAL V6.2.0</span>
+          <span className="text-[9px] font-bold text-slate-400 uppercase mt-1">ITB DIGITAL PORTAL V6.5.0</span>
         </div>
 
         <div className="flex-1 flex justify-center px-12">
@@ -405,7 +403,6 @@ export function BPMNFlowForgeApp() {
       </header>
 
       <main className="flex-1 p-8 space-y-12 max-w-7xl mx-auto w-full">
-        {/* SECTION 1: BPMN ARCHITECT */}
         <section className="space-y-8 animate-in fade-in duration-700">
           <Card className="border-none shadow-xl rounded-[2.5rem] bg-white overflow-hidden p-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -457,7 +454,6 @@ export function BPMNFlowForgeApp() {
           </Card>
         </section>
 
-        {/* SECTION 2: INTELLIGENCE HUB */}
         <section className="pt-20 space-y-10 animate-in slide-in-from-bottom-10 duration-1000">
            <div className="h-px bg-slate-200 w-full mb-10" />
            
@@ -526,7 +522,6 @@ export function BPMNFlowForgeApp() {
               </div>
            </header>
 
-           {/* AI / System Narrative Card */}
            {(aiAnalysisResult || performanceStats.score > 0) && (
              <Card className="rounded-[2.5rem] border-none shadow-2xl bg-gradient-to-br from-purple-50 to-blue-50/30 p-10 animate-in fade-in slide-in-from-top-4 duration-500">
                 <div className="flex flex-col lg:flex-row items-start gap-10">
@@ -566,7 +561,6 @@ export function BPMNFlowForgeApp() {
            )}
 
            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Performance Graph */}
               <Card className="lg:col-span-2 rounded-[2.5rem] border-none shadow-xl bg-white p-10">
                 <CardHeader className="p-0 mb-10 flex flex-row items-center justify-between">
                   <div>
@@ -615,7 +609,6 @@ export function BPMNFlowForgeApp() {
                 </div>
               </Card>
 
-              {/* Focus Areas Sidebar */}
               <Card className="rounded-[2.5rem] border-none shadow-xl bg-[#1e3a8a] text-white p-10 overflow-hidden relative">
                 <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full -mr-24 -mt-24 blur-3xl" />
                 <CardHeader className="p-0 mb-8">
@@ -637,18 +630,9 @@ export function BPMNFlowForgeApp() {
                     </div>
                   )}
                 </div>
-                {performanceStats.score > 0 && (
-                   <div className="absolute bottom-10 left-10 right-10">
-                      <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                         <div className="h-full bg-green-400 shadow-[0_0_10px_rgba(74,222,128,0.5)] transition-all duration-1000" style={{ width: `${performanceStats.score}%` }} />
-                      </div>
-                      <p className="text-[9px] font-black uppercase text-white/40 mt-3 text-center tracking-[0.2em]">Overall Efficiency Score</p>
-                   </div>
-                )}
               </Card>
            </div>
 
-           {/* Vault Data Table */}
            <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden">
              <div className="p-10 border-b flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
@@ -703,7 +687,6 @@ export function BPMNFlowForgeApp() {
                             {docItem.registryNumber && (
                               <Badge className="text-[8px] font-black bg-slate-100 text-[#1e3a8a] border-none px-3">ቁጥር፦ {docItem.registryNumber}</Badge>
                             )}
-                            <span className="text-[9px] font-bold text-slate-300">• {docItem.expertName}</span>
                          </div>
                        </div>
                      </div>
@@ -746,7 +729,6 @@ export function BPMNFlowForgeApp() {
         </section>
       </main>
 
-      {/* ADMIN FLOATING ACTION BUTTON */}
       <Button 
         onClick={() => router.push('/admin')}
         className="fixed bottom-12 right-12 h-18 w-18 rounded-full bg-[#1e3a8a] shadow-[0_20px_40px_rgba(30,58,138,0.3)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 p-0"
@@ -754,7 +736,6 @@ export function BPMNFlowForgeApp() {
         <ShieldCheck className="w-8 h-8 text-white" />
       </Button>
 
-      {/* DELETE DIALOG */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent className="rounded-[3rem] border-none p-12 bg-white max-w-md">
           <AlertDialogHeader>
