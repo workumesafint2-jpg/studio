@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -63,6 +62,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -105,13 +106,13 @@ interface UploadedFile {
 }
 
 const CATEGORIES = [
-  { id: 'plan', label: 'እቅድ' },
-  { id: 'report', label: 'ሪፖርት' },
-  { id: 'incoming_letter', label: 'ገቢ ደብዳቤ' },
-  { id: 'outgoing_letter', label: 'ወጪ ደብዳቤ' },
-  { id: 'reform', label: 'የሪፎርም ሰነዶች' },
-  { id: 'service', label: 'የቢሮ አገልግሎቶች' },
-  { id: 'other', label: 'ሌሎች' }
+  { id: 'plan', label: '1. እቅድ' },
+  { id: 'report', label: '2. ሪፖርት' },
+  { id: 'incoming_letter', label: '3. ገቢ ደብዳቤ' },
+  { id: 'outgoing_letter', label: '4. ወጪ ደብዳቤ' },
+  { id: 'reform', label: '5. የሪፎርም ሰነዶች' },
+  { id: 'service', label: '6. የቢሮ አገልግሎቶች' },
+  { id: 'other', label: '7. ሌሎች' }
 ];
 
 export function BPMNFlowForgeApp() {
@@ -121,11 +122,9 @@ export function BPMNFlowForgeApp() {
   const [xmlResult, setXmlResult] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
   const [globalSearch, setGlobalSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("plan");
   const [registryLoading, setRegistryLoading] = useState(false);
-  const [feedbackInput, setFeedbackInput] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteName, setDeleteName] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -151,13 +150,7 @@ export function BPMNFlowForgeApp() {
     return query(collection(db, 'documents'), orderBy('createdAt', 'desc'));
   }, [db]);
 
-  const feedbackQuery = useMemoFirebase(() => {
-    if (!db) return null;
-    return query(collection(db, 'feedback'), orderBy('createdAt', 'desc'));
-  }, [db]);
-
   const { data: allDocs, isLoading: isDocsLoading } = useCollection<UploadedFile>(documentsQuery);
-  const { data: feedbackMessages } = useCollection<any>(feedbackQuery);
   
   const filteredDocuments = useMemo(() => {
     let list = allDocs || [];
@@ -245,7 +238,6 @@ export function BPMNFlowForgeApp() {
       });
 
       let aiResult = null;
-      // Only run OCR for letters
       if (selectedCategory.includes('letter')) {
         aiResult = await processRegistry({
           photoDataUri,
@@ -292,25 +284,30 @@ export function BPMNFlowForgeApp() {
     }
     setIsAnalyzing(true);
     try {
-      const vaultSummary = filteredDocuments.map(d => `- ${d.name} (${d.category}, ሁኔታ፦ ${d.status})`).join('\n');
+      const vaultSummary = filteredDocuments.map(d => `- ${d.name} (ምድብ፦ ${d.category}, ሁኔታ፦ ${d.status}, ባለሙያ፦ ${d.expertName})`).join('\n');
       const result = await processRegistry({
         action: 'analyze_performance',
-        additionalContext: `የመዝገብ ቤት ሁኔታ፦\n${vaultSummary}`
+        additionalContext: `የመዝገብ ቤት ወቅታዊ ሁኔታ፦\n${vaultSummary}`
       });
       
       if (result && result.performanceAnalysis) {
         setAiAnalysisResult(result.performanceAnalysis);
         toast({ title: "ትንተና ተጠናቋል", description: "የቢሮው አፈጻጸም በ AI ተጠንቷል" });
+      } else {
+        throw new Error("No output from AI");
       }
     } catch (e) {
-      toast({ title: "ስህተት", description: "AI ትንተናውን መስራት አልቻለም", variant: "destructive" });
+      toast({ title: "ስህተት", description: "AI ትንተናውን መስራት አልቻለም። እባክዎ እንደገና ይሞክሩ።", variant: "destructive" });
     } finally {
       setIsAnalyzing(false);
     }
   };
 
   const handleExportCSV = () => {
-    if (filteredDocuments.length === 0) return;
+    if (filteredDocuments.length === 0) {
+      toast({ title: "መረጃ የለም", description: "ወደ CSV ለመቀየር በመዝገቡ ውስጥ ዳታ ያስፈልጋል" });
+      return;
+    }
     const headers = "ስም,ምድብ,ሁኔታ,ባለሙያ,ዘርፍ,ቁጥር,ቀን\n";
     const rows = filteredDocuments.map(d => 
       `"${d.name}","${d.category}","${d.status}","${d.expertName}","${d.sector}","${d.registryNumber || ''}","${d.uploadDate}"`
@@ -320,6 +317,7 @@ export function BPMNFlowForgeApp() {
     link.href = URL.createObjectURL(blob);
     link.download = `itb_registry_export_${new Date().toISOString().slice(0,10)}.csv`;
     link.click();
+    toast({ title: "ዳውንሎድ ተጀምሯል", description: "መዝገቡ ወደ CSV ተቀይሮ እየወረደ ነው" });
   };
 
   const handleOpenFile = (file: UploadedFile) => {
@@ -450,7 +448,7 @@ export function BPMNFlowForgeApp() {
                       <Upload className="w-4 h-4" /> ፋይል አስገባ
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-md rounded-[2.5rem] p-10 border-none shadow-2xl bg-white">
+                  <DialogContent className="max-w-md rounded-[2.5rem] p-10 border-none shadow-2xl bg-white z-[1000]">
                     <DialogHeader>
                       <DialogTitle className="text-center font-black uppercase text-[#1e3a8a] mb-6">ሰነድ መመዝገቢያ (Vault Entry)</DialogTitle>
                     </DialogHeader>
@@ -459,12 +457,15 @@ export function BPMNFlowForgeApp() {
                         <label className="text-[10px] font-black text-slate-400 uppercase">የፋይል ምድብ</label>
                         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                           <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none font-bold text-xs">
-                            <SelectValue placeholder="ይምረጡ" />
+                            <SelectValue placeholder="ምድብ ይምረጡ" />
                           </SelectTrigger>
                           <SelectContent className="rounded-2xl border-none shadow-2xl bg-white">
-                            {CATEGORIES.map(cat => (
-                              <SelectItem key={cat.id} value={cat.id}>{cat.label}</SelectItem>
-                            ))}
+                            <SelectGroup>
+                              <SelectLabel className="text-[10px] uppercase font-black text-slate-400">የቢሮ ፋይል ምድቦች</SelectLabel>
+                              {CATEGORIES.map(cat => (
+                                <SelectItem key={cat.id} value={cat.id} className="text-xs font-bold rounded-lg cursor-pointer">{cat.label}</SelectItem>
+                              ))}
+                            </SelectGroup>
                           </SelectContent>
                         </Select>
                       </div>
@@ -645,10 +646,10 @@ export function BPMNFlowForgeApp() {
 
       {/* MESSENGER FAB */}
       <Button 
-        onClick={() => setIsChatOpen(!isChatOpen)}
+        onClick={() => router.push('/admin')}
         className="fixed bottom-10 right-10 h-16 w-16 rounded-full bg-[#1e3a8a] shadow-2xl flex items-center justify-center hover:scale-110 transition-transform z-50 p-0"
       >
-        <MessageSquare className="w-7 h-7 text-white" />
+        <ShieldCheck className="w-7 h-7 text-white" />
       </Button>
 
       {/* DELETE DIALOG */}
