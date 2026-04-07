@@ -84,7 +84,7 @@ import {
   useDoc
 } from '@/firebase';
 import { collection, query, doc, Timestamp, orderBy, where } from 'firebase/firestore';
-import { Avatar, AvatarFallback } from "@/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -144,13 +144,10 @@ export function BPMNFlowForgeApp() {
   const [globalSearch, setGlobalSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("plan");
   const [registryLoading, setRegistryLoading] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [deleteName, setDeleteName] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiAnalysisResult, setAiAnalysisResult] = useState<any>(null);
   const [currentLang, setCurrentLang] = useState<Language>('am');
   
-  // Comment Section State
   const [selectedDocForComments, setSelectedDocForComments] = useState<UploadedFile | null>(null);
   const [newComment, setNewComment] = useState("");
 
@@ -185,7 +182,6 @@ export function BPMNFlowForgeApp() {
 
   const { data: allDocs, isLoading: isDocsLoading } = useCollection<UploadedFile>(documentsQuery);
 
-  // Comments Query
   const commentsQuery = useMemoFirebase(() => {
     if (!db || !selectedDocForComments) return null;
     return query(
@@ -199,7 +195,7 @@ export function BPMNFlowForgeApp() {
 
   const filteredDocuments = useMemo(() => {
     let list = allDocs || [];
-    if (!isMasterAdmin && userProfile?.sector) {
+    if (!isMasterAdmin && userProfile?.sector && userProfile.sector !== 'pending') {
       list = list.filter(f => f.sector === userProfile.sector || f.uploaderId === user?.uid);
     }
     if (!globalSearch.trim()) return list;
@@ -256,7 +252,7 @@ export function BPMNFlowForgeApp() {
         reader.readAsDataURL(blob);
       });
 
-      await addDocumentNonBlocking(collection(db, 'documents'), {
+      addDocumentNonBlocking(collection(db, 'documents'), {
         name: diagramName,
         category: "ዲያግራም",
         fileName: `${diagramName}.bpmn`,
@@ -304,7 +300,7 @@ export function BPMNFlowForgeApp() {
 
       const categoryLabel = CATEGORIES.find(c => c.id === selectedCategory)?.label || selectedCategory;
       
-      await addDocumentNonBlocking(collection(db, 'documents'), {
+      addDocumentNonBlocking(collection(db, 'documents'), {
         name: info?.subject || file.name,
         category: categoryLabel,
         fileName: file.name,
@@ -386,7 +382,7 @@ export function BPMNFlowForgeApp() {
   const handlePostComment = async () => {
     if (!newComment.trim() || !selectedDocForComments || !db || !user) return;
     try {
-      await addDocumentNonBlocking(collection(db, 'comments'), {
+      addDocumentNonBlocking(collection(db, 'comments'), {
         docId: selectedDocForComments.id,
         userId: user.uid,
         userName: user.displayName || user.email || "ባለሙያ",
@@ -407,7 +403,7 @@ export function BPMNFlowForgeApp() {
       <header className="h-20 bg-white border-b flex items-center px-8 shrink-0 sticky top-0 z-[100] shadow-sm">
         <div className="flex flex-col">
           <h1 className="text-sm font-black text-[#1e3a8a] uppercase leading-none tracking-tight">{t.title}</h1>
-          <span className="text-[9px] font-bold text-slate-400 uppercase mt-1">{t.subtitle} V6.9.0</span>
+          <span className="text-[9px] font-bold text-slate-400 uppercase mt-1">{t.subtitle} V7.0.0</span>
         </div>
 
         <div className="flex-1 flex justify-center px-12">
@@ -445,7 +441,7 @@ export function BPMNFlowForgeApp() {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-10 w-10 p-0 rounded-full border shadow-sm">
+              <Button variant="ghost" className="h-10 w-10 p-0 rounded-full border shadow-sm overflow-hidden">
                 <Avatar className="h-full w-full">
                   <AvatarFallback className="bg-[#1e3a8a] text-white text-[10px] font-black">
                     {user?.displayName?.charAt(0) || "U"}
@@ -488,7 +484,7 @@ export function BPMNFlowForgeApp() {
             </div>
           </Card>
 
-          <Card className="min-h-[850px] rounded-[3.5rem] border-none shadow-2xl bg-white relative overflow-hidden group">
+          <Card className="min-h-[850px] rounded-[3.5rem] border-none shadow-2xl bg-white relative overflow-hidden">
             {xmlResult ? (
               <BPMNViewer xml={xmlResult} title={title} ref={viewerRef} />
             ) : (
