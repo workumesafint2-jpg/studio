@@ -39,6 +39,10 @@ export const translations = {
     selectSector: "ዘርፍ ይምረጡ",
     forgotPassword: "የይለፍ ቃል ረስተዋል?",
     backToLogin: "ወደ መግቢያ ይመለሱ",
+    comments: "አስተያየቶች",
+    writeComment: "አስተያየትዎን እዚህ ይጻፉ...",
+    send: "ላክ",
+    noComments: "እስካሁን ምንም አስተያየት የለም።",
   },
   en: {
     title: "Innovation & Technology Bureau",
@@ -72,6 +76,10 @@ export const translations = {
     selectSector: "Select Sector",
     forgotPassword: "Forgot Password?",
     backToLogin: "Back to Login",
+    comments: "Comments",
+    writeComment: "Write a comment...",
+    send: "Send",
+    noComments: "No comments yet.",
   },
   or: {
     title: "Biiroo Innooveshinii fi Teeknoolojii",
@@ -105,6 +113,10 @@ export const translations = {
     selectSector: "Sektera Filadhu",
     forgotPassword: "Jecha Icchitii Dagattee?",
     backToLogin: "Gara Seensaatti Deebi'i",
+    comments: "Yaada",
+    writeComment: "Yaada keessan asitti barreessaa...",
+    send: "Ergi",
+    noComments: "Hamma yoوناtti yaada tokko illee hin jiru.",
   },
   ti: {
     title: "ቢሮ ኢኖቬሽንን ቴክኖሎጅን",
@@ -138,5 +150,9 @@ export const translations = {
     selectSector: "ዘርፊ ምረፅ",
     forgotPassword: "መሕለፊ ቃል ረሲዕካ?",
     backToLogin: "ናብ መእተዊ ተመለስ",
+    comments: "ርእይቶታት",
+    writeComment: "ርእይቶኹም ኣብዚ ጸሓፉ...",
+    send: "ለኣኽ",
+    noComments: "ክሳብ ሕጂ ዝኾነ ርእይቶ የለን።",
   }
 };

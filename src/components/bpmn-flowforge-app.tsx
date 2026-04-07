@@ -31,7 +31,10 @@ import {
   Building2,
   CheckCircle2,
   Languages,
-  ChevronDown
+  ChevronDown,
+  MessageSquare,
+  Send,
+  User
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -48,6 +51,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -79,16 +83,27 @@ import {
   useAuth,
   useDoc
 } from '@/firebase';
-import { collection, query, doc, Timestamp, orderBy } from 'firebase/firestore';
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { collection, query, doc, Timestamp, orderBy, where } from 'firebase/firestore';
+import { Avatar, AvatarFallback } from "@/avatar";
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { processRegistry } from '@/ai/flows/registry-intelligence-flow';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { translations, type Language } from '@/lib/translations';
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const ADMIN_EMAIL = "workumesafint2@gmail.com";
+
+interface CommentRecord {
+  id: string;
+  docId: string;
+  userId: string;
+  userName: string;
+  userRole: string;
+  text: string;
+  createdAt: any;
+}
 
 interface UploadedFile {
   id: string;
@@ -134,6 +149,10 @@ export function BPMNFlowForgeApp() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiAnalysisResult, setAiAnalysisResult] = useState<any>(null);
   const [currentLang, setCurrentLang] = useState<Language>('am');
+  
+  // Comment Section State
+  const [selectedDocForComments, setSelectedDocForComments] = useState<UploadedFile | null>(null);
+  const [newComment, setNewComment] = useState("");
 
   const viewerRef = useRef<BPMNViewerRef>(null);
   const { toast } = useToast();
@@ -165,7 +184,19 @@ export function BPMNFlowForgeApp() {
   }, [db]);
 
   const { data: allDocs, isLoading: isDocsLoading } = useCollection<UploadedFile>(documentsQuery);
-  
+
+  // Comments Query
+  const commentsQuery = useMemoFirebase(() => {
+    if (!db || !selectedDocForComments) return null;
+    return query(
+      collection(db, 'comments'),
+      where('docId', '==', selectedDocForComments.id),
+      orderBy('createdAt', 'asc')
+    );
+  }, [db, selectedDocForComments]);
+
+  const { data: comments } = useCollection<CommentRecord>(commentsQuery);
+
   const filteredDocuments = useMemo(() => {
     let list = allDocs || [];
     if (!isMasterAdmin && userProfile?.sector) {
@@ -352,6 +383,23 @@ export function BPMNFlowForgeApp() {
     }
   };
 
+  const handlePostComment = async () => {
+    if (!newComment.trim() || !selectedDocForComments || !db || !user) return;
+    try {
+      await addDocumentNonBlocking(collection(db, 'comments'), {
+        docId: selectedDocForComments.id,
+        userId: user.uid,
+        userName: user.displayName || user.email || "ባለሙያ",
+        userRole: userProfile?.role || "expert",
+        text: newComment,
+        createdAt: Timestamp.now()
+      });
+      setNewComment("");
+    } catch (e) {
+      toast({ title: "Error", description: "Failed to post comment", variant: "destructive" });
+    }
+  };
+
   if (!mounted) return null;
 
   return (
@@ -359,7 +407,7 @@ export function BPMNFlowForgeApp() {
       <header className="h-20 bg-white border-b flex items-center px-8 shrink-0 sticky top-0 z-[100] shadow-sm">
         <div className="flex flex-col">
           <h1 className="text-sm font-black text-[#1e3a8a] uppercase leading-none tracking-tight">{t.title}</h1>
-          <span className="text-[9px] font-bold text-slate-400 uppercase mt-1">{t.subtitle} V6.8.0</span>
+          <span className="text-[9px] font-bold text-slate-400 uppercase mt-1">{t.subtitle} V6.9.0</span>
         </div>
 
         <div className="flex-1 flex justify-center px-12">
@@ -570,13 +618,75 @@ export function BPMNFlowForgeApp() {
                          </div>
                        </div>
                      </div>
-                     <div className="flex items-center gap-10">
+                     <div className="flex items-center gap-4">
                        <Badge className="h-10 px-6 rounded-full text-[9px] font-black uppercase border-none shadow-sm bg-blue-50 text-blue-600">
                          {docItem.status}
                        </Badge>
-                       <Button variant="ghost" size="icon" onClick={() => handleOpenFile(docItem)} className="h-12 w-12 rounded-2xl text-[#1e3a8a] bg-slate-50 group-hover:bg-blue-50">
-                         <Eye className="w-5 h-5" />
-                       </Button>
+                       <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="icon" onClick={() => handleOpenFile(docItem)} className="h-12 w-12 rounded-2xl text-[#1e3a8a] bg-slate-50 group-hover:bg-blue-50">
+                            <Eye className="w-5 h-5" />
+                          </Button>
+                          <Dialog open={selectedDocForComments?.id === docItem.id} onOpenChange={(open) => setSelectedDocForComments(open ? docItem : null)}>
+                            <DialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-12 w-12 rounded-2xl text-purple-600 bg-slate-50 group-hover:bg-purple-50">
+                                <MessageSquare className="w-5 h-5" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl rounded-[2.5rem] p-0 border-none shadow-2xl bg-white overflow-hidden flex flex-col max-h-[85vh]">
+                              <DialogHeader className="p-8 border-b bg-slate-50/50">
+                                <DialogTitle className="flex items-center gap-3">
+                                  <MessageSquare className="w-6 h-6 text-[#1e3a8a]" />
+                                  <div className="flex flex-col">
+                                    <span className="text-[14px] font-black text-slate-900">{t.comments}</span>
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase">{docItem.name}</span>
+                                  </div>
+                                </DialogTitle>
+                              </DialogHeader>
+                              
+                              <ScrollArea className="flex-1 p-8">
+                                <div className="space-y-6">
+                                  {comments && comments.length > 0 ? (
+                                    comments.map((comment) => (
+                                      <div key={comment.id} className={`flex flex-col ${comment.userId === user?.uid ? 'items-end' : 'items-start'}`}>
+                                        <div className={`max-w-[85%] rounded-[1.5rem] p-5 shadow-sm ${comment.userId === user?.uid ? 'bg-[#1e3a8a] text-white rounded-tr-none' : 'bg-slate-100 text-slate-900 rounded-tl-none'}`}>
+                                          <div className="flex items-center gap-2 mb-2">
+                                            <span className={`text-[9px] font-black uppercase ${comment.userId === user?.uid ? 'text-blue-200' : 'text-slate-400'}`}>
+                                              {comment.userName} • {comment.userRole}
+                                            </span>
+                                          </div>
+                                          <p className="text-xs font-medium leading-relaxed">{comment.text}</p>
+                                          <p className={`text-[8px] font-bold mt-2 ${comment.userId === user?.uid ? 'text-blue-300' : 'text-slate-400'}`}>
+                                            {comment.createdAt?.toDate ? comment.createdAt.toDate().toLocaleString('et-ET') : '...'}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <div className="flex flex-col items-center justify-center py-20 opacity-20">
+                                      <MessageSquare className="w-16 h-16 mb-4" />
+                                      <p className="text-[10px] font-black uppercase tracking-widest">{t.noComments}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </ScrollArea>
+
+                              <DialogFooter className="p-8 border-t bg-slate-50/50">
+                                <div className="flex items-center gap-4 w-full">
+                                  <Input 
+                                    value={newComment} 
+                                    onChange={(e) => setNewComment(e.target.value)}
+                                    placeholder={t.writeComment} 
+                                    className="h-14 bg-white border-none rounded-2xl text-xs font-bold px-6 shadow-sm flex-1"
+                                    onKeyDown={(e) => e.key === 'Enter' && handlePostComment()}
+                                  />
+                                  <Button onClick={handlePostComment} className="h-14 w-14 rounded-2xl bg-[#1e3a8a] text-white shadow-xl hover:bg-[#1e3a8a]/90">
+                                    <Send className="w-5 h-5" />
+                                  </Button>
+                                </div>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                       </div>
                      </div>
                    </div>
                  ))
