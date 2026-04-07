@@ -34,7 +34,10 @@ import {
   ChevronDown,
   MessageSquare,
   Send,
-  User
+  User,
+  Image as ImageIcon,
+  FileCode,
+  CheckCircle
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -44,6 +47,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import {
   Dialog,
@@ -69,8 +73,6 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  SelectGroup,
-  SelectLabel
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -80,6 +82,7 @@ import {
   useMemoFirebase,
   addDocumentNonBlocking,
   deleteDocumentNonBlocking,
+  updateDocumentNonBlocking,
   useAuth,
   useDoc
 } from '@/firebase';
@@ -89,7 +92,6 @@ import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { processRegistry } from '@/ai/flows/registry-intelligence-flow';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { translations, type Language } from '@/lib/translations';
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -147,6 +149,7 @@ export function BPMNFlowForgeApp() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiAnalysisResult, setAiAnalysisResult] = useState<any>(null);
   const [currentLang, setCurrentLang] = useState<Language>('am');
+  const [isDeleting, setIsDeleting] = useState<UploadedFile | null>(null);
   
   const [selectedDocForComments, setSelectedDocForComments] = useState<UploadedFile | null>(null);
   const [newComment, setNewComment] = useState("");
@@ -328,6 +331,26 @@ export function BPMNFlowForgeApp() {
     }
   };
 
+  const handleApproveDoc = (docId: string) => {
+    if (!db) return;
+    updateDocumentNonBlocking(doc(db, 'documents', docId), { status: 'የጸደቀ' });
+    toast({ title: "የጸደቀ", description: "ሰነዱ በትክክል ጸድቋል" });
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!db || !isDeleting) return;
+    deleteDocumentNonBlocking(doc(db, 'documents', isDeleting.id));
+    setIsDeleting(null);
+    toast({ title: "ተሰርዟል", description: "ሰነዱ ከመዝገብ ቤት ተሰርዟል" });
+  };
+
+  const handleDownloadDoc = (file: UploadedFile) => {
+    const link = document.createElement('a');
+    link.href = file.fileUrl;
+    link.download = file.fileName;
+    link.click();
+  };
+
   const handlePerformAIAnalysis = async () => {
     if (filteredDocuments.length === 0) {
       toast({ title: "Empty", description: "No data to analyze" });
@@ -478,6 +501,24 @@ export function BPMNFlowForgeApp() {
             </div>
             <div className="flex items-center gap-4 mt-10">
               <Button onClick={handleGenerate} className="flex-1 h-16 bg-[#4c1d95] hover:bg-[#4c1d95]/90 rounded-2xl text-[12px] font-black uppercase shadow-2xl tracking-widest">{t.generate}</Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="h-16 px-10 rounded-2xl border-2 border-slate-100 font-black text-[11px] uppercase flex items-center gap-3">
+                    <FileDown className="w-5 h-5" /> Export
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-48 rounded-2xl p-2 shadow-2xl border-none">
+                  <DropdownMenuItem onClick={() => viewerRef.current?.exportPNG()} className="p-3 rounded-xl font-bold text-xs cursor-pointer">
+                    <ImageIcon className="w-4 h-4 mr-2 text-blue-500" /> PNG አውርድ
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => viewerRef.current?.exportSVG()} className="p-3 rounded-xl font-bold text-xs cursor-pointer">
+                    <FileCode className="w-4 h-4 mr-2 text-purple-500" /> SVG አውርድ
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => viewerRef.current?.exportXML()} className="p-3 rounded-xl font-bold text-xs cursor-pointer">
+                    <BrainCircuit className="w-4 h-4 mr-2 text-green-500" /> BPMN አውርድ
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button onClick={handleSaveToVault} disabled={!xmlResult || isSaving} variant="outline" className="h-16 px-10 rounded-2xl border-2 border-slate-100 font-black text-[11px] uppercase flex items-center gap-3">
                 <Save className="w-5 h-5" /> {t.save}
               </Button>
@@ -682,6 +723,29 @@ export function BPMNFlowForgeApp() {
                               </DialogFooter>
                             </DialogContent>
                           </Dialog>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-12 w-12 rounded-2xl text-slate-400">
+                                <MoreVertical className="w-5 h-5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56 rounded-2xl p-2 shadow-2xl border-none">
+                              <DropdownMenuItem onClick={() => handleDownloadDoc(docItem)} className="p-3 rounded-xl font-bold text-xs cursor-pointer">
+                                <Download className="w-4 h-4 mr-2 text-blue-500" /> አውርድ
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleApproveDoc(docItem.id)} className="p-3 rounded-xl font-bold text-xs cursor-pointer text-green-600">
+                                <CheckCircle className="w-4 h-4 mr-2" /> ያጽድቁ
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                disabled={!isMasterAdmin && user?.uid !== docItem.uploaderId}
+                                onClick={() => setIsDeleting(docItem)} 
+                                className="p-3 rounded-xl font-bold text-xs cursor-pointer text-red-600"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" /> ሰርዝ
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                        </div>
                      </div>
                    </div>
@@ -691,6 +755,23 @@ export function BPMNFlowForgeApp() {
            </Card>
         </section>
       </main>
+
+      <AlertDialog open={!!isDeleting} onOpenChange={(open) => !open && setIsDeleting(null)}>
+        <AlertDialogContent className="rounded-[2.5rem] p-10 border-none shadow-2xl bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-black text-red-600 uppercase flex items-center gap-3">
+              <AlertTriangle className="w-6 h-6" /> ሰነድ ሰርዝ
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm font-bold text-slate-500 mt-4 leading-relaxed">
+              ይህ ሰነድ ከመዝገብ ቤት ለዘላለም ሊጠፋ ነው። እባክዎ ድርጊቱን ከመፈጸምዎ በፊት እርግጠኛ ይሁኑ። ሰነዱ አንዴ ከተሰረዘ መልሶ ማግኘት አይቻልም።
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-8 gap-4">
+            <AlertDialogCancel className="h-14 px-8 rounded-2xl font-black text-[11px] uppercase border-none bg-slate-100 hover:bg-slate-200">ተመለስ</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="h-14 px-8 rounded-2xl font-black text-[11px] uppercase bg-red-600 text-white hover:bg-red-700 shadow-lg">አረጋግጥ</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Button onClick={() => router.push('/admin')} className="fixed bottom-12 right-12 h-18 w-18 rounded-full bg-[#1e3a8a] shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 p-0">
         <ShieldCheck className="w-8 h-8 text-white" />
