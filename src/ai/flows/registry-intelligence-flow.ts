@@ -26,6 +26,7 @@ const RegistryOutputSchema = z.object({
     score: z.number().describe("Efficiency score (0-100)."),
     narrative: z.string().describe("Amharic professional analysis of the current status."),
     focusAreas: z.array(z.string()).describe("Focus areas based on plan/report gaps."),
+    essencePoints: z.array(z.string()).describe("Main internal themes or summary points from document analysis."),
   }).optional(),
 });
 
@@ -53,18 +54,19 @@ const itbIntelligenceFlow = ai.defineFlow(
          Document Category: ${input.category}
          Photo: {{media url=photoDataUri}}`;
     } else {
-      systemPrompt = 'You are a Senior Bureau Performance Analyst. You will be provided with vault metadata. Analyze productivity and provide a high-value Amharic narrative.';
-      userPrompt = `Analyze the bureau's performance based on this context:
+      systemPrompt = 'You are a Senior Bureau Intelligence Analyst. You will analyze the internal essence, themes, and performance based on metadata and provided context. DO NOT JUST COUNT DOCUMENTS. READ THE THEMES.';
+      userPrompt = `Analyze the bureau's intelligence status based on this context:
          
          VAULT DATA:
          ${input.additionalContext || 'No context.'}
          
          INSTRUCTIONS:
-         1. Summarize efficiency based on the ratio of Reports to Plans.
-         2. Provide a narrative in Amharic (ፕሮፌሽናል የአማርኛ ትንተና).
-         3. List specific Focus Areas (ትኩረት የሚሹ ጉዳዮች) if gaps are found.
+         1. Analyze productivity and THEMES of the documents.
+         2. Provide a narrative in Amharic (ፕሮፌሽናል የአማርኛ ትንተና) that discusses the internal essence and findings.
+         3. List 3-5 "Essence Points" (የይዘት ጭብጦች) representing the core messages of these documents.
+         4. Identify specific Focus Areas if gaps or inefficiencies are found.
          
-         The response must be valid JSON matching the output schema.`;
+         The response must be valid JSON matching the output schema. Use Amharic for narrative and points.`;
     }
 
     try {
@@ -90,13 +92,13 @@ const itbIntelligenceFlow = ai.defineFlow(
       return output;
     } catch (err) {
       console.error("Genkit Flow Error:", err);
-      // Return a basic structure instead of throwing to avoid UI crash
       if (input.action === 'analyze_performance') {
         return {
           performanceAnalysis: {
             score: 0,
             narrative: "AI ትንተናውን በአሁኑ ሰዓት ማከናወን አልቻለም። እባክዎ ዳታውን በሲስተሙ በኩል ይመልከቱ።",
-            focusAreas: ["የኔትወርክ ግንኙነት ይፈትሹ", "መረጃዎችን በትክክል መጫናቸውን ያረጋግጡ"]
+            focusAreas: ["የኔትወርክ ግንኙነት ይፈትሹ"],
+            essencePoints: ["የመረጃ ዝውውር መቆራረጥ ይታያል", "የሰነድ ይዘት ትንተና አልተሳካም"]
           }
         };
       }
