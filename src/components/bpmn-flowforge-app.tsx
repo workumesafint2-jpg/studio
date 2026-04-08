@@ -38,7 +38,9 @@ import {
   Image as ImageIcon,
   FileCode,
   CheckCircle,
-  Lightbulb
+  Lightbulb,
+  Landmark,
+  Briefcase
 } from "lucide-react";
 import { generateBPMN } from "@/lib/bpmn-engine";
 import { useToast } from "@/hooks/use-toast";
