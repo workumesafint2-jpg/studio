@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -364,10 +363,13 @@ export function BPMNFlowForgeApp() {
     }
     setIsAnalyzing(true);
     try {
+      // Send a rich summary and sample document contents for deep analysis
+      const docSamples = filteredDocuments.slice(0, 5).map(d => `- Subject: ${d.name}, Content Essence: ${d.subject || d.name}, Sector: ${d.sector}`).join('\n');
       const vaultSummary = filteredDocuments.map(d => `- Name: ${d.name}, Type: ${d.category}, Status: ${d.status}, Sector: ${d.sector}`).join('\n');
+      
       const result = await processRegistry({
         action: 'analyze_performance',
-        additionalContext: `Institutional Audit for ${userProfile?.institution || 'Organization'}:\n${vaultSummary}\nScore: ${performanceStats.score}%`
+        additionalContext: `Institutional Audit for ${userProfile?.institution || 'Organization'}:\n\nDOCUMENT SUMMARY:\n${vaultSummary}\n\nDEEP SAMPLES FOR ESSENCE:\n${docSamples}\n\nEfficiency Score: ${performanceStats.score}%`
       });
       
       if (result && result.performanceAnalysis) {
@@ -569,7 +571,7 @@ export function BPMNFlowForgeApp() {
                       <Upload className="w-5 h-5" /> {t.uploadFile}
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-lg rounded-[3.5rem] p-12 border-none shadow-2xl bg-white">
+                  <DialogContent className="max-w-lg rounded-[3.5rem] p-12 border-none shadow-2xl bg-white z-[1100]">
                     <DialogHeader>
                       <DialogTitle className="text-center font-black uppercase text-[#1e3a8a] text-xl mb-8">{t.uploadFile}</DialogTitle>
                     </DialogHeader>
@@ -580,7 +582,7 @@ export function BPMNFlowForgeApp() {
                           <SelectTrigger className="h-16 rounded-[1.8rem] bg-slate-50 border-none font-bold text-xs px-8 shadow-inner">
                             <SelectValue placeholder={t.category} />
                           </SelectTrigger>
-                          <SelectContent className="rounded-[2rem] border-none shadow-2xl bg-white p-3 min-w-[200px] z-[1101]">
+                          <SelectContent className="rounded-[2rem] border-none shadow-2xl bg-white p-3 min-w-[200px] z-[1200]">
                             {CATEGORIES.map(cat => (
                               <SelectItem key={cat.id} value={cat.id} className="text-xs font-bold rounded-xl cursor-pointer p-4 hover:bg-slate-50 transition-colors">{cat.label}</SelectItem>
                             ))}
@@ -729,7 +731,7 @@ export function BPMNFlowForgeApp() {
                                 <MessageSquare className="w-6 h-6" />
                               </Button>
                             </DialogTrigger>
-                            <DialogContent className="max-w-3xl rounded-[3.5rem] p-0 border-none shadow-2xl bg-white overflow-hidden flex flex-col max-h-[90vh]">
+                            <DialogContent className="max-w-3xl rounded-[3.5rem] p-0 border-none shadow-2xl bg-white overflow-hidden flex flex-col max-h-[90vh] z-[1100]">
                               <DialogHeader className="p-10 border-b bg-slate-50/80">
                                 <DialogTitle className="flex items-center gap-5">
                                   <div className="w-12 h-12 bg-[#1e3a8a]/10 rounded-2xl flex items-center justify-center">
@@ -794,7 +796,7 @@ export function BPMNFlowForgeApp() {
                                 <MoreVertical className="w-6 h-6" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-64 rounded-[2rem] p-3 shadow-2xl border-none mt-2">
+                            <DropdownMenuContent align="end" className="w-64 rounded-[2rem] p-3 shadow-2xl border-none mt-2 z-[1100]">
                               <DropdownMenuItem onClick={() => handleDownloadDoc(docItem)} className="p-4 rounded-xl font-bold text-xs cursor-pointer hover:bg-blue-50">
                                 <Download className="w-5 h-5 mr-3 text-blue-500" /> አውርድ
                               </DropdownMenuItem>
@@ -822,7 +824,7 @@ export function BPMNFlowForgeApp() {
       </main>
 
       <AlertDialog open={!!isDeleting} onOpenChange={(open) => !open && setIsDeleting(null)}>
-        <AlertDialogContent className="rounded-[3.5rem] p-12 border-none shadow-2xl bg-white">
+        <AlertDialogContent className="rounded-[3.5rem] p-12 border-none shadow-2xl bg-white z-[1200]">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-2xl font-black text-red-600 uppercase flex items-center gap-4">
               <AlertTriangle className="w-8 h-8" /> ሰነድ ሰርዝ

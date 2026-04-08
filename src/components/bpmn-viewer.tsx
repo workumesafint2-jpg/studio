@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
@@ -26,8 +25,14 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
 
   const fitViewport = () => {
     if (modelerRef.current) {
-      const canvas: any = modelerRef.current.get('canvas');
-      canvas.zoom('fit-viewport');
+      try {
+        const canvas: any = modelerRef.current.get('canvas');
+        if (canvas) {
+          canvas.zoom('fit-viewport');
+        }
+      } catch (e) {
+        console.warn('Canvas not ready for fit-viewport', e);
+      }
     }
   };
 
@@ -40,54 +45,66 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
     },
     exportXML: async () => {
       if (!modelerRef.current) return;
-      const { xml: resultXml } = await modelerRef.current.saveXML({ format: true });
-      if (!resultXml) return;
-      const blob = new Blob([resultXml], { type: 'application/xml' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${title.replace(/\s+/g, '-').toLowerCase()}.bpmn`;
-      link.click();
-      URL.revokeObjectURL(url);
+      try {
+        const { xml: resultXml } = await modelerRef.current.saveXML({ format: true });
+        if (!resultXml) return;
+        const blob = new Blob([resultXml], { type: 'application/xml' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${title.replace(/\s+/g, '-').toLowerCase()}.bpmn`;
+        link.click();
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        console.error('Failed to export XML', e);
+      }
     },
     exportSVG: async () => {
       if (!modelerRef.current) return;
-      const { svg } = await modelerRef.current.saveSVG();
-      if (!svg) return;
-      const blob = new Blob([svg], { type: 'image/svg+xml' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${title.replace(/\s+/g, '-').toLowerCase()}.svg`;
-      link.click();
-      URL.revokeObjectURL(url);
+      try {
+        const { svg } = await modelerRef.current.saveSVG();
+        if (!svg) return;
+        const blob = new Blob([svg], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${title.replace(/\s+/g, '-').toLowerCase()}.svg`;
+        link.click();
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        console.error('Failed to export SVG', e);
+      }
     },
     exportPNG: async () => {
       if (!modelerRef.current) return;
-      const { svg } = await modelerRef.current.saveSVG();
-      if (!svg) return;
-      const canvas = document.createElement('canvas');
-      const img = new Image();
-      const svgBlob = new Blob([svg], { type: 'image/svg+xml' });
-      const url = URL.createObjectURL(svgBlob);
-      
-      img.onload = () => {
-        canvas.width = img.width * 2;
-        canvas.height = img.height * 2;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.fillStyle = 'white';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          const pngUrl = canvas.toDataURL('image/png');
-          const downloadLink = document.createElement('a');
-          downloadLink.href = pngUrl;
-          downloadLink.download = `${title.replace(/\s+/g, '-').toLowerCase()}.png`;
-          downloadLink.click();
-        }
-        URL.revokeObjectURL(url);
-      };
-      img.src = url;
+      try {
+        const { svg } = await modelerRef.current.saveSVG();
+        if (!svg) return;
+        const canvas = document.createElement('canvas');
+        const img = new Image();
+        const svgBlob = new Blob([svg], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(svgBlob);
+        
+        img.onload = () => {
+          canvas.width = img.width * 2;
+          canvas.height = img.height * 2;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const pngUrl = canvas.toDataURL('image/png');
+            const downloadLink = document.createElement('a');
+            downloadLink.href = pngUrl;
+            downloadLink.download = `${title.replace(/\s+/g, '-').toLowerCase()}.png`;
+            downloadLink.click();
+          }
+          URL.revokeObjectURL(url);
+        };
+        img.src = url;
+      } catch (e) {
+        console.error('Failed to export PNG', e);
+      }
     }
   }));
 
@@ -102,7 +119,11 @@ export const BPMNViewer = forwardRef<BPMNViewerRef, BPMNViewerProps>(({ xml, tit
 
   useEffect(() => {
     if (modelerRef.current && xml) {
-      modelerRef.current.importXML(xml).then(() => fitViewport()).catch(err => console.error(err));
+      modelerRef.current.importXML(xml)
+        .then(() => {
+          setTimeout(() => fitViewport(), 100);
+        })
+        .catch(err => console.error('BPMN Import Error:', err));
     }
   }, [xml]);
 
