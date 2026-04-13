@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -23,7 +24,6 @@ import {
   TrendingUp,
   AlertTriangle,
   History,
-  BarChart3,
   FileSpreadsheet,
   Download,
   Calendar,
@@ -99,12 +99,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 const ADMIN_EMAIL = "workumesafint2@gmail.com";
 
-interface CommentRecord {
+interface DiscussionMessage {
   id: string;
-  docId: string;
   userId: string;
   userName: string;
   userRole: string;
+  topic: string;
   text: string;
   createdAt: any;
 }
@@ -154,8 +154,9 @@ export function BPMNFlowForgeApp() {
   const [currentLang, setCurrentLang] = useState<Language>('am');
   const [isDeleting, setIsDeleting] = useState<UploadedFile | null>(null);
   
-  const [selectedDocForComments, setSelectedDocForComments] = useState<UploadedFile | null>(null);
-  const [newComment, setNewComment] = useState("");
+  const [isDiscussionOpen, setIsDiscussionOpen] = useState(false);
+  const [messageTopic, setMessageTopic] = useState("");
+  const [newMessage, setNewMessage] = useState("");
 
   const viewerRef = useRef<BPMNViewerRef>(null);
   const { toast } = useToast();
@@ -188,16 +189,12 @@ export function BPMNFlowForgeApp() {
 
   const { data: allDocs, isLoading: isDocsLoading } = useCollection<UploadedFile>(documentsQuery);
 
-  const commentsQuery = useMemoFirebase(() => {
-    if (!db || !selectedDocForComments) return null;
-    return query(
-      collection(db, 'comments'),
-      where('docId', '==', selectedDocForComments.id),
-      orderBy('createdAt', 'asc')
-    );
-  }, [db, selectedDocForComments]);
+  const discussionsQuery = useMemoFirebase(() => {
+    if (!db) return null;
+    return query(collection(db, 'discussions'), orderBy('createdAt', 'desc'));
+  }, [db]);
 
-  const { data: comments } = useCollection<CommentRecord>(commentsQuery);
+  const { data: discussions } = useCollection<DiscussionMessage>(discussionsQuery);
 
   const filteredDocuments = useMemo(() => {
     let list = allDocs || [];
@@ -363,8 +360,7 @@ export function BPMNFlowForgeApp() {
     }
     setIsAnalyzing(true);
     try {
-      // Send a rich summary and sample document contents for deep analysis
-      const docSamples = filteredDocuments.slice(0, 5).map(d => `- Subject: ${d.name}, Content Essence: ${d.subject || d.name}, Sector: ${d.sector}`).join('\n');
+      const docSamples = filteredDocuments.slice(0, 10).map(d => `- Subject: ${d.name}, Essence: ${d.subject || d.name}, Sector: ${d.sector}`).join('\n');
       const vaultSummary = filteredDocuments.map(d => `- Name: ${d.name}, Type: ${d.category}, Status: ${d.status}, Sector: ${d.sector}`).join('\n');
       
       const result = await processRegistry({
@@ -374,13 +370,43 @@ export function BPMNFlowForgeApp() {
       
       if (result && result.performanceAnalysis) {
         setAiAnalysisResult(result.performanceAnalysis);
-        toast({ title: "Analysis Done", description: "Deep analysis complete" });
+        toast({ title: "Analysis Done", description: "Deep essence analysis complete" });
+      } else {
+        throw new Error("No analysis output");
       }
     } catch (e) {
       console.error(e);
-      toast({ title: "Error", description: "Analysis failed", variant: "destructive" });
+      // System Fallback Narrative
+      setAiAnalysisResult({
+        score: performanceStats.score,
+        narrative: `ሲስተሙ በራሱ ባከናወነው ትንተና መሰረት፣ በ${userProfile?.institution} ውስጥ በአሁኑ ሰዓት ${filteredDocuments.length} ሰነዶች ተመዝግበው ይገኛሉ። ከእነዚህም ውስጥ ${performanceStats.plans} እቅዶች እና ${performanceStats.reports} ሪፖርቶች ናቸው። የሪፖርት አቀራረብ ውጤታማነት ${performanceStats.score}% ላይ ይገኛል።`,
+        essencePoints: [
+          `በ${userProfile?.sector} ዘርፍ ሰነዶች በስፋት እየገቡ ይገኛሉ።`,
+          "የደብዳቤዎች ልውውጥ በአብዛኛው በስራ ማስፈጸሚያ ላይ ያተኮሩ ናቸው።",
+          "የሪፎርም ሰነዶች ይዘት አዲስ የአሰራር ለውጥን ያመለክታሉ።"
+        ],
+        focusAreas: performanceStats.focus.length > 0 ? performanceStats.focus : ["የሰነድ አያያዝን ማዘመን", "የሪፖርት አቀራረብን ማፋጠን"]
+      });
+      toast({ title: "System Analysis", description: "AI delayed, system-driven analysis generated." });
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const handlePostDiscussion = async () => {
+    if (!newMessage.trim() || !db || !user) return;
+    try {
+      addDocumentNonBlocking(collection(db, 'discussions'), {
+        userId: user.uid,
+        userName: user.displayName || user.email || "ባለሙያ",
+        userRole: userProfile?.role || "expert",
+        topic: messageTopic || "አጠቃላይ ውይይት",
+        text: newMessage,
+        createdAt: Timestamp.now()
+      });
+      setNewMessage("");
+    } catch (e) {
+      toast({ title: "Error", description: "Failed to post message", variant: "destructive" });
     }
   };
 
@@ -393,7 +419,7 @@ export function BPMNFlowForgeApp() {
     const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `registry_export_${new Date().toISOString().slice(0,10)}.csv`;
+    link.download = `institutional_registry_${new Date().toISOString().slice(0,10)}.csv`;
     link.click();
   };
 
@@ -405,27 +431,10 @@ export function BPMNFlowForgeApp() {
     }
   };
 
-  const handlePostComment = async () => {
-    if (!newComment.trim() || !selectedDocForComments || !db || !user) return;
-    try {
-      addDocumentNonBlocking(collection(db, 'comments'), {
-        docId: selectedDocForComments.id,
-        userId: user.uid,
-        userName: user.displayName || user.email || "ባለሙያ",
-        userRole: userProfile?.role || "expert",
-        text: newComment,
-        createdAt: Timestamp.now()
-      });
-      setNewComment("");
-    } catch (e) {
-      toast({ title: "Error", description: "Failed to post comment", variant: "destructive" });
-    }
-  };
-
   if (!mounted) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans overflow-x-hidden">
       <header className="h-24 bg-white border-b flex items-center px-10 shrink-0 sticky top-0 z-[100] shadow-sm">
         <div className="flex items-center gap-6">
           <div className="w-14 h-14 bg-[#1e3a8a] rounded-[1.5rem] flex items-center justify-center shadow-lg">
@@ -435,7 +444,7 @@ export function BPMNFlowForgeApp() {
             <h1 className="text-lg font-black text-[#1e3a8a] uppercase leading-none tracking-tight">
               {userProfile?.institution || t.title}
             </h1>
-            <span className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest">{userProfile?.sector} • Intelligence Hub</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest">{userProfile?.sector} • Intelligence Portal</span>
           </div>
         </div>
 
@@ -468,7 +477,7 @@ export function BPMNFlowForgeApp() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button variant="ghost" size="icon" onClick={handleExportCSV} className="h-12 w-12 rounded-2xl text-slate-400 hover:text-[#1e3a8a] bg-slate-50">
+          <Button variant="ghost" size="icon" onClick={handleExportCSV} title="Export Registry to CSV" className="h-12 w-12 rounded-2xl text-slate-400 hover:text-[#1e3a8a] bg-slate-50">
             <FileSpreadsheet className="w-6 h-6" />
           </Button>
           
@@ -507,7 +516,7 @@ export function BPMNFlowForgeApp() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div className="space-y-5">
                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.15em] ml-2">{t.serviceName}</label>
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="የአገልግሎቱ ወይም የሰነዱ ስም..." className="h-16 bg-slate-50 border-none rounded-[1.8rem] text-xs font-bold px-8 shadow-inner" />
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="የሂደቱ ስም..." className="h-16 bg-slate-50 border-none rounded-[1.8rem] text-xs font-bold px-8 shadow-inner" />
               </div>
               <div className="space-y-5">
                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.15em] ml-2">{t.processDetails}</label>
@@ -565,6 +574,77 @@ export function BPMNFlowForgeApp() {
                 <Button onClick={handlePerformAIAnalysis} disabled={isAnalyzing} className="h-14 px-10 rounded-[1.8rem] bg-purple-600 text-white shadow-2xl hover:bg-purple-700 font-black text-[11px] uppercase flex items-center gap-3 transition-all scale-105">
                   {isAnalyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />} {t.analyzeAI}
                 </Button>
+                <Dialog open={isDiscussionOpen} onOpenChange={setIsDiscussionOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="h-14 px-10 rounded-[1.8rem] border-2 border-slate-50 bg-white font-black text-[11px] uppercase flex items-center gap-3 shadow-xl">
+                      <MessageSquare className="w-5 h-5 text-purple-600" /> {t.discussionCenter}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-3xl rounded-[3.5rem] p-0 border-none shadow-2xl bg-white overflow-hidden flex flex-col max-h-[90vh] z-[1100]">
+                    <DialogHeader className="p-10 border-b bg-slate-50/80">
+                      <DialogTitle className="flex items-center gap-5">
+                        <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center">
+                          <MessageSquare className="w-7 h-7 text-purple-600" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-lg font-black text-slate-900">{t.discussionCenter}</span>
+                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">ርዕስ በርዕስ መወያያ ማዕከል</span>
+                        </div>
+                      </DialogTitle>
+                    </DialogHeader>
+                    
+                    <ScrollArea className="flex-1 p-10">
+                      <div className="space-y-8">
+                        {discussions && discussions.length > 0 ? (
+                          discussions.map((msg) => (
+                            <div key={msg.id} className={`flex flex-col ${msg.userId === user?.uid ? 'items-end' : 'items-start'}`}>
+                               <div className="mb-2 px-4">
+                                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{msg.userName} • {msg.userRole}</span>
+                               </div>
+                               <div className={`max-w-[85%] rounded-[2.5rem] p-8 shadow-2xl ${msg.userId === user?.uid ? 'bg-purple-600 text-white rounded-tr-none' : 'bg-slate-50 text-slate-900 rounded-tl-none border border-slate-100'}`}>
+                                  <div className="flex items-center gap-2 mb-3">
+                                     <Badge className="bg-white/20 text-white text-[8px] font-black uppercase px-3 py-1 border-none">{msg.topic}</Badge>
+                                  </div>
+                                  <p className="text-[15px] font-bold leading-relaxed">{msg.text}</p>
+                                  <p className="text-[8px] font-bold mt-4 opacity-50">
+                                    {msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleString('et-ET') : '...'}
+                                  </p>
+                               </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-32 opacity-10">
+                            <MessageSquare className="w-24 h-24 mb-6" />
+                            <p className="text-[12px] font-black uppercase tracking-[0.5em]">{t.noComments}</p>
+                          </div>
+                        )}
+                      </div>
+                    </ScrollArea>
+
+                    <DialogFooter className="p-10 border-t bg-slate-50/50 space-y-4">
+                      <div className="w-full space-y-4">
+                        <Input 
+                          value={messageTopic} 
+                          onChange={(e) => setMessageTopic(e.target.value)}
+                          placeholder={t.messageTopic} 
+                          className="h-12 bg-white border-none rounded-xl text-xs font-bold px-6 shadow-sm"
+                        />
+                        <div className="flex items-center gap-5 w-full">
+                          <Input 
+                            value={newMessage} 
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            placeholder={t.writeComment} 
+                            className="h-16 bg-white border-none rounded-[1.8rem] text-sm font-bold px-8 shadow-2xl flex-1"
+                            onKeyDown={(e) => e.key === 'Enter' && handlePostDiscussion()}
+                          />
+                          <Button onClick={handlePostDiscussion} className="h-16 w-16 rounded-[1.8rem] bg-purple-600 text-white shadow-2xl hover:bg-purple-700 flex items-center justify-center">
+                            <Send className="w-6 h-6" />
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
                 <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
                   <DialogTrigger asChild>
                     <Button className="h-14 px-10 rounded-[1.8rem] bg-[#1e3a8a] text-white shadow-2xl hover:bg-[#1e3a8a]/90 font-black text-[11px] uppercase flex items-center gap-3">
@@ -601,7 +681,7 @@ export function BPMNFlowForgeApp() {
            </header>
 
            {aiAnalysisResult && (
-             <div className="space-y-8">
+             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                <Card className="rounded-[3.5rem] border-none shadow-2xl bg-gradient-to-br from-purple-50 via-white to-blue-50 p-12 relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-12 opacity-5">
                     <Sparkles className="w-40 h-40 text-purple-600" />
@@ -614,10 +694,10 @@ export function BPMNFlowForgeApp() {
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                          <div>
                            <h3 className="text-2xl font-black text-purple-900 uppercase tracking-tight">{t.performanceReport}</h3>
-                           <p className="text-[11px] font-bold text-purple-400 uppercase mt-2 tracking-widest">DEEP INTELLIGENCE ANALYTICS</p>
+                           <p className="text-[11px] font-bold text-purple-400 uppercase mt-2 tracking-widest">DEEP CONTENT ESSENCE ANALYTICS</p>
                          </div>
                          <Badge className="bg-purple-600 text-white font-black px-8 h-14 rounded-full text-lg shadow-2xl flex items-center gap-3">
-                           <Sparkles className="w-6 h-6 animate-pulse" /> {performanceStats.score}% {t.efficiency}
+                           <Sparkles className="w-6 h-6 animate-pulse" /> {aiAnalysisResult.score}% {t.efficiency}
                          </Badge>
                       </div>
                       
@@ -725,71 +805,6 @@ export function BPMNFlowForgeApp() {
                           <Button variant="ghost" size="icon" onClick={() => handleOpenFile(docItem)} className="h-14 w-14 rounded-[1.5rem] text-[#1e3a8a] bg-slate-50 group-hover:bg-blue-100 transition-all shadow-sm">
                             <Eye className="w-6 h-6" />
                           </Button>
-                          <Dialog open={selectedDocForComments?.id === docItem.id} onOpenChange={(open) => setSelectedDocForComments(open ? docItem : null)}>
-                            <DialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-14 w-14 rounded-[1.5rem] text-purple-600 bg-slate-50 group-hover:bg-purple-100 transition-all shadow-sm">
-                                <MessageSquare className="w-6 h-6" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-3xl rounded-[3.5rem] p-0 border-none shadow-2xl bg-white overflow-hidden flex flex-col max-h-[90vh] z-[1100]">
-                              <DialogHeader className="p-10 border-b bg-slate-50/80">
-                                <DialogTitle className="flex items-center gap-5">
-                                  <div className="w-12 h-12 bg-[#1e3a8a]/10 rounded-2xl flex items-center justify-center">
-                                    <MessageSquare className="w-7 h-7 text-[#1e3a8a]" />
-                                  </div>
-                                  <div className="flex flex-col">
-                                    <span className="text-lg font-black text-slate-900">{t.comments}</span>
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{docItem.name}</span>
-                                  </div>
-                                </DialogTitle>
-                              </DialogHeader>
-                              
-                              <ScrollArea className="flex-1 p-10">
-                                <div className="space-y-8">
-                                  {comments && comments.length > 0 ? (
-                                    comments.map((comment) => (
-                                      <div key={comment.id} className={`flex flex-col ${comment.userId === user?.uid ? 'items-end' : 'items-start'}`}>
-                                        <div className={`max-w-[85%] rounded-[2rem] p-8 shadow-2xl ${comment.userId === user?.uid ? 'bg-[#1e3a8a] text-white rounded-tr-none' : 'bg-slate-50 text-slate-900 rounded-tl-none border border-slate-100'}`}>
-                                          <div className="flex items-center gap-3 mb-4">
-                                            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-black">
-                                              {comment.userName.charAt(0)}
-                                            </div>
-                                            <span className={`text-[10px] font-black uppercase tracking-widest ${comment.userId === user?.uid ? 'text-blue-200' : 'text-slate-400'}`}>
-                                              {comment.userName} • {comment.userRole}
-                                            </span>
-                                          </div>
-                                          <p className="text-[15px] font-bold leading-relaxed">{comment.text}</p>
-                                          <p className={`text-[9px] font-bold mt-4 opacity-50`}>
-                                            {comment.createdAt?.toDate ? comment.createdAt.toDate().toLocaleString('et-ET') : '...'}
-                                          </p>
-                                        </div>
-                                      </div>
-                                    ))
-                                  ) : (
-                                    <div className="flex flex-col items-center justify-center py-32 opacity-10">
-                                      <MessageSquare className="w-24 h-24 mb-6" />
-                                      <p className="text-[12px] font-black uppercase tracking-[0.5em]">{t.noComments}</p>
-                                    </div>
-                                  )}
-                                </div>
-                              </ScrollArea>
-
-                              <DialogFooter className="p-10 border-t bg-slate-50/50">
-                                <div className="flex items-center gap-5 w-full">
-                                  <Input 
-                                    value={newComment} 
-                                    onChange={(e) => setNewComment(e.target.value)}
-                                    placeholder={t.writeComment} 
-                                    className="h-16 bg-white border-none rounded-[1.8rem] text-sm font-bold px-8 shadow-2xl flex-1"
-                                    onKeyDown={(e) => e.key === 'Enter' && handlePostComment()}
-                                  />
-                                  <Button onClick={handlePostComment} className="h-16 w-16 rounded-[1.8rem] bg-[#1e3a8a] text-white shadow-2xl hover:bg-[#1e3a8a]/90 flex items-center justify-center">
-                                    <Send className="w-6 h-6" />
-                                  </Button>
-                                </div>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-14 w-14 rounded-[1.5rem] text-slate-400 bg-slate-50 hover:bg-white shadow-sm transition-all">
