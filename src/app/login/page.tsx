@@ -141,7 +141,7 @@ export default function LoginPage() {
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="h-12 px-6 rounded-2xl bg-white border-none shadow-xl flex items-center gap-3 font-black text-[10px] uppercase">
               <Languages className="w-5 h-5 text-[#1e3a8a]" />
-              {currentLang === 'am' ? 'አማርኛ' : currentLang === 'en' ? 'English' : currentLang === 'or' ? 'Oromo' : 'Tigrinya'}
+              {currentLang === 'am' ? 'አማርኛ' : currentLang === 'en' ? 'English' : currentLang === 'or' ? 'Oromo' : 'ትግርኛ'}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48 rounded-[1.5rem] p-2 shadow-2xl border-none">
