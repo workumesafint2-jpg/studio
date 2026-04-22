@@ -40,7 +40,6 @@ export default function LoginPage() {
   const [fatherName, setFatherName] = useState('');
   const [institutionName, setInstitutionName] = useState('');
   const [sectorName, setSectorName] = useState('');
-  const [role, setRole] = useState('expert');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [currentLang, setCurrentLang] = useState<Language>('am');
@@ -115,7 +114,7 @@ export default function LoginPage() {
           sector: sectorName,
           email,
           displayName,
-          role,
+          role: 'expert',
           createdAt: new Date().toISOString()
         });
         toast({ title: t.signup, description: "Account created" });
