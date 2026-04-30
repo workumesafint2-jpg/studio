@@ -80,8 +80,8 @@ export default function LoginPage() {
         await saveUserProfile(result.user.uid, {
           email: result.user.email,
           displayName: result.user.displayName,
-          institution: 'General',
-          sector: 'General',
+          institution: 'የኢኖቬሽንና ቴክኖሎጂ ቢሮ',
+          sector: 'አጠቃላይ',
           role: 'expert',
           createdAt: new Date().toISOString()
         });
